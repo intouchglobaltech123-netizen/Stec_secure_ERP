@@ -1,0 +1,511 @@
+import React, { useState } from 'react';
+import { useStecSecure } from '@/lib/stecsecure-context';
+import { Job, Invoice, PaymentMode } from '@/lib/stecsecure-types';
+import {
+  X,
+  Share2,
+  CheckCircle2,
+  Phone,
+  MessageCircle,
+  KeyRound,
+  ShieldCheck,
+  FileCheck2,
+  Receipt,
+  CreditCard,
+  Camera,
+  ArrowRight,
+  DollarSign,
+  AlertCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Modal } from '@/components/ui/modal';
+import { formatINR, formatDateTime } from '@/lib/utils';
+import { toast } from 'sonner';
+
+interface JobShareOtpModalProps {
+  isOpen: boolean;
+  job: Job | null;
+  invoice?: Invoice | null;
+  onClose: () => void;
+  onJobClosed: () => void;
+}
+
+export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
+  isOpen,
+  job,
+  invoice: propInvoice,
+  onClose,
+  onJobClosed,
+}) => {
+  const { customers, getJobMaterials, getJobInvoice, verifyJobOtp, recordPaymentAfterOtp } =
+    useStecSecure();
+
+  const [whatsAppSentAt, setWhatsAppSentAt] = useState<string | null>(null);
+  const [otpInput, setOtpInput] = useState('');
+  const [otpError, setOtpError] = useState<string | null>(null);
+
+  // Post-OTP Payment Collection Stage
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
+  const [paymentOption, setPaymentOption] = useState<'FULL' | 'PARTIAL' | 'NOTHING'>('FULL');
+  const [partialAmountReceived, setPartialAmountReceived] = useState<number>(0);
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>('UPI');
+  const [referenceNo, setReferenceNo] = useState<string>('');
+
+  if (!isOpen || !job) return null;
+
+  const customer = customers.find((c) => c.id === job.customerNumber);
+  const invoice = propInvoice || getJobInvoice(job.id);
+  const materials = getJobMaterials(job.id);
+
+  const grandTotal = invoice?.grandTotal || job.serviceAmount || 0;
+
+  const handleSendWhatsApp = () => {
+    const timestamp = new Date().toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    setWhatsAppSentAt(timestamp);
+    toast.success(`Job summary and invoice shared to ${customer?.phone} via WhatsApp.`);
+  };
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpInput.trim()) {
+      setOtpError('Please enter the 4-digit OTP');
+      return;
+    }
+
+    const success = verifyJobOtp(job.id, otpInput.trim());
+    if (success) {
+      toast.success(`OTP verified. Customer sign-off authenticated.`);
+      setIsOtpVerified(true);
+      setPartialAmountReceived(Math.round(grandTotal / 2));
+    } else {
+      setOtpError('Invalid OTP code. Please enter 1234');
+      toast.error('Invalid OTP. Use demo code 1234');
+    }
+  };
+
+  const handleAutoFillOtp = () => {
+    setOtpInput('1234');
+    setOtpError(null);
+  };
+
+  const handleConfirmPayment = () => {
+    if (invoice) {
+      const amountReceived =
+        paymentOption === 'FULL'
+          ? grandTotal
+          : paymentOption === 'PARTIAL'
+          ? Number(partialAmountReceived) || 0
+          : 0;
+
+      recordPaymentAfterOtp({
+        invoiceId: invoice.id,
+        customerNumber: job.customerNumber,
+        statusOption: paymentOption,
+        amountReceived,
+        paymentMode,
+        referenceNo: referenceNo.trim() || undefined,
+      });
+
+      const balance = Math.max(0, grandTotal - amountReceived);
+      toast.success(
+        `Payment recorded: ${formatINR(amountReceived)} collected (Balance: ${formatINR(balance)}). Job ${job.jobNumber} closed.`
+      );
+    } else {
+      toast.success(`Job ${job.jobNumber} closed.`);
+    }
+
+    onJobClosed();
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="2xl"
+      showCloseButton={false}
+      className="max-h-[90vh]"
+      bodyClassName="p-0 flex flex-col overflow-hidden"
+    >
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 shrink-0 bg-white">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600 shadow-2xs">
+            <FileCheck2 className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 font-display">
+              {isOtpVerified ? 'Step 3: Record Payment Collection' : 'Customer Share & Sign-off'}
+            </h2>
+            <p className="text-xs text-slate-500">
+              {isOtpVerified
+                ? `Select settlement status for Invoice ${invoice?.invoiceNo || ''}`
+                : `Share service report, photos & invoice and verify OTP for ${job.jobNumber}`}
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs overscroll-contain">
+          {/* Job Summary Card with Embedded Photos */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <div>
+                <span className="font-mono text-sm font-bold text-orange-600">{job.jobNumber}</span>
+                <span className="text-slate-600 text-xs ml-2">&bull; {job.productModel}</span>
+              </div>
+              <Badge variant={isOtpVerified ? 'success' : 'warning'}>
+                {isOtpVerified ? 'OTP VERIFIED' : 'AWAITING OTP'}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700">
+              <div>
+                <div className="text-[10px] text-slate-500 uppercase font-bold">Customer Details</div>
+                <div className="font-bold text-slate-900 mt-0.5">{customer?.name}</div>
+                <div className="text-slate-600 flex items-center gap-1 mt-0.5 font-medium">
+                  <Phone className="w-3 h-3 text-emerald-600" /> {customer?.phone}
+                </div>
+              </div>
+
+              {invoice && (
+                <div className="sm:text-right">
+                  <div className="text-[10px] text-slate-500 uppercase font-bold">Invoice Total</div>
+                  <div className="font-mono font-bold text-emerald-700 text-base mt-0.5">
+                    {formatINR(invoice.grandTotal)}
+                  </div>
+                  <div className="text-slate-500 text-[11px]">
+                    {invoice.invoiceNo} &bull; {invoice.lineItems.length} line item(s)
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Embedded Before and After Photos */}
+            {(job.beforePhotoUrl || job.afterPhotoUrl) && (
+              <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                <div className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                  <Camera className="w-3.5 h-3.5 text-orange-600" />
+                  Photographic Evidence (Embedded in Invoice & Report)
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {job.beforePhotoUrl && (
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase font-bold text-blue-700 flex items-center justify-between">
+                        <span>Before Photo</span>
+                        <span className="text-slate-500 font-normal">Pre-Service</span>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
+                        <img
+                          src={job.beforePhotoUrl}
+                          alt="Before Work"
+                          className="w-full h-32 object-cover object-center"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {job.afterPhotoUrl && (
+                    <div className="space-y-1">
+                      <div className="text-[10px] uppercase font-bold text-emerald-700 flex items-center justify-between">
+                        <span>After Photo</span>
+                        <span className="text-slate-500 font-normal">Post-Completion</span>
+                      </div>
+                      <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
+                        <img
+                          src={job.afterPhotoUrl}
+                          alt="After Work"
+                          className="w-full h-32 object-cover object-center"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {!isOtpVerified ? (
+            <>
+              {/* STEP 1: Mock WhatsApp Share */}
+              <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                      <MessageCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 text-xs">Step 1: Share via WhatsApp</div>
+                      <div className="text-[11px] text-slate-600">
+                        Dispatch job summary, before/after photos & invoice to customer's WhatsApp
+                      </div>
+                    </div>
+                  </div>
+                  {whatsAppSentAt && (
+                    <Badge variant="success" className="text-[10px]">
+                      Sent at {whatsAppSentAt}
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleSendWhatsApp}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-xs transition-all shadow-sm shadow-emerald-600/25 cursor-pointer"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>{whatsAppSentAt ? 'Resend via WhatsApp' : 'Send via WhatsApp'}</span>
+                  </button>
+                  <span className="text-[11px] text-slate-600 font-medium">
+                    Recipient: <strong className="text-slate-900">{customer?.phone}</strong>
+                  </span>
+                </div>
+              </div>
+
+              {/* STEP 2: Mock OTP Customer Sign-off */}
+              <form
+                onSubmit={handleVerifyOtp}
+                className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600">
+                      <KeyRound className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 text-xs">Step 2: Customer OTP Verification</div>
+                      <div className="text-[11px] text-slate-500">
+                        Enter customer's 4-digit code to authenticate completion
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAutoFillOtp}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-mono hover:bg-slate-200 cursor-pointer transition-colors"
+                  >
+                    Demo Code: <strong>1234</strong> (Click to insert)
+                  </button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                  <div className="relative w-full sm:w-48">
+                    <Input
+                      type="text"
+                      maxLength={4}
+                      placeholder="Enter 4 digits"
+                      value={otpInput}
+                      onChange={(e) => {
+                        setOtpInput(e.target.value);
+                        setOtpError(null);
+                      }}
+                      className="text-center font-mono text-base tracking-widest h-10 border-slate-300 focus:border-orange-500 bg-white"
+                    />
+                  </div>
+                  <Button type="submit" variant="primary" size="md" className="w-full sm:w-auto">
+                    <ShieldCheck className="w-4 h-4 mr-1.5" />
+                    Verify OTP & Proceed to Payment
+                    <ArrowRight className="w-4 h-4 ml-1.5" />
+                  </Button>
+                </div>
+
+                {otpError && (
+                  <p className="text-[11px] text-rose-600 font-semibold">{otpError}</p>
+                )}
+              </form>
+            </>
+          ) : (
+            /* STEP 3: Post-OTP Payment Recording */
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 shadow-sm space-y-4 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-slate-900 text-sm">Record Payment Status</div>
+                    <div className="text-[11px] text-slate-500">
+                      Invoice Total: <strong className="text-emerald-700 font-mono">{formatINR(grandTotal)}</strong>
+                    </div>
+                  </div>
+                </div>
+                <Badge variant="success">OTP Verified</Badge>
+              </div>
+
+              {/* Payment Settlement Status Options */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  Payment Collection Status *
+                </label>
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentOption('FULL')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      paymentOption === 'FULL'
+                        ? 'bg-emerald-50 border-emerald-500 text-emerald-950 shadow-2xs ring-1 ring-emerald-300'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-xs text-slate-900">Full Amount Received</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Customer paid 100% ({formatINR(grandTotal)}) on site
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold text-emerald-700 text-sm font-mono">{formatINR(grandTotal)}</span>
+                      <div className="text-[10px] text-slate-500">Balance: ₹0</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentOption('PARTIAL')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      paymentOption === 'PARTIAL'
+                        ? 'bg-amber-50 border-amber-500 text-amber-950 shadow-2xs ring-1 ring-amber-300'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-xs text-slate-900">
+                        Credit / Partial — Advance Already Taken, Balance Pending
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Advance collected; remaining balance due as credit
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="warning">Partial</Badge>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentOption('NOTHING')}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      paymentOption === 'NOTHING'
+                        ? 'bg-rose-50 border-rose-500 text-rose-950 shadow-2xs ring-1 ring-rose-300'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-xs text-slate-900">
+                        Credit / Partial — Nothing Received Yet
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Total {formatINR(grandTotal)} outstanding on client credit account
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold text-rose-600 text-sm font-mono">{formatINR(grandTotal)}</span>
+                      <div className="text-[10px] text-rose-600 font-semibold">Balance Pending</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* If Partial: prompt for advance received amount */}
+              {paymentOption === 'PARTIAL' && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-amber-900 mb-1">
+                        Advance Collected (₹) *
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max={grandTotal}
+                        value={partialAmountReceived}
+                        onChange={(e) => setPartialAmountReceived(Number(e.target.value))}
+                        className="text-xs h-9 bg-white border-amber-300 focus:border-amber-500 font-mono"
+                      />
+                    </div>
+                    <div className="p-2 rounded-lg bg-white border border-slate-200 flex flex-col justify-center">
+                      <div className="text-[10px] text-slate-500 uppercase font-bold">Remaining Balance Due</div>
+                      <div className="text-base font-bold text-rose-600 font-mono">
+                        {formatINR(Math.max(0, grandTotal - (Number(partialAmountReceived) || 0)))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Mode Selection (for FULL or PARTIAL) */}
+              {paymentOption !== 'NOTHING' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1 text-[11px]">
+                      Payment Mode *
+                    </label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {(['UPI', 'CASH', 'NEFT', 'CHEQUE'] as PaymentMode[]).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => setPaymentMode(mode)}
+                          className={`h-8 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                            paymentMode === mode
+                              ? 'bg-orange-500 border-orange-500 text-white shadow-2xs'
+                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {mode}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-1 text-[11px]">
+                      UTR / Transaction Ref (Optional)
+                    </label>
+                    <Input
+                      placeholder="e.g. UPI-9982481 or Cheque #"
+                      value={referenceNo}
+                      onChange={(e) => setReferenceNo(e.target.value)}
+                      className="text-xs h-8 font-mono bg-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                <Button
+                  type="button"
+                  variant="success"
+                  size="md"
+                  onClick={handleConfirmPayment}
+                  className="w-full sm:w-auto"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                  Confirm Payment & Close Job
+                </Button>
+              </div>
+            </div>
+          )}
+      </div>
+
+      <div className="flex items-center justify-end px-5 py-3 border-t border-slate-200 bg-slate-50/80 shrink-0">
+        <Button type="button" variant="secondary" size="md" onClick={onClose} className="rounded-xl">
+          Close Window
+        </Button>
+      </div>
+    </Modal>
+  );
+};
