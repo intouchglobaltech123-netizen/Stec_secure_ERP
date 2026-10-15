@@ -53,7 +53,31 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
     products,
     invoices,
     isManagement,
+    serialUnits,
   } = useStecSecure();
+
+  // Phase 22: catalogue product for a line (exact name first, then partial), to show stock and serials
+  const productForLine = (item: DeliveryChallanLineItem) => {
+    if (item.productId) return products.find((p) => p.id === item.productId);
+    const n = item.itemDescription.trim().toLowerCase();
+    if (!n) return undefined;
+    return (
+      products.find((p) => p.name.toLowerCase() === n) ??
+      products.find((p) => n.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(n))
+    );
+  };
+
+  const toggleSerial = (index: number, serialId: string) => {
+    setLineItems((prev) => {
+      const updated = [...prev];
+      const picked = updated[index].serialUnitIds ?? [];
+      updated[index] = {
+        ...updated[index],
+        serialUnitIds: picked.includes(serialId) ? picked.filter((id) => id !== serialId) : [...picked, serialId],
+      };
+      return updated;
+    });
+  };
 
   const [mode, setMode] = useState<'CREATE' | 'PREVIEW'>(() => {
     if (initialMode === 'EDIT' || initialMode === 'CREATE') return 'CREATE';
@@ -118,7 +142,8 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
   };
 
   const handleQuickInsertProduct = (index: number, productName: string) => {
-    handleUpdateItem(index, { itemDescription: productName });
+    const prod = products.find((p) => p.name === productName);
+    handleUpdateItem(index, { itemDescription: productName, productId: prod?.id, serialUnitIds: [] });
   };
 
   const handleCreateOrUpdate = async (e: React.FormEvent) => {
@@ -297,7 +322,11 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                               required
                               value={item.itemDescription}
                               onChange={(e) =>
-                                handleUpdateItem(idx, { itemDescription: e.target.value })
+                                handleUpdateItem(idx, {
+                                  itemDescription: e.target.value,
+                                  productId: undefined,
+                                  serialUnitIds: [],
+                                })
                               }
                               placeholder="Type item name or pick from catalogue below..."
                               className="h-8 text-xs bg-white text-slate-900"
@@ -314,6 +343,54 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                                 </button>
                               ))}
                             </div>
+                            {(() => {
+                              // Phase 22: stock available for this line and the serial units to dispatch
+                              const prod = productForLine(item);
+                              if (!prod) return null;
+                              const picked = item.serialUnitIds ?? [];
+                              const tracked = serialUnits.some((u) => u.productId === prod.id);
+                              if (!tracked) return null;
+                              const available = serialUnits.filter(
+                                (u) => u.productId === prod.id && (u.status === 'IN_STOCK' || picked.includes(u.id))
+                              );
+                              return (
+                                <div className="pt-1 space-y-1">
+                                  <div className="text-[10px] text-slate-600">
+                                    In stock: <strong>{available.length}</strong> · Serials picked:{' '}
+                                    <strong>
+                                      {picked.length}/{item.qty}
+                                    </strong>
+                                    {item.qty > available.length && (
+                                      <span className="ml-1 text-amber-700 font-semibold">
+                                        — only {available.length} in stock
+                                      </span>
+                                    )}
+                                  </div>
+                                  {available.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                      {available.map((u) => {
+                                        const on = picked.includes(u.id);
+                                        return (
+                                          <button
+                                            key={u.id}
+                                            type="button"
+                                            disabled={!on && picked.length >= item.qty}
+                                            onClick={() => toggleSerial(idx, u.id)}
+                                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded border cursor-pointer disabled:opacity-40 ${
+                                              on
+                                                ? 'bg-orange-500 border-orange-500 text-white'
+                                                : 'bg-white border-slate-300 text-slate-600'
+                                            }`}
+                                          >
+                                            {u.serialNumber}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                         </td>
                         <td className="p-2">
@@ -434,7 +511,17 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                     {activeChallan.lineItems.map((item, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50">
                         <td className="p-2 text-center text-slate-500">{idx + 1}</td>
-                        <td className="p-2 font-medium text-slate-900">{item.itemDescription}</td>
+                        <td className="p-2 font-medium text-slate-900">
+                          {item.itemDescription}
+                          {(item.serialUnitIds?.length ?? 0) > 0 && (
+                            <div className="text-[10px] font-mono font-normal text-slate-500">
+                              S/N:{' '}
+                              {item.serialUnitIds!
+                                .map((id) => serialUnits.find((u) => u.id === id)?.serialNumber || id)
+                                .join(', ')}
+                            </div>
+                          )}
+                        </td>
                         <td className="p-2 text-center font-bold text-orange-600">{item.qty} Nos</td>
                         <td className="p-2 text-right text-slate-500 text-[11px]">Site Installation</td>
                       </tr>

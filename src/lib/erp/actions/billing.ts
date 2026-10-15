@@ -26,6 +26,8 @@ import {
   findInvoiceForQuotation,
   withNotification,
   managementIds,
+  matchProduct,
+  applyChallanSerials,
 } from '../core';
 
 // Phase 22: tell management about money received (not the person who recorded it)
@@ -205,7 +207,7 @@ export const recordAdvance: Action<RecordAdvanceArgs, Payment> = (s, env, data) 
 
 export interface CreateDeliveryChallanArgs {
   customerNumber: string;
-  lineItems: { itemDescription: string; qty: number }[];
+  lineItems: { itemDescription: string; qty: number; productId?: string; serialUnitIds?: string[] }[];
   transportedBy?: string;
   jobId?: string;
   quotationId?: string;
@@ -217,20 +219,34 @@ export const createDeliveryChallan: Action<CreateDeliveryChallanArgs, DeliveryCh
     challanNo: nextDocNumber(`DC-${env.fy}-`, s.deliveryChallans.map((d) => d.challanNo)),
     date: env.today,
     customerNumber: data.customerNumber,
-    lineItems: data.lineItems,
+    lineItems: data.lineItems.map((l) => ({ ...l, productId: l.productId ?? matchProduct(s, l.itemDescription)?.id })),
     receiverSignature: 'Pending Site Signature',
     transportedBy: data.transportedBy || 'Field Van / Technician Bike',
     jobId: data.jobId,
     quotationId: data.quotationId,
   };
-  return done({ ...s, deliveryChallans: [newChallan, ...s.deliveryChallans] }, newChallan);
+  const withStock = applyChallanSerials(s, newChallan);
+  return done({ ...withStock, deliveryChallans: [newChallan, ...s.deliveryChallans] }, newChallan);
 };
 
 export const updateDeliveryChallan: Action<{ id: string; updates: Partial<DeliveryChallan> }, void> = (
   s,
   _env,
   { id, updates }
-) => done({ ...s, deliveryChallans: updateById(s.deliveryChallans, id, (dc) => ({ ...dc, ...updates })) }, undefined);
+) => {
+  const prev = s.deliveryChallans.find((dc) => dc.id === id);
+  if (!prev) throw new Error('Delivery Challan not found');
+  const next: DeliveryChallan = {
+    ...prev,
+    ...updates,
+    lineItems: (updates.lineItems ?? prev.lineItems).map((l) => ({
+      ...l,
+      productId: l.productId ?? matchProduct(s, l.itemDescription)?.id,
+    })),
+  };
+  const withStock = applyChallanSerials(s, next, prev);
+  return done({ ...withStock, deliveryChallans: updateById(s.deliveryChallans, id, () => next) }, undefined);
+};
 
 export type CreateQuotationArgs = Omit<Quotation, 'id' | 'quotationNo'> & {
   quotationNo?: string;
@@ -385,6 +401,7 @@ export const convertQuotationToDeliveryChallan: Action<{ quotationId: string; jo
     lineItems: itemsToConvert.map((item) => ({
       itemDescription: item.itemName,
       qty: item.qty || 1,
+      productId: matchProduct(s, item.itemName)?.id,
     })),
     receiverSignature: 'Pending Site Signature',
     transportedBy: 'Technician Field Van / Bike',

@@ -77,6 +77,7 @@ export interface SerialUnit {
   soldToCustomerId?: string;
   installedAtJobId?: string;
   installedLocation?: string;
+  challanId?: string; // Phase 22: dispatched on this delivery challan
 }
 
 export type JobType = 'SERVICE' | 'INSTALLATION';
@@ -270,6 +271,9 @@ export interface Invoice {
 export interface DeliveryChallanLineItem {
   itemDescription: string;
   qty: number;
+  // Phase 22: the catalogue product and the exact serial units dispatched (taken out of stock)
+  productId?: string;
+  serialUnitIds?: string[];
 }
 
 export interface DeliveryChallan {

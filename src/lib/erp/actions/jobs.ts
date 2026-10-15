@@ -109,7 +109,7 @@ export const deleteJob: Action<{ jobId: string }, void> = (s, _env, { jobId }) =
       serialUnits: s.serialUnits.map((su) =>
         su.installedAtJobId === jobId
           ? su.status === 'ALLOCATED'
-            ? { ...su, status: 'IN_STOCK' as const, installedAtJobId: undefined }
+            ? { ...su, status: 'IN_STOCK' as const, installedAtJobId: undefined, challanId: undefined }
             : { ...su, installedAtJobId: undefined }
           : su
       ),
@@ -382,7 +382,7 @@ export const cancelJob: Action<{ jobId: string; reason: string }, void> = (s, en
       // Units allocated to this job go back to stock
       serialUnits: s.serialUnits.map((su) =>
         su.installedAtJobId === jobId && su.status === 'ALLOCATED'
-          ? { ...su, status: 'IN_STOCK' as const, installedAtJobId: undefined }
+          ? { ...su, status: 'IN_STOCK' as const, installedAtJobId: undefined, challanId: undefined }
           : su
       ),
     },

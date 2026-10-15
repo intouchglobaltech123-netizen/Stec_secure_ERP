@@ -162,6 +162,79 @@ export const findInvoiceForJob = (s: ErpState, job: Job) => {
   );
 };
 
+// Phase 22: catalogue product a challan / quotation line refers to (exact name first, then partial)
+export function matchProduct(s: ErpState, name: string) {
+  const n = name.trim().toLowerCase();
+  if (!n) return undefined;
+  return (
+    s.products.find((p) => p.name.toLowerCase() === n) ??
+    s.products.find((p) => n.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(n))
+  );
+}
+
+// Phase 22: delivery challans take their serial units out of stock. Units on a challan for a job are
+// allocated to that job (installed when the job completes); units on a stand-alone challan are
+// delivered to the customer. `prev` is the challan before an edit, so removed units go back to stock.
+export function applyChallanSerials(s: ErpState, dc: DeliveryChallan, prev?: DeliveryChallan): ErpState {
+  const ids = (c?: DeliveryChallan) => new Set((c?.lineItems ?? []).flatMap((l) => l.serialUnitIds ?? []));
+  const before = ids(prev);
+  const after = ids(dc);
+
+  for (const line of dc.lineItems) {
+    const picked = line.serialUnitIds ?? [];
+    if (picked.length > line.qty) {
+      throw new Error(`${line.itemDescription}: ${picked.length} serials picked for a quantity of ${line.qty}.`);
+    }
+    for (const id of picked) {
+      if (before.has(id)) continue;
+      const unit = s.serialUnits.find((u) => u.id === id);
+      if (!unit) throw new Error('A selected serial number no longer exists.');
+      if (unit.status !== 'IN_STOCK') throw new Error(`Serial ${unit.serialNumber} is not in stock (${unit.status}).`);
+      if (line.productId && unit.productId !== line.productId) {
+        throw new Error(`Serial ${unit.serialNumber} is not a ${line.itemDescription}.`);
+      }
+    }
+  }
+  for (const id of before) {
+    if (after.has(id)) continue;
+    const unit = s.serialUnits.find((u) => u.id === id);
+    // Units already back in stock (e.g. the job was cancelled) need nothing
+    if (!unit || unit.challanId !== dc.id) continue;
+    const releasable = unit.status === 'ALLOCATED' || (!dc.jobId && unit.status === 'INSTALLED');
+    if (!releasable) {
+      throw new Error(`Serial ${unit.serialNumber} is already installed and cannot be taken off the challan.`);
+    }
+  }
+
+  return {
+    ...s,
+    serialUnits: s.serialUnits.map((u) => {
+      if (after.has(u.id) && !before.has(u.id)) {
+        return dc.jobId
+          ? { ...u, status: 'ALLOCATED' as const, installedAtJobId: dc.jobId, challanId: dc.id }
+          : {
+              ...u,
+              status: 'INSTALLED' as const,
+              soldToCustomerId: dc.customerNumber,
+              installedLocation: `Delivered on ${dc.challanNo}`,
+              challanId: dc.id,
+            };
+      }
+      if (before.has(u.id) && !after.has(u.id) && u.challanId === dc.id) {
+        return {
+          ...u,
+          status: 'IN_STOCK' as const,
+          challanId: undefined,
+          installedAtJobId: u.installedAtJobId === dc.jobId ? undefined : u.installedAtJobId,
+          soldToCustomerId: dc.jobId ? u.soldToCustomerId : undefined,
+          installedLocation: dc.jobId ? u.installedLocation : undefined,
+        };
+      }
+      return u;
+    }),
+  };
+}
+
 // Phase 22: in-app notifications. The person who caused the event is never notified; only the most
 // recent ones are kept so the list (and every sync) stays small.
 const MAX_NOTIFICATIONS = 300;
