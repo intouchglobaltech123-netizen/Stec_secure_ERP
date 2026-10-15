@@ -5,6 +5,7 @@ import { Shield, Lock, UserCheck, KeyRound, AlertCircle, ArrowRight } from 'luci
 import { Button } from '@/components/ui/button';
 import { COMPANY_LOGO_SRC } from '@/components/layout/AppShell';
 import { toast } from 'sonner';
+import { DEMO_MODE } from '@/lib/demo-mode';
 
 export const LoginScreen: React.FC = () => {
   const { users, loginWithPin, loginAsUser } = useStecSecure();
@@ -34,7 +35,7 @@ export const LoginScreen: React.FC = () => {
     } else {
       setError(res.message || 'Invalid PIN');
       setPin('');
-      toast.error('Invalid PIN. Please try again or click a demo profile.');
+      toast.error(DEMO_MODE ? 'Invalid PIN. Please try again or click a demo profile.' : 'Invalid PIN. Please try again.');
     }
   };
 
@@ -145,6 +146,9 @@ export const LoginScreen: React.FC = () => {
             </button>
           </div>
 
+          {/* One-click personas (with their PINs) exist only in demo mode */}
+          {DEMO_MODE && (
+          <>
           <div className="relative py-1">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-200" />
@@ -201,6 +205,8 @@ export const LoginScreen: React.FC = () => {
               );
             })}
           </div>
+          </>
+          )}
         </div>
 
         {/* Footer info */}

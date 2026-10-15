@@ -50,6 +50,8 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
     updateDeliveryChallan,
     convertDeliveryChallanToInvoice,
     products,
+    invoices,
+    isManagement,
   } = useStecSecure();
 
   const [mode, setMode] = useState<'CREATE' | 'PREVIEW'>(() => {
@@ -158,12 +160,21 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
 
   const handleConvertToInvoice = () => {
     if (!activeChallan) return;
-    const inv = convertDeliveryChallanToInvoice(activeChallan.id);
-    toast.success(`Tax Invoice ${inv.invoiceNo} created from Delivery Challan ${activeChallan.challanNo}`);
-    if (onConvertedToInvoice) {
-      onConvertedToInvoice(inv);
+    try {
+      const inv = convertDeliveryChallanToInvoice(activeChallan.id);
+      toast.success(`Tax Invoice ${inv.invoiceNo} created from Delivery Challan ${activeChallan.challanNo}`);
+      if (onConvertedToInvoice) {
+        onConvertedToInvoice(inv);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to convert delivery challan to invoice');
     }
   };
+
+  // A challan is invoiced at most once
+  const existingChallanInvoice = activeChallan
+    ? invoices.find((i) => i.deliveryChallanId === activeChallan.id)
+    : undefined;
 
   const previewCustomer = customers.find(
     (c) => c.id === (activeChallan ? activeChallan.customerNumber : customerId)
@@ -488,16 +499,25 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                   <Printer className="w-3.5 h-3.5 mr-1" /> Print
                 </Button>
 
-                <Button
-                  type="button"
-                  variant="success"
-                  size="sm"
-                  onClick={handleConvertToInvoice}
-                  className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                >
-                  <ReceiptText className="w-3.5 h-3.5" />
-                  Convert to Invoice
-                </Button>
+                {existingChallanInvoice ? (
+                  <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5 px-2">
+                    <ReceiptText className="w-3.5 h-3.5" />
+                    Invoiced as {existingChallanInvoice.invoiceNo}
+                  </span>
+                ) : (
+                  isManagement && (
+                    <Button
+                      type="button"
+                      variant="success"
+                      size="sm"
+                      onClick={handleConvertToInvoice}
+                      className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <ReceiptText className="w-3.5 h-3.5" />
+                      Convert to Invoice
+                    </Button>
+                  )
+                )}
 
                 <Button type="button" variant="primary" size="sm" onClick={onClose} className="rounded-xl text-xs">
                   Done

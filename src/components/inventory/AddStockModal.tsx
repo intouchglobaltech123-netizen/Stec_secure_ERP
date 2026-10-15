@@ -302,6 +302,12 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
     toast.success(
       `Added ${createdUnits.length} unit(s) of "${finalProductName}" to stock from ${finalVendorName}.`
     );
+    const skipped = parsedSerials.length - createdUnits.length;
+    if (skipped > 0) {
+      toast.warning(
+        `${skipped} serial number(s) skipped — already in stock records or entered twice.`
+      );
+    }
 
     // TASK 3: If an internal barcode was generated, show clearly to the user
     if (generatedInternalCode) {

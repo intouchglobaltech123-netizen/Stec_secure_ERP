@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
+import { toast } from 'sonner';
 import {
   User,
   Customer,
@@ -24,7 +25,13 @@ import {
   RepairStatus,
   RepairPath,
   RepairTimelineEntry,
+  AppSection,
+  AccessControl,
+  ConfigurableRole,
+  DEFAULT_ACCESS_CONTROL,
 } from './stecsecure-types';
+import { financialYearStart, localDateISO, maxSequence } from './numbering';
+import { DEMO_MODE } from './demo-mode';
 import {
   SEED_USERS,
   SEED_CUSTOMERS,
@@ -69,6 +76,7 @@ interface ErpState {
   enquiries: Enquiry[];
   jobProductUsages: JobProductUsage[];
   repairTickets: RepairTicket[];
+  accessControl: AccessControl;
 }
 
 
@@ -80,6 +88,10 @@ export interface StecSecureContextType extends ErpState {
   isManagement: boolean;
   visibleJobs: Job[];
   visibleRepairTickets: RepairTicket[];
+
+  // Phase 18: Access control (CEO-managed)
+  canAccessSection: (section: AppSection) => boolean;
+  updateAccessControl: (role: ConfigurableRole, sections: AppSection[]) => void;
 
   // Auth
   loginWithPin: (pin: string) => { success: boolean; message?: string };
@@ -237,82 +249,72 @@ export interface StecSecureContextType extends ErpState {
 const StecSecureContext = createContext<StecSecureContextType | undefined>(undefined);
 
 function getInitialState(): ErpState {
+  const raw = localStorage.getItem(STORAGE_KEY);
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      // A saved list is kept even when empty; only a list missing from an older save starts empty.
+      // (Falling back to demo seeds here used to resurrect deleted records.)
+      const list = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
-      const rawQuotations: Quotation[] = (parsed.quotations?.length ? parsed.quotations : SEED_QUOTATIONS).map(
-        (q: Quotation) => ({
-          ...q,
-          bankDetails: CANARA_BANK_DETAILS,
-        })
-      );
-      // Phase 15.5: Audit and consolidate duplicate demo quotations (e.g. A24101 duplicate of A24100)
-      const sanitizedQuotations: Quotation[] = [];
-      const seenEnquiryQuotes = new Set<string>();
-      for (const q of rawQuotations) {
-        // If specifically A24101 was created on the same enquiry as A24100, skip duplicate
-        if (q.quotationNo === 'A24101' && rawQuotations.some((o) => o.quotationNo === 'A24100')) {
-          continue;
-        }
-        if (q.enquiryId) {
-          const key = `${q.enquiryId}_${q.customerNumber}`;
-          if (seenEnquiryQuotes.has(key)) {
-            continue; // skip duplicate quotation on same enquiry
-          }
-          seenEnquiryQuotes.add(key);
-        }
-        sanitizedQuotations.push(q);
-      }
+      const quotations = list<Quotation>(parsed.quotations).map((q) => ({
+        ...q,
+        bankDetails: CANARA_BANK_DETAILS,
+      }));
+      const users = list<User>(parsed.users);
 
       return {
-        users: (parsed.users?.length ? parsed.users : SEED_USERS).map((u: User) =>
+        // Never start with zero users, or nobody could log in
+        users: (users.length ? users : SEED_USERS).map((u: User) =>
           u.id === 'usr-ceo' ? { ...u, name: 'Santhosh', phone: '8148562605', email: 'stecsecure@gmail.com' } : u
         ),
-        customers: parsed.customers?.length ? parsed.customers : SEED_CUSTOMERS,
-        vendors: parsed.vendors?.length ? parsed.vendors : SEED_VENDORS,
-        products: (parsed.products?.length ? parsed.products : SEED_PRODUCTS).map((p: Product) => {
+        customers: list<Customer>(parsed.customers),
+        vendors: list<Vendor>(parsed.vendors),
+        products: list<Product>(parsed.products).map((p) => {
           const seed = SEED_PRODUCTS.find((sp) => sp.id === p.id);
           return seed?.barcode && !p.barcode ? { ...p, barcode: seed.barcode } : p;
         }),
-        jobs: (parsed.jobs?.length ? parsed.jobs : SEED_JOBS).map((j: Job) => ({
+        jobs: list<Job>(parsed.jobs).map((j) => ({
           ...j,
-          teamLeadUserId: j.teamLeadUserId || j.assignedTeam?.[0] || 'usr-tech-1',
+          teamLeadUserId: j.teamLeadUserId || j.assignedTeam?.[0],
         })),
-        workLogs: parsed.workLogs?.length ? parsed.workLogs : SEED_WORK_LOGS,
-        holdEvents: parsed.holdEvents?.length ? parsed.holdEvents : SEED_HOLD_EVENTS,
-        materialUsages: parsed.materialUsages?.length ? parsed.materialUsages : SEED_MATERIAL_USAGES,
-        quotations: sanitizedQuotations,
-        invoices: (parsed.invoices?.length ? parsed.invoices : SEED_INVOICES).map((inv: Invoice) => ({
+        workLogs: list<WorkLog>(parsed.workLogs),
+        holdEvents: list<HoldEvent>(parsed.holdEvents),
+        materialUsages: list<MaterialUsage>(parsed.materialUsages),
+        quotations,
+        invoices: list<Invoice>(parsed.invoices).map((inv) => ({
           ...inv,
           bankDetails: CANARA_BANK_DETAILS,
         })),
-        serialUnits: parsed.serialUnits?.length ? parsed.serialUnits : SEED_SERIAL_UNITS,
-        deliveryChallans: parsed.deliveryChallans?.length
-          ? parsed.deliveryChallans
-          : SEED_DELIVERY_CHALLANS,
-        payments: parsed.payments?.length ? parsed.payments : SEED_PAYMENTS,
-        otpVerifications: parsed.otpVerifications?.length
-          ? parsed.otpVerifications
-          : SEED_OTP_VERIFICATIONS,
-        enquiries: (parsed.enquiries?.length ? parsed.enquiries : SEED_ENQUIRIES).map((e: Enquiry) => {
-          // If the linked quotation was removed or consolidated, point to the canonical quotation for this enquiry
-          const canonical = sanitizedQuotations.find((q) => q.enquiryId === e.id);
-          return canonical ? { ...e, quotationId: canonical.id } : e;
+        serialUnits: list<SerialUnit>(parsed.serialUnits),
+        deliveryChallans: list<DeliveryChallan>(parsed.deliveryChallans),
+        payments: list<Payment>(parsed.payments),
+        otpVerifications: list<OTPVerification>(parsed.otpVerifications),
+        enquiries: list<Enquiry>(parsed.enquiries).map((e) => {
+          // Repair enquiries whose linked quotation no longer exists: point at the latest one for this enquiry
+          if (!e.quotationId || quotations.some((q) => q.id === e.quotationId)) return e;
+          const latest = quotations.find((q) => q.enquiryId === e.id);
+          return { ...e, quotationId: latest?.id };
         }),
-        jobProductUsages: parsed.jobProductUsages?.length
-          ? parsed.jobProductUsages
-          : SEED_JOB_PRODUCT_USAGES,
-        repairTickets: parsed.repairTickets?.length
-          ? parsed.repairTickets
-          : SEED_REPAIR_TICKETS,
+        jobProductUsages: list<JobProductUsage>(parsed.jobProductUsages),
+        repairTickets: list<RepairTicket>(parsed.repairTickets),
+        accessControl: { ...DEFAULT_ACCESS_CONTROL, ...(parsed.accessControl || {}) },
       };
     }
   } catch (err) {
     console.error('Failed to parse state from localStorage', err);
+    // Keep the unreadable save instead of letting the demo data overwrite it
+    try {
+      if (raw) localStorage.setItem(`${STORAGE_KEY}_unreadable_${Date.now()}`, raw);
+    } catch {
+      // storage full — nothing more we can do here
+    }
   }
 
+  return getSeedState();
+}
+
+function getSeedState(): ErpState {
   return {
     users: SEED_USERS,
     customers: SEED_CUSTOMERS,
@@ -331,6 +333,7 @@ function getInitialState(): ErpState {
     enquiries: SEED_ENQUIRIES,
     jobProductUsages: SEED_JOB_PRODUCT_USAGES,
     repairTickets: SEED_REPAIR_TICKETS,
+    accessControl: DEFAULT_ACCESS_CONTROL,
   };
 }
 
@@ -338,18 +341,39 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [erpState, setErpState] = useState<ErpState>(getInitialState);
 
   // Auth state
+  // No stored session means logged out — never fall back to a default user
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
-    return localStorage.getItem(AUTH_KEY) || 'usr-ceo';
+    return localStorage.getItem(AUTH_KEY);
   });
 
-  // Persist ERP state to localStorage
+  // Persist ERP state to localStorage — a failed save must be visible, not just logged
+  const saveFailedRef = useRef(false);
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(erpState));
+      if (saveFailedRef.current) {
+        saveFailedRef.current = false;
+        toast.success('Saving works again — all changes are stored.');
+      }
     } catch (err) {
       console.error('Failed to persist ERP state to localStorage', err);
+      if (!saveFailedRef.current) {
+        saveFailedRef.current = true;
+        toast.error('Storage is full — recent changes are NOT saved and will be lost on reload.', {
+          duration: Infinity,
+        });
+      }
     }
   }, [erpState]);
+
+  // Document numbers issued this session, so two creates in the same tick can't share a number
+  const issuedSeqRef = useRef<Record<string, number>>({});
+  const nextDocNumber = (prefix: string, existing: (string | undefined)[], pad = 3) => {
+    const next = Math.max(maxSequence(existing, prefix), issuedSeqRef.current[prefix] ?? 0) + 1;
+    issuedSeqRef.current[prefix] = next;
+    return `${prefix}${String(next).padStart(pad, '0')}`;
+  };
+  const fy = () => financialYearStart();
 
   // Persist Current User ID
   useEffect(() => {
@@ -368,6 +392,21 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const isAuthenticated = Boolean(currentUser);
   const isManagement = currentUser?.role === 'CEO' || currentUser?.role === 'MANAGER';
   const canResolveHold = isManagement;
+
+  // Phase 18: CEO always has full access; other roles follow the CEO-managed matrix
+  const canAccessSection = (section: AppSection) => {
+    if (!currentUser) return false;
+    if (currentUser.role === 'CEO') return true;
+    return erpState.accessControl[currentUser.role].includes(section);
+  };
+
+  const updateAccessControl = (role: ConfigurableRole, sections: AppSection[]) => {
+    if (currentUser?.role !== 'CEO') return;
+    setErpState((prev) => ({
+      ...prev,
+      accessControl: { ...prev.accessControl, [role]: sections },
+    }));
+  };
 
   // Route guard & data filtering: Technicians only see jobs assigned to them
   const visibleJobs = useMemo(() => {
@@ -398,7 +437,8 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       job.teamLeadUserId === currentUser.id ||
       (!job.teamLeadUserId && job.assignedTeam[0] === currentUser.id);
     const isRaiser = hold ? hold.raisedByUserId === currentUser.id : false;
-    return isLead || isRaiser;
+    // Management can always authorize resumption (RaiseHoldModal promises this)
+    return isManagement || isLead || isRaiser;
   };
 
   const loginWithPin = (pin: string) => {
@@ -410,7 +450,9 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return { success: false, message: 'Invalid 4-digit PIN. Please try again.' };
   };
 
+  // One-click persona login is a demo-only feature: without a PIN it would let anyone become CEO
   const loginAsUser = (userId: string) => {
+    if (!DEMO_MODE) return;
     const user = erpState.users.find((u) => u.id === userId);
     if (user) {
       setCurrentUserId(user.id);
@@ -422,26 +464,8 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const resetToDemoData = () => {
-    const fresh: ErpState = {
-      users: SEED_USERS,
-      customers: SEED_CUSTOMERS,
-      vendors: SEED_VENDORS,
-      products: SEED_PRODUCTS,
-      serialUnits: SEED_SERIAL_UNITS,
-      jobs: SEED_JOBS,
-      workLogs: SEED_WORK_LOGS,
-      holdEvents: SEED_HOLD_EVENTS,
-      materialUsages: SEED_MATERIAL_USAGES,
-      quotations: SEED_QUOTATIONS,
-      invoices: SEED_INVOICES,
-      deliveryChallans: SEED_DELIVERY_CHALLANS,
-      payments: SEED_PAYMENTS,
-      otpVerifications: SEED_OTP_VERIFICATIONS,
-      enquiries: SEED_ENQUIRIES,
-      jobProductUsages: SEED_JOB_PRODUCT_USAGES,
-      repairTickets: SEED_REPAIR_TICKETS,
-    };
-
+    if (!DEMO_MODE || currentUser?.role !== 'CEO') return;
+    const fresh = getSeedState();
     setErpState(fresh);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
@@ -458,8 +482,8 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       createdByUserId?: string;
     }
   ): Job => {
-    const nextSeq = String(erpState.jobs.length + 1).padStart(3, '0');
-    const jobNumber = jobData.jobNumber || `JOB-2024-${nextSeq}`;
+    const jobNumber =
+      jobData.jobNumber || nextDocNumber(`JOB-${fy()}-`, erpState.jobs.map((j) => j.jobNumber));
     const newJob: Job = {
       ...jobData,
       id: jobNumber,
@@ -519,6 +543,20 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const updatedEnquiries = prev.enquiries.map((e) =>
         e.convertedJobId === jobId ? { ...e, convertedJobId: undefined } : e
       );
+      // Units allocated to this job go back to stock (installed units stay with the customer)
+      const updatedSerials = prev.serialUnits.map((su) =>
+        su.installedAtJobId === jobId
+          ? su.status === 'ALLOCATED'
+            ? { ...su, status: 'IN_STOCK' as const, installedAtJobId: undefined }
+            : { ...su, installedAtJobId: undefined }
+          : su
+      );
+      const updatedChallans = prev.deliveryChallans.map((dc) =>
+        dc.jobId === jobId ? { ...dc, jobId: undefined } : dc
+      );
+      const updatedRepairs = prev.repairTickets.map((t) =>
+        t.sourceJobId === jobId ? { ...t, sourceJobId: null } : t
+      );
 
       return {
         ...prev,
@@ -531,6 +569,9 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         jobProductUsages: updatedUsages,
         otpVerifications: updatedOtps,
         enquiries: updatedEnquiries,
+        serialUnits: updatedSerials,
+        deliveryChallans: updatedChallans,
+        repairTickets: updatedRepairs,
       };
     });
   };
@@ -709,6 +750,16 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     });
   };
 
+  // One job is billed by one tax invoice — whichever path (completion, quotation, challan) raises it first
+  const resolveQuotationId = (ref?: string) =>
+    ref ? erpState.quotations.find((q) => q.id === ref || q.quotationNo === ref)?.id : undefined;
+  const findInvoiceForJob = (job: Job) => {
+    const quotationId = resolveQuotationId(job.quotationId);
+    return erpState.invoices.find(
+      (i) => i.linkedJobId === job.id || (quotationId !== undefined && i.quotationId === quotationId)
+    );
+  };
+
   const completeJob = (
     jobId: string,
     completionData?: {
@@ -722,6 +773,10 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const now = new Date().toISOString();
     const targetJob = erpState.jobs.find((j) => j.id === jobId);
     if (!targetJob) return;
+    if (targetJob.status === 'AWAITING_OTP' || targetJob.status === 'CLOSED' || targetJob.status === 'COMPLETED') {
+      return erpState.invoices.find((i) => i.linkedJobId === jobId);
+    }
+    const alreadyInvoiced = findInvoiceForJob(targetJob);
 
     let finalDuration = targetJob.timerElapsedSeconds || 0;
     if (targetJob.timerStartedAt) {
@@ -734,7 +789,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       (targetJob.serviceAmount > 0 ? targetJob.serviceAmount : 1500);
     const gstChoice = completionData?.serviceGstChoice ?? targetJob.serviceGstChoice ?? 'GST';
     const isTaxable = gstChoice === 'GST';
-    const gstRate = isTaxable ? 18 : 0;
+    const gstRate = isTaxable ? 18 : 0; // service / labour line only
 
     // Line items for the invoice
     const lineItems: LineItem[] = [];
@@ -768,14 +823,15 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         );
         const rate = prod ? prod.defaultRate : 350;
         const hsn = prod?.hsnSac || '85258090';
+        const matGstRate = prod?.gstRate ?? 18;
         const amt = netQty * rate;
-        const cgst = Number((amt * (gstRate / 200)).toFixed(2));
-        const sgst = Number((amt * (gstRate / 200)).toFixed(2));
+        const cgst = Number((amt * (matGstRate / 200)).toFixed(2));
+        const sgst = Number((amt * (matGstRate / 200)).toFixed(2));
         lineItems.push({
           itemName: mat.materialName,
           description: `Material consumed during ${targetJob.jobNumber}`,
           hsnSac: hsn,
-          gstRate,
+          gstRate: matGstRate,
           qty: netQty,
           rate,
           amount: amt,
@@ -793,9 +849,10 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (prod) {
         const rate = prod.defaultRate;
         const hsn = prod.hsnSac || '85258090';
+        const prodGstRate = prod.gstRate ?? 18;
         const amt = pu.quantity * rate;
-        const cgst = Number((amt * (gstRate / 200)).toFixed(2));
-        const sgst = Number((amt * (gstRate / 200)).toFixed(2));
+        const cgst = Number((amt * (prodGstRate / 200)).toFixed(2));
+        const sgst = Number((amt * (prodGstRate / 200)).toFixed(2));
         const serialText = pu.serialUnitIds && pu.serialUnitIds.length > 0
           ? ` (S/N: ${pu.serialUnitIds
               .map((sid) => erpState.serialUnits.find((s) => s.id === sid || s.serialNumber === sid)?.serialNumber || sid)
@@ -805,7 +862,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           itemName: prod.name,
           description: `Hardware installed during ${targetJob.jobNumber}${serialText}`,
           hsnSac: hsn,
-          gstRate,
+          gstRate: prodGstRate,
           qty: pu.quantity,
           rate,
           amount: amt,
@@ -823,12 +880,14 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const grandTotal = Math.round(rawTotal);
     const roundOff = Number((grandTotal - rawTotal).toFixed(2));
 
-    const invSeq = String(erpState.invoices.length + 91).padStart(3, '0');
+    const invoiceNo = alreadyInvoiced
+      ? alreadyInvoiced.invoiceNo
+      : nextDocNumber(`INV-${fy()}-`, erpState.invoices.map((i) => i.invoiceNo));
     const newInvoice: Invoice = {
       id: `INV-${Date.now()}`,
-      invoiceNo: `INV-2024-${invSeq}`,
+      invoiceNo,
       customerNumber: targetJob.customerNumber || '',
-      date: now.split('T')[0],
+      date: localDateISO(),
       validityDays: 15,
       lineItems,
       termsAndConditions:
@@ -865,6 +924,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const loc = completionData?.installedLocation || 'Customer Site';
     const allUsageSerialIds = jobProducts.flatMap((u) => u.serialUnitIds || []);
     const updatedSerialUnits = erpState.serialUnits.map((s) => {
+      if (s.status === 'IN_REPAIR' || s.status === 'RETURNED') return s;
       if (
         s.installedAtJobId === jobId ||
         allUsageSerialIds.includes(s.id) ||
@@ -881,6 +941,8 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return s;
     });
 
+
+    const jobInvoice = alreadyInvoiced ?? newInvoice;
 
     setErpState((prev) => ({
       ...prev,
@@ -902,13 +964,15 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             }
           : j
       ),
-      invoices: [newInvoice, ...prev.invoices],
+      invoices: alreadyInvoiced
+        ? prev.invoices.map((i) => (i.id === alreadyInvoiced.id ? { ...i, linkedJobId: jobId } : i))
+        : [newInvoice, ...prev.invoices],
       otpVerifications: [newOtp, ...prev.otpVerifications.filter((o) => o.jobId !== jobId)],
       workLogs: updatedWorkLogs,
       serialUnits: updatedSerialUnits,
     }));
 
-    return newInvoice;
+    return jobInvoice;
   };
 
   const recordPaymentAfterOtp = (data: {
@@ -922,32 +986,37 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const inv = erpState.invoices.find((i) => i.id === data.invoiceId);
     if (!inv) return null;
 
-    let finalPaid = 0;
-    let finalBalance = inv.grandTotal;
-    let pMode = data.paymentMode || 'UPI';
-
-    if (data.statusOption === 'FULL') {
-      finalPaid = inv.grandTotal;
-      finalBalance = 0;
-    } else if (data.statusOption === 'PARTIAL') {
-      finalPaid = Math.min(inv.grandTotal, Math.max(0, data.amountReceived));
-      finalBalance = Math.max(0, inv.grandTotal - finalPaid);
-    } else {
-      finalPaid = 0;
-      finalBalance = inv.grandTotal;
-      pMode = 'CASH';
+    // Payment collection is only allowed after the customer's OTP sign-off
+    if (inv.linkedJobId) {
+      const job = erpState.jobs.find((j) => j.id === inv.linkedJobId);
+      const otp = erpState.otpVerifications.find((o) => o.jobId === inv.linkedJobId);
+      if (job && job.status !== 'CLOSED' && otp?.status !== 'VERIFIED') return null;
     }
 
+    // Add to what was already paid (advances / earlier instalments) — never overwrite it
+    const alreadyPaid = inv.amountPaid || 0;
+    const outstanding = Math.max(0, inv.grandTotal - alreadyPaid);
+    const pMode = data.paymentMode || 'UPI';
+
+    let received = 0;
+    if (data.statusOption === 'FULL') {
+      received = outstanding;
+    } else if (data.statusOption === 'PARTIAL') {
+      received = Math.min(outstanding, Math.max(0, data.amountReceived));
+    }
+    const newAmountPaid = alreadyPaid + received;
+    const newBalanceDue = Math.max(0, inv.grandTotal - newAmountPaid);
+
     let createdPayment: Payment | null = null;
-    if (finalPaid > 0) {
+    if (received > 0) {
       createdPayment = {
         id: `PAY-${Date.now()}`,
         customerNumber: data.customerNumber,
         invoiceId: data.invoiceId,
-        amount: finalPaid,
+        amount: received,
         mode: pMode,
-        date: new Date().toISOString().split('T')[0],
-        type: data.statusOption === 'FULL' ? 'FULL' : 'ADVANCE',
+        date: localDateISO(),
+        type: newBalanceDue > 0 ? 'ADVANCE' : alreadyPaid > 0 ? 'BALANCE' : 'FULL',
         referenceNo: data.referenceNo || `RCPT-${Math.floor(1000 + Math.random() * 9000)}`,
       };
     }
@@ -958,9 +1027,9 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         i.id === data.invoiceId
           ? {
               ...i,
-              amountPaid: finalPaid,
-              balanceDue: finalBalance,
-              paymentMode: finalBalance === 0 ? pMode : finalPaid > 0 ? pMode : 'PENDING',
+              amountPaid: newAmountPaid,
+              balanceDue: newBalanceDue,
+              paymentMode: received > 0 ? pMode : newAmountPaid > 0 ? i.paymentMode : 'PENDING',
             }
           : i
       ),
@@ -992,7 +1061,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       invoiceId: data.invoiceId,
       amount: paymentAmount,
       mode: data.paymentMode,
-      date: data.date || new Date().toISOString().split('T')[0],
+      date: data.date || localDateISO(),
       type: newBalanceDue === 0 ? 'BALANCE' : 'ADVANCE',
       referenceNo: data.referenceNo || `RCPT-${Math.floor(1000 + Math.random() * 9000)}`,
     };
@@ -1039,12 +1108,12 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const amountPaid = invoiceData.amountPaid ?? 0;
     const balanceDue = grandTotal - amountPaid;
 
-    const invSeq = String(erpState.invoices.length + 91).padStart(3, '0');
+    const invoiceNo = nextDocNumber(`INV-${fy()}-`, erpState.invoices.map((i) => i.invoiceNo));
     const newInvoice: Invoice = {
       id: `INV-${Date.now()}`,
-      invoiceNo: `INV-2024-${invSeq}`,
+      invoiceNo,
       customerNumber: job?.customerNumber || '',
-      date: new Date().toISOString().split('T')[0],
+      date: localDateISO(),
       validityDays: invoiceData.validityDays || 15,
       lineItems,
       termsAndConditions:
@@ -1084,7 +1153,10 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const verifyJobOtp = (jobId: string, enteredCode: string): boolean => {
-    if (enteredCode.trim() === '1234') {
+    const job = erpState.jobs.find((j) => j.id === jobId);
+    const otp = erpState.otpVerifications.find((o) => o.jobId === jobId);
+    if (!job || job.status !== 'AWAITING_OTP' || !otp) return false;
+    if (enteredCode.trim() === otp.otpCode) {
       const now = new Date().toISOString();
       setErpState((prev) => ({
         ...prev,
@@ -1109,11 +1181,11 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     jobId?: string;
     quotationId?: string;
   }): DeliveryChallan => {
-    const nextSeq = String(erpState.deliveryChallans.length + 43).padStart(3, '0');
+    const challanNo = nextDocNumber(`DC-${fy()}-`, erpState.deliveryChallans.map((d) => d.challanNo));
     const newChallan: DeliveryChallan = {
       id: `DC-${Date.now()}`,
-      challanNo: `DC-2024-${nextSeq}`,
-      date: new Date().toISOString().split('T')[0],
+      challanNo,
+      date: localDateISO(),
       customerNumber: data.customerNumber,
       lineItems: data.lineItems,
       receiverSignature: 'Pending Site Signature',
@@ -1142,7 +1214,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addCustomer = (cust: Omit<Customer, 'id' | 'createdAt'>): Customer => {
     const newCustomer: Customer = {
       ...cust,
-      id: `CUST-${String(erpState.customers.length + 1).padStart(3, '0')}`,
+      id: nextDocNumber('CUST-', erpState.customers.map((c) => c.id)),
       createdAt: new Date().toISOString(),
     };
     setErpState((prev) => ({
@@ -1163,7 +1235,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addProduct = (prod: Omit<Product, 'id'>): Product => {
     const newProduct: Product = {
       ...prod,
-      id: `PROD-${String(erpState.products.length + 1).padStart(3, '0')}`,
+      id: nextDocNumber('PROD-', erpState.products.map((p) => p.id)),
     };
     setErpState((prev) => ({
       ...prev,
@@ -1182,7 +1254,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addVendor = (vendor: Omit<Vendor, 'id'>): Vendor => {
     const newVendor: Vendor = {
       ...vendor,
-      id: `VEND-${String(erpState.vendors.length + 1).padStart(3, '0')}`,
+      id: nextDocNumber('VEND-', erpState.vendors.map((v) => v.id)),
     };
     setErpState((prev) => ({
       ...prev,
@@ -1201,7 +1273,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addSerialUnit = (unit: Omit<SerialUnit, 'id'>): SerialUnit => {
     const newUnit: SerialUnit = {
       ...unit,
-      id: `SER-${String(erpState.serialUnits.length + 1).padStart(3, '0')}`,
+      id: `SER-${Date.now()}`,
     };
     setErpState((prev) => ({
       ...prev,
@@ -1224,10 +1296,18 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     purchaseDate?: string;
     purchaseCost?: number;
   }): SerialUnit[] => {
-    const now = new Date().toISOString().split('T')[0];
-    const createdSerials: SerialUnit[] = data.serialNumbers
+    const now = localDateISO();
+    // Skip serials already in the system and repeats within this batch (double scans)
+    const known = new Set(erpState.serialUnits.map((u) => u.serialNumber.trim().toUpperCase()));
+    const uniqueSerials = data.serialNumbers
       .map((s) => s.trim())
-      .filter((s) => s.length > 0)
+      .filter((s) => {
+        const key = s.toUpperCase();
+        if (!s || known.has(key)) return false;
+        known.add(key);
+        return true;
+      });
+    const createdSerials: SerialUnit[] = uniqueSerials
       .map((serialNumber, idx) => ({
         id: `SER-${Date.now()}-${idx}`,
         productId: data.productId,
@@ -1249,7 +1329,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const allocateSerialToJob = (serialId: string, jobId: string) => {
     setErpState((prev) => {
       const serial = prev.serialUnits.find((s) => s.id === serialId || s.serialNumber === serialId);
-      if (!serial) return prev;
+      if (!serial || serial.status !== 'IN_STOCK') return prev;
 
       const updatedSerials = prev.serialUnits.map((s) =>
         s.id === serial.id
@@ -1332,7 +1412,10 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       let updatedSerials = prev.serialUnits;
       if (serialUnitIds.length > 0) {
         updatedSerials = prev.serialUnits.map((s) => {
-          if (serialUnitIds.includes(s.id) || serialUnitIds.includes(s.serialNumber)) {
+          if (
+            s.status === 'IN_STOCK' &&
+            (serialUnitIds.includes(s.id) || serialUnitIds.includes(s.serialNumber))
+          ) {
             return {
               ...s,
               status: 'ALLOCATED' as const,
@@ -1386,8 +1469,9 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
 
   const createQuotation = (data: Omit<Quotation, 'id' | 'quotationNo'> & { quotationNo?: string; status?: 'DRAFT' | 'SENT' | 'CONVERTED'; enquiryId?: string }): Quotation => {
-    const nextSeq = String(erpState.quotations.length + 82).padStart(3, '0');
-    const quotationNo = data.quotationNo || `A24${nextSeq}`;
+    const quotationNo =
+      data.quotationNo ||
+      nextDocNumber(`A${String(fy()).slice(2)}`, erpState.quotations.map((q) => q.quotationNo));
     const newQuot: Quotation = {
       ...data,
       id: `QUOT-${Date.now()}`,
@@ -1442,16 +1526,63 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return updatedInv || ({ id, ...updates } as Invoice);
   };
 
+  // Rule: a line is a physical good (goes on a delivery challan) unless it is a labour/service charge.
+  // Services are identified by SAC codes starting with '99', or by service terms when not a catalog product.
+  const SERVICE_KEYWORDS = [
+    'installation',
+    'install',
+    'labour',
+    'labor',
+    'service',
+    'setup',
+    'configuration',
+    'wiring',
+    'testing',
+    'commissioning',
+    'amc',
+    'visiting',
+    'charge',
+  ];
+  const isPhysicalLineItem = (item: LineItem) => {
+    const hsn = (item.hsnSac || '').trim();
+    const name = item.itemName.toLowerCase();
+    const desc = (item.description || '').toLowerCase();
+
+    if (hsn.startsWith('99')) return false;
+
+    const isCatalogProduct = erpState.products.some(
+      (p) =>
+        p.name.toLowerCase() === name ||
+        p.name.toLowerCase().includes(name) ||
+        name.includes(p.name.toLowerCase())
+    );
+    if (isCatalogProduct) return true;
+
+    if (SERVICE_KEYWORDS.some((kw) => name.includes(kw) || desc.includes(kw))) return false;
+
+    return Boolean(hsn);
+  };
+
   const convertQuotationToInvoice = (quotationId: string): Invoice => {
     const quot = erpState.quotations.find((q) => q.id === quotationId);
     if (!quot) throw new Error('Quotation not found');
+    const existing = erpState.invoices.find((i) => i.quotationId === quotationId);
+    if (existing) {
+      throw new Error(`Quotation ${quot.quotationNo} is already invoiced as ${existing.invoiceNo}.`);
+    }
+    for (const job of erpState.jobs.filter((j) => resolveQuotationId(j.quotationId) === quotationId)) {
+      const jobInvoice = findInvoiceForJob(job);
+      if (jobInvoice) {
+        throw new Error(`Job ${job.jobNumber} on this quotation is already invoiced as ${jobInvoice.invoiceNo}.`);
+      }
+    }
 
-    const invSeq = String(erpState.invoices.length + 95).padStart(3, '0');
+    const invoiceNo = nextDocNumber(`INV-${fy()}-`, erpState.invoices.map((i) => i.invoiceNo));
     const newInvoice: Invoice = {
       id: `INV-${Date.now()}`,
-      invoiceNo: `INV-2024-${invSeq}`,
+      invoiceNo,
       customerNumber: quot.customerNumber,
-      date: new Date().toISOString().split('T')[0],
+      date: localDateISO(),
       validityDays: quot.validityDays || 15,
       lineItems: quot.lineItems,
       termsAndConditions: quot.termsAndConditions,
@@ -1461,6 +1592,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       roundOff: quot.roundOff,
       grandTotal: quot.grandTotal,
       bankDetails: quot.bankDetails,
+      quotationId: quot.id,
       amountPaid: 0,
       balanceDue: quot.grandTotal,
       paymentMode: 'PENDING',
@@ -1485,54 +1617,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const quot = erpState.quotations.find((q) => q.id === quotationId);
     if (!quot) throw new Error('Quotation not found');
 
-    // Rule: Skip any line item that represents labor/service charges.
-    // Identify these as:
-    // - HSN/SAC starting with '99' (service SAC code) or empty
-    // - or itemName/description having service terms
-    const serviceKeywords = [
-      'installation',
-      'install',
-      'labour',
-      'labor',
-      'service',
-      'setup',
-      'configuration',
-      'wiring',
-      'testing',
-      'commissioning',
-      'amc',
-      'visiting',
-      'charge',
-    ];
-
-    const physicalItems = quot.lineItems.filter((item) => {
-      const hsn = (item.hsnSac || '').trim();
-      const name = item.itemName.toLowerCase();
-      const desc = (item.description || '').toLowerCase();
-
-      // If SAC code starts with 99, it's a service
-      if (hsn.startsWith('99')) return false;
-
-      // If item matches a catalog product, it's a physical good
-      const isCatalogProduct = erpState.products.some(
-        (p) =>
-          p.name.toLowerCase() === name ||
-          p.name.toLowerCase().includes(name) ||
-          name.includes(p.name.toLowerCase())
-      );
-      if (isCatalogProduct) return true;
-
-      // If keywords match service and not a catalog product, exclude it
-      const hasServiceKeyword = serviceKeywords.some(
-        (kw) => name.includes(kw) || desc.includes(kw)
-      );
-      if (hasServiceKeyword) return false;
-
-      // If HSN is empty or missing, exclude
-      if (!hsn) return false;
-
-      return true;
-    });
+    const physicalItems = quot.lineItems.filter((item) => isPhysicalLineItem(item));
 
     const itemsToConvert = physicalItems.length > 0 ? physicalItems : quot.lineItems;
 
@@ -1543,11 +1628,11 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           (j) => j.quotationId === quotationId || j.quotationId === quot.quotationNo
         );
 
-    const nextSeq = String(erpState.deliveryChallans.length + 43).padStart(3, '0');
+    const challanNo = nextDocNumber(`DC-${fy()}-`, erpState.deliveryChallans.map((d) => d.challanNo));
     const newChallan: DeliveryChallan = {
       id: `DC-${Date.now()}`,
-      challanNo: `DC-2024-${nextSeq}`,
-      date: new Date().toISOString().split('T')[0],
+      challanNo,
+      date: localDateISO(),
       customerNumber: quot.customerNumber,
       lineItems: itemsToConvert.map((item) => ({
         itemDescription: item.itemName,
@@ -1570,17 +1655,33 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const convertDeliveryChallanToInvoice = (challanId: string): Invoice => {
     const dc = erpState.deliveryChallans.find((c) => c.id === challanId);
     if (!dc) throw new Error('Delivery Challan not found');
+    const existingForChallan = erpState.invoices.find((i) => i.deliveryChallanId === dc.id);
+    if (existingForChallan) {
+      throw new Error(`Delivery Challan ${dc.challanNo} is already invoiced as ${existingForChallan.invoiceNo}.`);
+    }
+    // Services from the quotation are billed once, on the first invoice for that quotation
+    const quotationAlreadyInvoiced = dc.quotationId
+      ? erpState.invoices.some((i) => i.quotationId === dc.quotationId)
+      : false;
 
     const sourceQuot = dc.quotationId
       ? erpState.quotations.find((q) => q.id === dc.quotationId)
       : null;
+    // Only a job tied to this challan or its quotation — never "any job of the same customer"
     const linkedJob = dc.jobId
       ? erpState.jobs.find((j) => j.id === dc.jobId)
-      : erpState.jobs.find(
-          (j) =>
-            (dc.quotationId && j.quotationId === dc.quotationId) ||
-            j.customerNumber === dc.customerNumber
+      : dc.quotationId
+      ? erpState.jobs.find((j) => resolveQuotationId(j.quotationId) === dc.quotationId)
+      : undefined;
+
+    if (linkedJob) {
+      const jobInvoice = findInvoiceForJob(linkedJob);
+      if (jobInvoice) {
+        throw new Error(
+          `Job ${linkedJob.jobNumber} is already invoiced as ${jobInvoice.invoiceNo}. Edit that invoice instead of raising a second one.`
         );
+      }
+    }
 
     // 1. Convert DC line items back to priced invoice line items
     const invoiceLineItems: LineItem[] = dc.lineItems.map((item) => {
@@ -1621,19 +1722,25 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       };
     });
 
-    // 2. Re-add excluded service/labor lines from the source quotation if present
-    if (sourceQuot) {
+    // 2. Add the quotation's service/labour lines (not undelivered goods), once per quotation
+    if (sourceQuot && !quotationAlreadyInvoiced) {
       const serviceLines = sourceQuot.lineItems.filter((qi) => {
         const isAlreadyInInvoice = invoiceLineItems.some(
           (invItem) => invItem.itemName.toLowerCase() === qi.itemName.toLowerCase()
         );
-        return !isAlreadyInInvoice;
+        return !isAlreadyInInvoice && !isPhysicalLineItem(qi);
       });
 
       serviceLines.forEach((sLine) => {
         invoiceLineItems.push({ ...sLine });
       });
-    } else if (linkedJob && linkedJob.serviceAmount && linkedJob.serviceAmount > 0) {
+    } else if (
+      !sourceQuot &&
+      linkedJob &&
+      linkedJob.serviceAmount &&
+      linkedJob.serviceAmount > 0 &&
+      !erpState.invoices.some((i) => i.linkedJobId === linkedJob.id)
+    ) {
       const sAmt = linkedJob.serviceAmount;
       const gstRate = linkedJob.serviceGstChoice === 'GST' ? 18 : 0;
       const cgst = Number((sAmt * (gstRate / 200)).toFixed(2));
@@ -1666,12 +1773,12 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const grandTotal = Math.round(exactGrandTotal);
     const roundOff = Number((grandTotal - exactGrandTotal).toFixed(2));
 
-    const invSeq = String(erpState.invoices.length + 95).padStart(3, '0');
+    const invoiceNo = nextDocNumber(`INV-${fy()}-`, erpState.invoices.map((i) => i.invoiceNo));
     const newInvoice: Invoice = {
       id: `INV-${Date.now()}`,
-      invoiceNo: `INV-2024-${invSeq}`,
+      invoiceNo,
       customerNumber: dc.customerNumber,
-      date: new Date().toISOString().split('T')[0],
+      date: localDateISO(),
       validityDays: sourceQuot?.validityDays || 15,
       lineItems: invoiceLineItems,
       termsAndConditions:
@@ -1685,6 +1792,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       bankDetails: sourceQuot?.bankDetails || SEED_BANK_DETAILS,
       linkedJobId: linkedJob?.id || dc.jobId,
       deliveryChallanId: dc.id,
+      quotationId: dc.quotationId,
       amountPaid: 0,
       balanceDue: grandTotal,
       paymentMode: 'PENDING',
@@ -1739,7 +1847,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addPayment = (payment: Omit<Payment, 'id'>): Payment => {
     const newPayment: Payment = {
       ...payment,
-      id: `PAY-${String(erpState.payments.length + 1).padStart(3, '0')}`,
+      id: `PAY-${Date.now()}`,
     };
     setErpState((prev) => ({
       ...prev,
@@ -1767,8 +1875,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       status?: EnquiryStatus;
     }
   ): Enquiry => {
-    const nextSeq = String(erpState.enquiries.length + 1).padStart(3, '0');
-    const enquiryNumber = `ENQ-2024-${nextSeq}`;
+    const enquiryNumber = nextDocNumber(`ENQ-${fy()}-`, erpState.enquiries.map((e) => e.enquiryNumber));
     const newEnquiry: Enquiry = {
       ...data,
       id: enquiryNumber,
@@ -1881,9 +1988,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     faultDescription: string;
     initialNote?: string;
   }): RepairTicket => {
-    const year = new Date().getFullYear();
-    const count = erpState.repairTickets.length + 1;
-    const ticketNumber = `RMA-${year}-${String(count).padStart(3, '0')}`;
+    const ticketNumber = nextDocNumber(`RMA-${fy()}-`, erpState.repairTickets.map((t) => t.ticketNumber));
     const id = `RMA-${Date.now().toString().slice(-6)}`;
     const now = new Date().toISOString();
     const userId = currentUser?.id || 'usr-tech-1';
@@ -2062,6 +2167,8 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         isManagement,
         visibleJobs,
         visibleRepairTickets,
+        canAccessSection,
+        updateAccessControl,
         loginWithPin,
         loginAsUser,
         logout,

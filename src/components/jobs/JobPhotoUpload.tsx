@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
 import { Camera, UploadCloud, X, CheckCircle2, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { compressImageFile } from '@/lib/image-utils';
 
 interface JobPhotoUploadProps {
   label: string;
@@ -23,33 +25,26 @@ export const JobPhotoUpload: React.FC<JobPhotoUploadProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Photos are resized/compressed before storing — full-size camera images overflow browser storage
+  const acceptFile = async (file: File) => {
+    try {
+      onPhotoChange(await compressImageFile(file));
+    } catch {
+      toast.error('Could not read that photo. Please try another image.');
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (result) {
-        onPhotoChange(result);
-      }
-    };
-    reader.readAsDataURL(file);
+    void acceptFile(file);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (result) {
-        onPhotoChange(result);
-      }
-    };
-    reader.readAsDataURL(file);
+    void acceptFile(file);
   };
 
   return (

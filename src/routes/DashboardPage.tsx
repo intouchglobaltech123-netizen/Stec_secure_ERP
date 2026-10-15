@@ -283,7 +283,7 @@ export const DashboardPage: React.FC = () => {
     activityFeed.push({
       id: `inv-${inv.id}`,
       title: `Invoice ${inv.invoiceNo} Raised`,
-      desc: `Total ${formatINR(inv.grandTotal)} &bull; ${inv.paymentMode}`,
+      desc: `Total ${formatINR(inv.grandTotal)} • ${inv.paymentMode}`,
       time: inv.date + 'T12:00:00Z',
       type: 'invoice',
     });
@@ -948,7 +948,7 @@ export const DashboardPage: React.FC = () => {
                       {formatDateTime(item.time)}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 line-clamp-2" dangerouslySetInnerHTML={{ __html: item.desc }} />
+                  <p className="text-xs text-slate-600 line-clamp-2">{item.desc}</p>
                 </div>
               </div>
             ))}

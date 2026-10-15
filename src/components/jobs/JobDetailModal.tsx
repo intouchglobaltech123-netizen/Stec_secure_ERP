@@ -68,6 +68,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
     deliveryChallans,
     convertQuotationToDeliveryChallan,
     visibleRepairTickets,
+    isManagement,
   } = useStecSecure();
 
   const [isSiteLocationModalOpen, setIsSiteLocationModalOpen] = React.useState(false);
@@ -220,6 +221,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     </div>
                     {linkedQuotation ? (
                       <div className="flex items-center gap-1 shrink-0">
+                        {isManagement && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -232,6 +234,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </button>
+                        )}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -244,7 +247,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                           <FileSpreadsheet className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    ) : (
+                    ) : isManagement ? (
                       <button
                         type="button"
                         onClick={() => {
@@ -255,7 +258,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                       >
                         + Create
                       </button>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Stage 2: Delivery Challan */}
@@ -264,6 +267,8 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                       if (jobChallans.length > 0) {
                         setInspectingChallan(jobChallans[0]);
                         setIsChallanModalOpen(true);
+                      } else if (!isManagement) {
+                        return;
                       } else if (linkedQuotation) {
                         try {
                           const newDc = convertQuotationToDeliveryChallan(linkedQuotation.id, job.id);
@@ -637,6 +642,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                       &bull; Material transfer without pricing
                     </span>
                   </div>
+                  {isManagement && (
                   <Button
                     type="button"
                     size="sm"
@@ -650,6 +656,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     <Plus className="w-3 h-3" />
                     + Create Delivery Challan
                   </Button>
+                  )}
                 </div>
 
                 {jobChallans.length === 0 ? (
@@ -657,7 +664,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     <p className="text-xs text-slate-500">
                       No delivery challans issued for this job yet.
                     </p>
-                    {linkedQuotation && (
+                    {linkedQuotation && isManagement && (
                       <Button
                         type="button"
                         size="sm"

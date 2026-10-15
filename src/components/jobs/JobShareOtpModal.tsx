@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { Job, Invoice, PaymentMode } from '@/lib/stecsecure-types';
 import {
@@ -53,6 +53,20 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('UPI');
   const [referenceNo, setReferenceNo] = useState<string>('');
 
+  // The modal stays mounted between jobs: start every opening from step 1, or a previous
+  // job's "OTP verified" state would let this job skip customer sign-off
+  useEffect(() => {
+    if (!isOpen) return;
+    setWhatsAppSentAt(null);
+    setOtpInput('');
+    setOtpError(null);
+    setIsOtpVerified(false);
+    setPaymentOption('FULL');
+    setPartialAmountReceived(0);
+    setPaymentMode('UPI');
+    setReferenceNo('');
+  }, [isOpen, job?.id]);
+
   if (!isOpen || !job) return null;
 
   const customer = customers.find((c) => c.id === job.customerNumber);
@@ -96,14 +110,16 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
 
   const handleConfirmPayment = () => {
     if (invoice) {
+      // Advances recorded earlier count towards the total
+      const outstanding = Math.max(0, grandTotal - (invoice.amountPaid || 0));
       const amountReceived =
         paymentOption === 'FULL'
-          ? grandTotal
+          ? outstanding
           : paymentOption === 'PARTIAL'
-          ? Number(partialAmountReceived) || 0
+          ? Math.min(outstanding, Number(partialAmountReceived) || 0)
           : 0;
 
-      recordPaymentAfterOtp({
+      const payment = recordPaymentAfterOtp({
         invoiceId: invoice.id,
         customerNumber: job.customerNumber,
         statusOption: paymentOption,
@@ -112,7 +128,11 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
         referenceNo: referenceNo.trim() || undefined,
       });
 
-      const balance = Math.max(0, grandTotal - amountReceived);
+      if (amountReceived > 0 && !payment) {
+        toast.error('Payment not recorded — the customer OTP has not been verified for this job.');
+        return;
+      }
+      const balance = Math.max(0, outstanding - amountReceived);
       toast.success(
         `Payment recorded: ${formatINR(amountReceived)} collected (Balance: ${formatINR(balance)}). Job ${job.jobNumber} closed.`
       );

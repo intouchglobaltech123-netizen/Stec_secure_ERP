@@ -248,6 +248,7 @@ export interface Invoice {
   amountPaid: number;
   balanceDue: number;
   paymentMode: 'CASH' | 'UPI' | 'NEFT' | 'CHEQUE' | 'PENDING';
+  quotationId?: string; // source quotation (direct or via delivery challan) — used to block double invoicing
   raisedByUserId?: string; // technician who raised it at job completion
   beforePhotoUrl?: string;
   afterPhotoUrl?: string;
@@ -381,3 +382,43 @@ export interface RepairTicket {
   createdAt: string;
   timeline: RepairTimelineEntry[];
 }
+
+// Phase 18: CEO-managed access control — which app sections each role may open
+export type AppSection =
+  | 'dashboard'
+  | 'enquiries'
+  | 'service-jobs'
+  | 'installation-jobs'
+  | 'repairs'
+  | 'inventory'
+  | 'customers'
+  | 'technicians'
+  | 'quotations-invoices'
+  | 'payments'
+  | 'reports'
+  | 'settings';
+
+export const APP_SECTIONS: { id: AppSection; label: string }[] = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'enquiries', label: 'Enquiries' },
+  { id: 'service-jobs', label: 'Service Jobs' },
+  { id: 'installation-jobs', label: 'Installation Jobs' },
+  { id: 'repairs', label: 'Repair' },
+  { id: 'inventory', label: 'Inventory' },
+  { id: 'customers', label: 'Customers' },
+  { id: 'technicians', label: 'Technicians' },
+  { id: 'quotations-invoices', label: 'Quotations & Invoices' },
+  { id: 'payments', label: 'Payments' },
+  { id: 'reports', label: 'Reports' },
+  { id: 'settings', label: 'Settings' },
+];
+
+// CEO always has every section; only these roles are configurable
+export type ConfigurableRole = Exclude<UserRole, 'CEO'>;
+
+export type AccessControl = Record<ConfigurableRole, AppSection[]>;
+
+export const DEFAULT_ACCESS_CONTROL: AccessControl = {
+  MANAGER: APP_SECTIONS.map((s) => s.id),
+  TECHNICIAN: ['dashboard', 'service-jobs', 'installation-jobs', 'repairs'],
+};

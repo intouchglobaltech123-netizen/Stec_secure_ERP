@@ -46,6 +46,7 @@ import { formatDate, formatDateTime, formatINR, formatCreatedBy } from '@/lib/ut
 import { JobCreateModal } from '@/components/jobs/JobCreateModal';
 import { JobInvoiceModal } from '@/components/jobs/JobInvoiceModal';
 import { JobShareOtpModal } from '@/components/jobs/JobShareOtpModal';
+import { InvoicePreviewModal } from '@/components/invoices/InvoicePreviewModal';
 import { RaiseHoldModal } from '@/components/jobs/RaiseHoldModal';
 import { DeliveryChallanModal } from '@/components/jobs/DeliveryChallanModal';
 import { JobPhotoUpload } from '@/components/jobs/JobPhotoUpload';
@@ -168,6 +169,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
   const [selectedHoldJob, setSelectedHoldJob] = useState<Job | null>(null);
   const [selectedInvoiceJob, setSelectedInvoiceJob] = useState<Job | null>(null);
   const [selectedShareJob, setSelectedShareJob] = useState<Job | null>(null);
+  const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
   const [activeCreatedInvoice, setActiveCreatedInvoice] = useState<Invoice | null>(null);
   const [productUsedJob, setProductUsedJob] = useState<Job | null>(() => {
     if (typeof window !== 'undefined') {
@@ -554,8 +556,13 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 </div>
               )}
 
-              {/* AWAITING_OTP */}
-              {job.status === 'AWAITING_OTP' && (
+              {/* AWAITING_OTP — customer sign-off and payment are handled by the team lead (or management) */}
+              {job.status === 'AWAITING_OTP' && !isLead && (
+                <div className="p-2 bg-slate-50 rounded border border-slate-200 text-[11px] text-slate-600 text-center font-medium">
+                  Awaiting team lead to verify customer OTP
+                </div>
+              )}
+              {job.status === 'AWAITING_OTP' && isLead && (
                 <Button
                   variant="primary"
                   size="sm"
@@ -575,10 +582,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                   variant="outline"
                   size="sm"
                   className="w-full text-xs font-semibold rounded-md border-slate-300 hover:bg-slate-100"
-                  onClick={() => {
-                    setSelectedShareJob(job);
-                    setActiveCreatedInvoice(invoice);
-                  }}
+                  onClick={() => setViewingInvoice(invoice)}
                 >
                   <ReceiptText className="w-3.5 h-3.5 mr-1 text-emerald-600" /> View Invoice ({invoice.invoiceNo})
                 </Button>
@@ -1276,6 +1280,13 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
             setSelectedShareJob(selectedInvoiceJob);
           }
         }}
+      />
+
+      {/* View-only invoice for completed / closed jobs — must not re-run OTP & payment collection */}
+      <InvoicePreviewModal
+        isOpen={Boolean(viewingInvoice)}
+        invoice={viewingInvoice}
+        onClose={() => setViewingInvoice(null)}
       />
 
       <JobShareOtpModal

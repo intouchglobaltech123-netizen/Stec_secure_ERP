@@ -108,10 +108,11 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
 
       if (!matchesQuery) return false;
 
-      if (selectedCustomerId) {
-        if (s.soldToCustomerId === selectedCustomerId) return true;
-      }
+      // Only units out with customers; not warehouse stock, written-off units, or units already under repair
+      if (s.status !== 'INSTALLED' && s.status !== 'ALLOCATED') return false;
+
       if (initialJobId && s.installedAtJobId === initialJobId) return true;
+      if (selectedCustomerId) return s.soldToCustomerId === selectedCustomerId;
       return true;
     });
   }, [serialUnits, products, serialSearch, selectedCustomerId, initialJobId]);

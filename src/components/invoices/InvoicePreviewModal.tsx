@@ -38,7 +38,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   onClose,
   onInvoiceSaved,
 }) => {
-  const { getCustomer, updateInvoice, products } = useStecSecure();
+  const { getCustomer, updateInvoice, products, isManagement } = useStecSecure();
 
   const [mode, setMode] = useState<'PREVIEW' | 'EDIT'>(initialMode);
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(invoice);
@@ -222,14 +222,17 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         <div className="flex items-center gap-2">
           {mode === 'PREVIEW' ? (
             <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setMode('EDIT')}
-                className="h-8 text-xs rounded-lg text-orange-700 border-orange-300 hover:bg-orange-50 font-semibold cursor-pointer"
-              >
-                <Edit className="w-3.5 h-3.5 mr-1 text-orange-600" /> Edit Invoice
-              </Button>
+              {/* Tax invoices are edited by management only */}
+              {isManagement && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setMode('EDIT')}
+                  className="h-8 text-xs rounded-lg text-orange-700 border-orange-300 hover:bg-orange-50 font-semibold cursor-pointer"
+                >
+                  <Edit className="w-3.5 h-3.5 mr-1 text-orange-600" /> Edit Invoice
+                </Button>
+              )}
               <Button size="sm" variant="secondary" onClick={handleShareWhatsApp} className="h-8 text-xs rounded-lg">
                 <Share2 className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Share WhatsApp
               </Button>

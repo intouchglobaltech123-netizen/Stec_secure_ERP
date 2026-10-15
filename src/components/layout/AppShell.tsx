@@ -24,24 +24,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { DEMO_MODE } from '@/lib/demo-mode';
+import { AppSection } from '@/lib/stecsecure-types';
 
 // REPLACE WITH ACTUAL S TEC SECURE LOGO (white background version) — see /public/logo-placeholder.png
 export const COMPANY_LOGO_SRC = '/logo.png';
 
-export type NavSection =
-  | 'dashboard'
-  | 'enquiries'
-  | 'service-jobs'
-  | 'installation-jobs'
-  | 'repairs'
-  | 'jobs'
-  | 'inventory'
-  | 'customers'
-  | 'technicians'
-  | 'quotations-invoices'
-  | 'payments'
-  | 'reports'
-  | 'settings';
+// 'jobs' is a legacy alias of 'service-jobs'
+export type NavSection = AppSection | 'jobs';
 
 interface AppShellProps {
   currentSection: NavSection;
@@ -60,12 +50,17 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
     visibleRepairTickets,
     holdEvents,
     enquiries,
+    isManagement,
+    canAccessSection,
   } = useStecSecure();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
 
-  const openHoldsCount = holdEvents.filter((h) => h.status === 'OPEN').length;
+  const visibleJobIds = new Set(visibleJobs.map((j) => j.id));
+  const openHoldsCount = holdEvents.filter(
+    (h) => h.status === 'OPEN' && (isManagement || visibleJobIds.has(h.jobId))
+  ).length;
 
   const followUpEnquiriesCount = enquiries.filter((e) => e.status === 'FOLLOW_UP').length;
   const serviceJobsCount = visibleJobs.filter((j) => j.type === 'SERVICE').length;
@@ -83,8 +78,6 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
     (t) => t.status !== 'REINSTALLED' && t.status !== 'WRITE_OFF'
   ).length;
 
-  const isTechnician = currentUser?.role === 'TECHNICIAN';
-
   const rawNavItems: ({
     id: NavSection;
     label: string;
@@ -93,14 +86,12 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
     badgeVariant?: 'default' | 'warning' | 'danger';
   } | null)[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    !isTechnician
-      ? {
-          id: 'enquiries',
-          label: 'Enquiries',
-          icon: Inbox,
-          badge: followUpEnquiriesCount > 0 ? followUpEnquiriesCount : undefined,
-        }
-      : null,
+    {
+      id: 'enquiries',
+      label: 'Enquiries',
+      icon: Inbox,
+      badge: followUpEnquiriesCount > 0 ? followUpEnquiriesCount : undefined,
+    },
     {
       id: 'service-jobs',
       label: 'Service Jobs',
@@ -134,11 +125,27 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  const navItems = rawNavItems.filter((item): item is NonNullable<typeof item> => Boolean(item));
+  // Phase 18: only the sections the CEO's access control allows for this role
+  const navItems = rawNavItems.filter(
+    (item): item is NonNullable<typeof item> => Boolean(item) && canAccessSection(item!.id as AppSection)
+  );
 
   const handleNavClick = (section: NavSection) => {
     onNavigate(section);
     setMobileMenuOpen(false);
+  };
+
+  const handleResetDemo = () => {
+    setRoleMenuOpen(false);
+    if (
+      !window.confirm(
+        'Reset to demo data? This permanently deletes ALL customers, jobs, invoices and payments in this browser.'
+      )
+    ) {
+      return;
+    }
+    resetToDemoData();
+    toast.info('ERP reset to initial demo seeds');
   };
 
   const handleRoleSwitch = (userId: string) => {
@@ -224,8 +231,10 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
 
             {roleMenuOpen && (
               <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white border border-slate-200 shadow-xl p-2 z-50 animate-in fade-in-50 zoom-in-95">
+                {DEMO_MODE ? (
+                <>
                 <div className="px-2 py-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 mb-1">
-                  Switch Active Persona
+                  Switch Active Persona (Demo)
                 </div>
                 <div className="space-y-1">
                   {users.map((u) => {
@@ -261,19 +270,26 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
                     );
                   })}
                 </div>
+                </>
+                ) : (
+                  <div className="px-2 py-1.5">
+                    <div className="text-xs font-semibold text-slate-900">{currentUser?.name}</div>
+                    <div className="text-[10px] text-slate-500">{currentUser?.role}</div>
+                  </div>
+                )}
 
                 <div className="pt-2 border-t border-slate-100 mt-2 flex items-center justify-between px-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      resetToDemoData();
-                      setRoleMenuOpen(false);
-                      toast.info('ERP reset to initial demo seeds');
-                    }}
-                    className="text-[11px] text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3 h-3" /> Reset Demo
-                  </button>
+                  {DEMO_MODE && currentUser?.role === 'CEO' ? (
+                    <button
+                      type="button"
+                      onClick={handleResetDemo}
+                      className="text-[11px] text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Reset Demo
+                    </button>
+                  ) : (
+                    <span />
+                  )}
                   <button
                     type="button"
                     onClick={logout}
@@ -300,7 +316,9 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-xs font-semibold text-slate-700">Live Workspace</span>
               </div>
-              <span className="text-[10px] text-slate-500 font-mono font-medium">v1.0 Demo</span>
+              <span className="text-[10px] text-slate-500 font-mono font-medium">
+                {DEMO_MODE ? 'v1.0 Demo' : 'v1.0'}
+              </span>
             </div>
 
             {/* Navigation links */}
