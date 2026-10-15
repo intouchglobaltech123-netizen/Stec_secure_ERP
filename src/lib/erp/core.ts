@@ -45,6 +45,7 @@ import {
   CANARA_BANK_DETAILS,
 } from '../seed-data';
 import { financialYearStart, localDateISO } from '../numbering';
+import { customerStateCode, isInterState, splitTax, taxTotals } from '../gst';
 
 export interface ErpState {
   users: User[];
@@ -107,17 +108,40 @@ export const updateById = <T extends { id: string }>(list: T[], id: string, fn: 
   list.map((item) => (item.id === id ? fn(item) : item));
 
 // Totals for a set of GST line items, rounded to the rupee with a round-off line
-// (sums are rounded to paise first, so float drift like 7144.4999 can't flip the rupee rounding)
-export function invoiceTotals(lineItems: LineItem[]) {
-  const sum = (pick: (item: LineItem) => number) =>
-    Number(lineItems.reduce((acc, item) => acc + pick(item), 0).toFixed(2));
-  const totalAmount = sum((item) => item.amount);
-  const totalCgst = sum((item) => item.cgst);
-  const totalSgst = sum((item) => item.sgst);
-  const rawTotal = Number((totalAmount + totalCgst + totalSgst).toFixed(2));
-  const grandTotal = Math.round(rawTotal);
-  const roundOff = Number((grandTotal - rawTotal).toFixed(2));
-  return { totalAmount, totalCgst, totalSgst, grandTotal, roundOff };
+export const invoiceTotals = taxTotals;
+
+// Step 3: CGST+SGST within Tamil Nadu, IGST to other states — decided by the customer's state.
+// Every invoice is finalised here: tax split, totals, place of supply and a snapshot of the customer.
+export function finalizeInvoiceTax(s: ErpState, inv: Invoice): Invoice {
+  const customer = s.customers.find((c) => c.id === inv.customerNumber);
+  const placeOfSupply = customerStateCode(customer);
+  const lineItems = splitTax(inv.lineItems, isInterState(placeOfSupply));
+  const totals = taxTotals(lineItems);
+  const amountPaid = inv.amountPaid || 0;
+  return {
+    ...inv,
+    lineItems,
+    ...totals,
+    placeOfSupply,
+    billTo: customer
+      ? {
+          name: customer.name,
+          address: customer.address,
+          phone: customer.phone,
+          gstin: customer.gstin || undefined,
+          stateCode: placeOfSupply,
+        }
+      : inv.billTo,
+    amountPaid,
+    balanceDue: Math.max(0, totals.grandTotal - amountPaid),
+  };
+}
+
+export function finalizeQuotationTax(s: ErpState, q: Quotation): Quotation {
+  const customer = s.customers.find((c) => c.id === q.customerNumber);
+  const placeOfSupply = customerStateCode(customer);
+  const lineItems = splitTax(q.lineItems, isInterState(placeOfSupply));
+  return { ...q, lineItems, ...taxTotals(lineItems), placeOfSupply };
 }
 
 export function makeLineItem(

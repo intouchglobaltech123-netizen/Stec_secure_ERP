@@ -25,6 +25,7 @@ import {
   withNotification,
   managementIds,
   jobSection,
+  finalizeInvoiceTax,
 } from '../core';
 
 export type CreateJobArgs = Omit<Job, 'id' | 'createdAt' | 'jobNumber'> & {
@@ -523,7 +524,7 @@ export const completeJob: Action<CompleteJobArgs, Invoice | undefined> = (s, env
   const totals = invoiceTotals(lineItems);
   const newInvoice: Invoice | undefined = alreadyInvoiced
     ? undefined
-    : {
+    : finalizeInvoiceTax(s, {
         id: env.newId('INV'),
         invoiceNo: nextDocNumber(`INV-${env.fy}-`, s.invoices.map((i) => i.invoiceNo)),
         customerNumber: targetJob.customerNumber || '',
@@ -542,7 +543,7 @@ export const completeJob: Action<CompleteJobArgs, Invoice | undefined> = (s, env
         raisedByUserId: env.actor?.id,
         beforePhotoUrl: targetJob.beforePhotoUrl,
         afterPhotoUrl: completionData.afterPhotoUrl || targetJob.afterPhotoUrl,
-      };
+      });
 
   const newOtp: OTPVerification = {
     id: env.newId('OTP'),
@@ -640,7 +641,7 @@ export const raiseJobInvoice: Action<RaiseJobInvoiceArgs, Invoice> = (s, env, in
   const totals = invoiceTotals(lineItems);
   const amountPaid = Math.min(totals.grandTotal, Math.max(0, invoiceData.amountPaid ?? 0));
 
-  const newInvoice: Invoice = {
+  const newInvoice: Invoice = finalizeInvoiceTax(s, {
     id: env.newId('INV'),
     invoiceNo: nextDocNumber(`INV-${env.fy}-`, s.invoices.map((i) => i.invoiceNo)),
     customerNumber: job?.customerNumber || '',
@@ -659,7 +660,7 @@ export const raiseJobInvoice: Action<RaiseJobInvoiceArgs, Invoice> = (s, env, in
     raisedByUserId: env.actor?.id,
     beforePhotoUrl: invoiceData.beforePhotoUrl || job?.beforePhotoUrl,
     afterPhotoUrl: invoiceData.afterPhotoUrl || job?.afterPhotoUrl,
-  };
+  });
 
   const newOtp: OTPVerification = {
     id: env.newId('OTP'),

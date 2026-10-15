@@ -50,7 +50,9 @@ React 19, TypeScript (strict), Vite 6, Tailwind CSS 4 (via `@tailwindcss/vite`, 
 ## Conventions
 
 - Money is INR; format with `formatINR` and dates with `formatDate` / `formatDateTime` from `src/lib/utils.ts`.
-- GST line items use the `LineItem` shape (`amount`, `cgst`, `sgst`, `total`). Hardware/material lines use the product's own `gstRate`; the job's GST choice applies only to the service line.
+- GST line items use the `LineItem` shape (`amount`, `cgst`, `sgst`, `igst`, `total`). Hardware/material lines use the product's own `gstRate`; the job's GST choice applies only to the service line.
+- **GST rules** (Step 3, `src/lib/gst.ts`): place of supply = the customer's state (`customerStateCode()`: valid GSTIN prefix, else `customer.stateCode`, else `33`). Tamil Nadu (33) → CGST + SGST; any other state → IGST. Every invoice/quotation create or update path must end in `finalizeInvoiceTax()` / `finalizeQuotationTax()` (core) — the server recomputes tax and totals, so client-sent totals are ignored. Invoices snapshot `billTo` and `placeOfSupply`. `updateInvoice` cannot touch payments and refuses a total below the amount received (credit note instead). GSTINs are checked with `isValidGstin()` (check digit) in the customer actions. The printable invoice is `TaxInvoiceDocument` (`#printable-invoice-doc`).
+- JSON drops `undefined`, so an update that must clear a field sends `''` (see `updateCustomer`).
 - Document numbers come from `nextDocNumber(prefix, existing)` in `src/lib/numbering.ts` (max existing + 1, never array length). Prefixes use the financial-year start (`financialYearStart()` in `src/lib/numbering.ts`): `INV-2026-001`, `DC-`, `JOB-`, `ENQ-`, `RMA-`, quotations `A26001`.
 - Store dates with `env.today` / `localDateISO()` (India calendar date via `Asia/Kolkata`, correct even on a UTC server), never `toISOString().split('T')[0]` (UTC).
 - An invoice records its source `quotationId` / `deliveryChallanId`; conversions must refuse to invoice the same source twice.

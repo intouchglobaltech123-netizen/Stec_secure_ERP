@@ -1,19 +1,32 @@
 // Customers and enquiries
 import { Customer, Enquiry, EnquiryStatus } from '../../stecsecure-types';
 import { nextDocNumber } from '../../numbering';
+import { isValidGstin } from '../../gst';
 import { Action, done, updateById } from '../core';
+
+// Step 3: a GSTIN must pass its check digit, and a valid one fixes the customer's state (its first
+// two digits). An empty GSTIN clears it — JSON drops undefined, so the client sends '' to clear.
+function withCheckedGstin<T extends Partial<Customer>>(c: T): T {
+  if (!('gstin' in c)) return c;
+  const gstin = (c.gstin || '').trim().toUpperCase();
+  if (!gstin) return { ...c, gstin: undefined };
+  if (!isValidGstin(gstin)) throw new Error(`GSTIN ${gstin} is not valid — check it for a typing mistake`);
+  return { ...c, gstin, stateCode: gstin.slice(0, 2) };
+}
 
 export const addCustomer: Action<Omit<Customer, 'id' | 'createdAt'>, Customer> = (s, env, cust) => {
   const newCustomer: Customer = {
-    ...cust,
+    ...withCheckedGstin(cust),
     id: nextDocNumber('CUST-', s.customers.map((c) => c.id)),
     createdAt: env.nowIso,
   };
   return done({ ...s, customers: [newCustomer, ...s.customers] }, newCustomer);
 };
 
-export const updateCustomer: Action<{ id: string; updates: Partial<Customer> }, void> = (s, _env, { id, updates }) =>
-  done({ ...s, customers: updateById(s.customers, id, (c) => ({ ...c, ...updates })) }, undefined);
+export const updateCustomer: Action<{ id: string; updates: Partial<Customer> }, void> = (s, _env, { id, updates }) => {
+  const checked = withCheckedGstin(updates);
+  return done({ ...s, customers: updateById(s.customers, id, (c) => ({ ...c, ...checked })) }, undefined);
+};
 
 export type CreateEnquiryArgs = Omit<Enquiry, 'id' | 'enquiryNumber' | 'createdAt' | 'followUpNotes' | 'status'> & {
   status?: EnquiryStatus;

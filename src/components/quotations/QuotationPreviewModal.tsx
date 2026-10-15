@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { formatINR, formatDate } from '@/lib/utils';
 import { exportElementToPdfWithToast } from '@/lib/pdf-generator';
+import { amountInWords, customerStateCode, hsnSummary, isInterState, placeOfSupplyLabel, stateName } from '@/lib/gst';
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/api';
 
@@ -63,17 +64,10 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
 
   const customer = getCustomer(quotation.customerNumber);
 
-  // Group line items by HSN for HSN-wise tax summary table
-  const hsnMap: Record<string, { taxable: number; cgst: number; sgst: number; rate: number }> = {};
-  quotation.lineItems.forEach((item) => {
-    const code = item.hsnSac || 'OTHERS';
-    if (!hsnMap[code]) {
-      hsnMap[code] = { taxable: 0, cgst: 0, sgst: 0, rate: item.gstRate };
-    }
-    hsnMap[code].taxable += item.amount;
-    hsnMap[code].cgst += item.cgst;
-    hsnMap[code].sgst += item.sgst;
-  });
+  // Step 3: place of supply decides CGST+SGST (Tamil Nadu) or IGST (other states)
+  const placeOfSupply = quotation.placeOfSupply ?? customerStateCode(customer);
+  const interState = isInterState(placeOfSupply) || Boolean(quotation.totalIgst);
+  const hsnRows = hsnSummary(quotation.lineItems);
 
   const handlePrint = () => {
     window.print();
@@ -298,6 +292,10 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                   <strong>Validity: </strong>
                   <span>{quotation.validityDays} Days</span>
                 </div>
+                <div>
+                  <strong>Place of Supply: </strong>
+                  <span>{placeOfSupplyLabel(placeOfSupply)}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -311,11 +309,12 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
               <div className="font-bold text-sm text-slate-900 mt-0.5">{customer?.name}</div>
               <div className="text-slate-700 mt-0.5">{customer?.address}</div>
               <div className="text-slate-700 mt-0.5">Phone: {customer?.phone}</div>
-              {customer?.gstin && (
-                <div className="font-mono text-[11px] text-orange-600 font-semibold mt-0.5">
-                  GSTIN: {customer.gstin}
-                </div>
-              )}
+              <div className="font-mono text-[11px] text-orange-600 font-semibold mt-0.5">
+                GSTIN: {customer?.gstin || 'Unregistered'}
+              </div>
+              <div className="text-slate-700 mt-0.5">
+                State: {stateName(placeOfSupply)} ({placeOfSupply})
+              </div>
             </div>
 
             <div className="bg-slate-50 p-2.5 rounded border border-slate-200 text-[11px] space-y-1">
@@ -370,14 +369,23 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                 <span>Taxable Value:</span>
                 <span className="font-semibold text-slate-900">{formatINR(quotation.totalAmount)}</span>
               </div>
-              <div className="flex justify-between text-slate-700">
-                <span>CGST (9%):</span>
-                <span>{formatINR(quotation.totalCgst)}</span>
-              </div>
-              <div className="flex justify-between text-slate-700">
-                <span>SGST (9%):</span>
-                <span>{formatINR(quotation.totalSgst)}</span>
-              </div>
+              {interState ? (
+                <div className="flex justify-between text-slate-700">
+                  <span>IGST:</span>
+                  <span>{formatINR(quotation.totalIgst || 0)}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between text-slate-700">
+                    <span>CGST:</span>
+                    <span>{formatINR(quotation.totalCgst)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-700">
+                    <span>SGST:</span>
+                    <span>{formatINR(quotation.totalSgst)}</span>
+                  </div>
+                </>
+              )}
               {quotation.roundOff !== 0 && (
                 <div className="flex justify-between text-slate-600 text-[11px]">
                   <span>Round Off:</span>
@@ -390,6 +398,10 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
               </div>
             </div>
           </div>
+          <div className="mt-1 text-xs text-slate-700">
+            <span className="font-semibold">Amount in words: </span>
+            {amountInWords(quotation.grandTotal)}
+          </div>
 
           {/* HSN-wise tax summary table */}
           <div className="mt-4 pt-3 border-t border-slate-200">
@@ -401,20 +413,34 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                 <tr>
                   <th className="p-1.5">HSN/SAC</th>
                   <th className="p-1.5 text-right">Taxable Value (₹)</th>
-                  <th className="p-1.5 text-right">CGST (9%)</th>
-                  <th className="p-1.5 text-right">SGST (9%)</th>
+                  <th className="p-1.5 text-right">Rate</th>
+                  {interState ? (
+                    <th className="p-1.5 text-right">IGST</th>
+                  ) : (
+                    <>
+                      <th className="p-1.5 text-right">CGST</th>
+                      <th className="p-1.5 text-right">SGST</th>
+                    </>
+                  )}
                   <th className="p-1.5 text-right">Total Tax (₹)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {Object.entries(hsnMap).map(([hsn, data]) => (
-                  <tr key={hsn}>
-                    <td className="p-1.5 font-mono font-semibold text-orange-600">{hsn}</td>
-                    <td className="p-1.5 text-right">{formatINR(data.taxable)}</td>
-                    <td className="p-1.5 text-right">{formatINR(data.cgst)}</td>
-                    <td className="p-1.5 text-right">{formatINR(data.sgst)}</td>
+                {hsnRows.map((row) => (
+                  <tr key={`${row.hsnSac}@${row.gstRate}`}>
+                    <td className="p-1.5 font-mono font-semibold text-orange-600">{row.hsnSac}</td>
+                    <td className="p-1.5 text-right">{formatINR(row.taxable)}</td>
+                    <td className="p-1.5 text-right">{row.gstRate}%</td>
+                    {interState ? (
+                      <td className="p-1.5 text-right">{formatINR(row.igst)}</td>
+                    ) : (
+                      <>
+                        <td className="p-1.5 text-right">{formatINR(row.cgst)}</td>
+                        <td className="p-1.5 text-right">{formatINR(row.sgst)}</td>
+                      </>
+                    )}
                     <td className="p-1.5 text-right font-semibold text-emerald-700">
-                      {formatINR(data.cgst + data.sgst)}
+                      {formatINR(row.cgst + row.sgst + row.igst)}
                     </td>
                   </tr>
                 ))}

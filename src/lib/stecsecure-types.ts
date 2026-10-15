@@ -24,6 +24,7 @@ export interface Customer {
   amcRenewalDate?: string;
   amcActive?: boolean;
   siteLocationMapLink?: string; // Google Maps URL (maps.app.goo.gl or google.com/maps)
+  stateCode?: string; // Step 3: GST state code when there is no GSTIN (default Tamil Nadu, 33)
 }
 
 export interface Vendor {
@@ -187,6 +188,7 @@ export interface LineItem {
   amount: number;
   cgst: number;
   sgst: number;
+  igst?: number; // Step 3: inter-state supply (then cgst = sgst = 0)
   total: number;
 }
 
@@ -233,9 +235,11 @@ export interface Quotation {
   totalAmount: number;
   totalCgst: number;
   totalSgst: number;
+  totalIgst?: number; // Step 3
   roundOff: number;
   grandTotal: number;
   bankDetails: BankDetails;
+  placeOfSupply?: string; // Step 3: GST state code of the customer
   status?: QuotationStatus;
   statusNote?: string; // e.g. why it was rejected or lost
   statusUpdatedAt?: string;
@@ -254,9 +258,13 @@ export interface Invoice {
   totalAmount: number;
   totalCgst: number;
   totalSgst: number;
+  totalIgst?: number; // Step 3
   roundOff: number;
   grandTotal: number;
   bankDetails: BankDetails;
+  // Step 3: place of supply (GST state code) and the customer's details as printed on the invoice
+  placeOfSupply?: string;
+  billTo?: { name: string; address: string; phone: string; gstin?: string; stateCode: string };
   linkedJobId?: string;
   deliveryChallanId?: string; // Phase 15: Linked Delivery Challan ID
   amountPaid: number;

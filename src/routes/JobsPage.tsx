@@ -44,7 +44,6 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { formatDate, formatDateTime, formatINR, formatCreatedBy } from '@/lib/utils';
 import { JobCreateModal } from '@/components/jobs/JobCreateModal';
-import { JobInvoiceModal } from '@/components/jobs/JobInvoiceModal';
 import { JobShareOtpModal } from '@/components/jobs/JobShareOtpModal';
 import { InvoicePreviewModal } from '@/components/invoices/InvoicePreviewModal';
 import { EditJobModal, CancelJobModal } from '@/components/jobs/EditJobModal';
@@ -171,7 +170,6 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
   });
   const [isChallanOpen, setIsChallanOpen] = useState(false);
   const [selectedHoldJob, setSelectedHoldJob] = useState<Job | null>(null);
-  const [selectedInvoiceJob, setSelectedInvoiceJob] = useState<Job | null>(null);
   const [selectedShareJob, setSelectedShareJob] = useState<Job | null>(null);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
   const [activeCreatedInvoice, setActiveCreatedInvoice] = useState<Invoice | null>(null);
@@ -1349,7 +1347,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                     onChange={(e) => setGstChoiceInput(e.target.value as any)}
                     className="w-full text-xs h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
                   >
-                    <option value="GST">Standard 18% GST (CGST 9% + SGST 9%)</option>
+                    <option value="GST">Standard 18% GST (CGST + SGST in Tamil Nadu, IGST outside)</option>
                     <option value="NO_GST">Non-GST / Exempt</option>
                   </select>
                 </div>
@@ -1432,19 +1430,6 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
         job={selectedHoldJob}
         onClose={() => setSelectedHoldJob(null)}
         onHoldRaised={() => setSelectedHoldJob(null)}
-      />
-
-      <JobInvoiceModal
-        isOpen={Boolean(selectedInvoiceJob)}
-        job={selectedInvoiceJob}
-        onClose={() => setSelectedInvoiceJob(null)}
-        onInvoiceCreated={(invoice) => {
-          setSelectedInvoiceJob(null);
-          setActiveCreatedInvoice(invoice);
-          if (selectedInvoiceJob) {
-            setSelectedShareJob(selectedInvoiceJob);
-          }
-        }}
       />
 
       {/* View-only invoice for completed / closed jobs — must not re-run OTP & payment collection */}

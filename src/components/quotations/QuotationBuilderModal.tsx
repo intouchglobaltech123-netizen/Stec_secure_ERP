@@ -20,6 +20,18 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { formatINR, formatDate } from '@/lib/utils';
 import { CANARA_BANK_DETAILS } from '@/lib/seed-data';
+import {
+  COMPANY_STATE_CODE,
+  INDIAN_STATES,
+  customerStateCode,
+  hsnSummary,
+  isInterState,
+  isValidGstin,
+  placeOfSupplyLabel,
+  splitLineTax,
+  splitTax,
+  taxTotals,
+} from '@/lib/gst';
 import { Modal } from '@/components/ui/modal';
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/api';
@@ -54,6 +66,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
   const [newCustPhone, setNewCustPhone] = useState('');
   const [newCustAddress, setNewCustAddress] = useState('');
   const [newCustGstin, setNewCustGstin] = useState('');
+  const [newCustState, setNewCustState] = useState(COMPANY_STATE_CODE);
   const [saving, setSaving] = useState(false);
 
   // Quotation Meta
@@ -147,19 +160,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
   const handleUpdateItem = (index: number, updates: Partial<LineItem>) => {
     setLineItems((prev) => {
       const copy = [...prev];
-      const item = { ...copy[index], ...updates };
-      const amt = Number((item.qty * item.rate).toFixed(2));
-      const cgst = Number((amt * (item.gstRate / 200)).toFixed(2));
-      const sgst = Number((amt * (item.gstRate / 200)).toFixed(2));
-      const total = Number((amt + cgst + sgst).toFixed(2));
-
-      copy[index] = {
-        ...item,
-        amount: amt,
-        cgst,
-        sgst,
-        total,
-      };
+      copy[index] = splitLineTax({ ...copy[index], ...updates }, false);
       return copy;
     });
   };
@@ -199,25 +200,15 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
     setLineItems((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  // Calculations
-  const totalAmount = lineItems.reduce((sum, item) => sum + item.amount, 0);
-  const totalCgst = lineItems.reduce((sum, item) => sum + item.cgst, 0);
-  const totalSgst = lineItems.reduce((sum, item) => sum + item.sgst, 0);
-  const rawTotal = totalAmount + totalCgst + totalSgst;
-  const grandTotal = Math.round(rawTotal);
-  const roundOff = Number((grandTotal - rawTotal).toFixed(2));
-
-  // HSN Breakdown
-  const hsnMap: Record<string, { taxable: number; cgst: number; sgst: number }> = {};
-  lineItems.forEach((item) => {
-    const code = item.hsnSac || 'OTHERS';
-    if (!hsnMap[code]) {
-      hsnMap[code] = { taxable: 0, cgst: 0, sgst: 0 };
-    }
-    hsnMap[code].taxable += item.amount;
-    hsnMap[code].cgst += item.cgst;
-    hsnMap[code].sgst += item.sgst;
-  });
+  // Step 3: tax follows the customer's state — CGST+SGST in Tamil Nadu, IGST elsewhere
+  // (the server recomputes the same when the quotation is saved)
+  const placeOfSupply = isQuickAdd
+    ? customerStateCode({ gstin: newCustGstin, stateCode: newCustState })
+    : customerStateCode(selectedCustomer);
+  const interState = isInterState(placeOfSupply);
+  const taxedItems = splitTax(lineItems, interState);
+  const { totalAmount, totalCgst, totalSgst, totalIgst, roundOff, grandTotal } = taxTotals(taxedItems);
+  const hsnRows = hsnSummary(taxedItems);
 
   const handleSaveQuotation = async (status: 'DRAFT' | 'SENT') => {
     if (saving) return;
@@ -226,6 +217,10 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
     if (isQuickAdd) {
       if (!newCustName.trim() || !newCustPhone.trim() || !newCustAddress.trim()) {
         toast.error('Please complete customer details');
+        return;
+      }
+      if (newCustGstin.trim() && !isValidGstin(newCustGstin)) {
+        toast.error('GSTIN is not valid — check it or leave it empty');
         return;
       }
     }
@@ -242,7 +237,8 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
           name: newCustName.trim(),
           phone: newCustPhone.trim(),
           address: newCustAddress.trim(),
-          gstin: newCustGstin.trim() || undefined,
+          gstin: newCustGstin.trim().toUpperCase() || undefined,
+          stateCode: customerStateCode({ gstin: newCustGstin, stateCode: newCustState }),
         });
         finalCustId = createdCust.id;
         // Customer now exists — select it so a retry after a failed save doesn't add it twice
@@ -256,11 +252,12 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
           customerNumber: finalCustId,
           date: quotationDate,
           validityDays,
-          lineItems,
+          lineItems: taxedItems,
           termsAndConditions: terms,
           totalAmount,
           totalCgst,
           totalSgst,
+          totalIgst,
           roundOff,
           grandTotal,
           bankDetails: CANARA_BANK_DETAILS,
@@ -278,11 +275,12 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
         customerNumber: finalCustId,
         date: quotationDate,
         validityDays,
-        lineItems,
+        lineItems: taxedItems,
         termsAndConditions: terms,
         totalAmount,
         totalCgst,
         totalSgst,
+        totalIgst,
         roundOff,
         grandTotal,
         bankDetails: CANARA_BANK_DETAILS,
@@ -393,6 +391,10 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                       {selectedCustomer.gstin && (
                         <div className="font-mono text-orange-600 font-semibold">GST: {selectedCustomer.gstin}</div>
                       )}
+                      <div>
+                        Place of supply: <strong>{placeOfSupplyLabel(placeOfSupply)}</strong> ·{' '}
+                        {interState ? 'IGST' : 'CGST + SGST'}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -424,6 +426,25 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                     onChange={(e) => setNewCustAddress(e.target.value)}
                     className="h-8 text-xs bg-white"
                   />
+                  <select
+                    value={isValidGstin(newCustGstin) ? newCustGstin.trim().slice(0, 2) : newCustState}
+                    disabled={isValidGstin(newCustGstin)}
+                    onChange={(e) => setNewCustState(e.target.value)}
+                    className="w-full h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-900 focus:outline-none focus:border-orange-500 disabled:bg-slate-100"
+                  >
+                    {INDIAN_STATES.map((st) => (
+                      <option key={st.code} value={st.code}>
+                        {st.name} ({st.code})
+                      </option>
+                    ))}
+                  </select>
+                  {newCustGstin.trim() && !isValidGstin(newCustGstin) && (
+                    <div className="text-[11px] text-rose-600">GSTIN is not valid</div>
+                  )}
+                  <div className="text-[11px] text-slate-600">
+                    Place of supply: <strong>{placeOfSupplyLabel(placeOfSupply)}</strong> ·{' '}
+                    {interState ? 'IGST' : 'CGST + SGST'}
+                  </div>
                 </div>
               )}
             </div>
@@ -555,10 +576,10 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                         />
                       </td>
                       <td className="p-2 text-right pt-3 text-[11px] text-slate-500 font-medium">
-                        {item.gstRate}% (₹{(item.cgst + item.sgst).toFixed(2)})
+                        {item.gstRate}% (₹{(taxedItems[idx].total - taxedItems[idx].amount).toFixed(2)})
                       </td>
                       <td className="p-2 text-right font-bold text-slate-900 pt-3 font-mono">
-                        {formatINR(item.total)}
+                        {formatINR(taxedItems[idx].total)}
                       </td>
                       <td className="p-2 text-center pt-3">
                         <button
@@ -596,14 +617,23 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                 <span>Subtotal (Taxable Amount):</span>
                 <span className="font-semibold text-slate-900 font-mono">{formatINR(totalAmount)}</span>
               </div>
-              <div className="flex justify-between text-slate-600 text-xs">
-                <span>Total CGST (9%):</span>
-                <span className="font-mono">{formatINR(totalCgst)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600 text-xs">
-                <span>Total SGST (9%):</span>
-                <span className="font-mono">{formatINR(totalSgst)}</span>
-              </div>
+              {interState ? (
+                <div className="flex justify-between text-slate-600 text-xs">
+                  <span>Total IGST:</span>
+                  <span className="font-mono">{formatINR(totalIgst)}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between text-slate-600 text-xs">
+                    <span>Total CGST:</span>
+                    <span className="font-mono">{formatINR(totalCgst)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600 text-xs">
+                    <span>Total SGST:</span>
+                    <span className="font-mono">{formatINR(totalSgst)}</span>
+                  </div>
+                </>
+              )}
               {roundOff !== 0 && (
                 <div className="flex justify-between text-slate-600 text-[11px]">
                   <span>Round Off:</span>
@@ -628,20 +658,34 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                   <tr>
                     <th className="p-2">HSN / SAC</th>
                     <th className="p-2 text-right">Taxable Value (₹)</th>
-                    <th className="p-2 text-right">CGST (9%)</th>
-                    <th className="p-2 text-right">SGST (9%)</th>
+                    <th className="p-2 text-right">Rate</th>
+                    {interState ? (
+                      <th className="p-2 text-right">IGST</th>
+                    ) : (
+                      <>
+                        <th className="p-2 text-right">CGST</th>
+                        <th className="p-2 text-right">SGST</th>
+                      </>
+                    )}
                     <th className="p-2 text-right">Total Tax (₹)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {Object.entries(hsnMap).map(([hsn, data]) => (
-                    <tr key={hsn}>
-                      <td className="p-2 font-mono text-orange-600 font-semibold">{hsn}</td>
-                      <td className="p-2 text-right font-medium text-slate-900 font-mono">{formatINR(data.taxable)}</td>
-                      <td className="p-2 text-right text-slate-600 font-mono">{formatINR(data.cgst)}</td>
-                      <td className="p-2 text-right text-slate-600 font-mono">{formatINR(data.sgst)}</td>
+                  {hsnRows.map((row) => (
+                    <tr key={`${row.hsnSac}@${row.gstRate}`}>
+                      <td className="p-2 font-mono text-orange-600 font-semibold">{row.hsnSac}</td>
+                      <td className="p-2 text-right font-medium text-slate-900 font-mono">{formatINR(row.taxable)}</td>
+                      <td className="p-2 text-right text-slate-600 font-mono">{row.gstRate}%</td>
+                      {interState ? (
+                        <td className="p-2 text-right text-slate-600 font-mono">{formatINR(row.igst)}</td>
+                      ) : (
+                        <>
+                          <td className="p-2 text-right text-slate-600 font-mono">{formatINR(row.cgst)}</td>
+                          <td className="p-2 text-right text-slate-600 font-mono">{formatINR(row.sgst)}</td>
+                        </>
+                      )}
                       <td className="p-2 text-right font-bold text-emerald-700 font-mono">
-                        {formatINR(data.cgst + data.sgst)}
+                        {formatINR(row.cgst + row.sgst + row.igst)}
                       </td>
                     </tr>
                   ))}

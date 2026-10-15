@@ -28,6 +28,8 @@ import {
   managementIds,
   matchProduct,
   applyChallanSerials,
+  finalizeInvoiceTax,
+  finalizeQuotationTax,
 } from '../core';
 
 // Phase 22: tell management about money received (not the person who recorded it)
@@ -257,13 +259,13 @@ export type CreateQuotationArgs = Omit<Quotation, 'id' | 'quotationNo'> & {
 export const createQuotation: Action<CreateQuotationArgs, Quotation> = (s, env, data) => {
   const quotationNo =
     data.quotationNo || nextDocNumber(`A${String(env.fy).slice(2)}`, s.quotations.map((q) => q.quotationNo));
-  const newQuot: Quotation = {
+  const newQuot: Quotation = finalizeQuotationTax(s, {
     ...data,
     id: env.newId('QUOT'),
     quotationNo,
     status: data.status || 'DRAFT',
     enquiryId: data.enquiryId,
-  };
+  });
   return done(
     {
       ...s,
@@ -289,11 +291,11 @@ export const updateQuotation: Action<{ id: string; updates: Partial<Quotation> }
   }
   // Phase 22: saving the builder may move Draft ↔ Sent, never undo Accepted / Rejected / Lost
   const keepStatus = !['DRAFT', 'SENT', undefined].includes(existing.status);
-  const updatedQuot: Quotation = {
+  const updatedQuot: Quotation = finalizeQuotationTax(s, {
     ...existing,
     ...updates,
     status: keepStatus ? existing.status : updates.status ?? existing.status,
-  };
+  });
   const enquiryId = updates.enquiryId || existing.enquiryId;
   return done(
     {
@@ -305,10 +307,23 @@ export const updateQuotation: Action<{ id: string; updates: Partial<Quotation> }
   );
 };
 
+// Step 3: an invoice edit may change the date, payment terms, line items and terms only. Tax, totals and
+// place of supply are recomputed; amounts paid come only from recorded payments.
 export const updateInvoice: Action<{ id: string; updates: Partial<Invoice> }, Invoice> = (s, _env, { id, updates }) => {
   const existing = s.invoices.find((inv) => inv.id === id);
   if (!existing) throw new Error('Invoice not found');
-  const updatedInv: Invoice = { ...existing, ...updates };
+  const updatedInv = finalizeInvoiceTax(s, {
+    ...existing,
+    date: updates.date ?? existing.date,
+    validityDays: updates.validityDays ?? existing.validityDays,
+    lineItems: updates.lineItems ?? existing.lineItems,
+    termsAndConditions: updates.termsAndConditions ?? existing.termsAndConditions,
+  });
+  if (updatedInv.grandTotal < (existing.amountPaid || 0)) {
+    throw new Error(
+      `The new total ₹${updatedInv.grandTotal} is less than the ₹${existing.amountPaid} already received — issue a credit note instead.`
+    );
+  }
   return done({ ...s, invoices: updateById(s.invoices, id, () => updatedInv) }, updatedInv);
 };
 
@@ -345,7 +360,7 @@ export const convertQuotationToInvoice: Action<{ quotationId: string }, Invoice>
     }
   }
 
-  const newInvoice: Invoice = {
+  const newInvoice: Invoice = finalizeInvoiceTax(s, {
     id: env.newId('INV'),
     invoiceNo: nextDocNumber(`INV-${env.fy}-`, s.invoices.map((i) => i.invoiceNo)),
     customerNumber: quot.customerNumber,
@@ -364,7 +379,7 @@ export const convertQuotationToInvoice: Action<{ quotationId: string }, Invoice>
     balanceDue: quot.grandTotal,
     paymentMode: 'PENDING',
     raisedByUserId: env.actor?.id,
-  };
+  });
 
   const next = applyAdvancesToInvoice(
     {
@@ -491,7 +506,7 @@ export const convertDeliveryChallanToInvoice: Action<{ challanId: string }, Invo
   // 3. Compute Invoice Totals
   const totals = invoiceTotals(invoiceLineItems);
 
-  const newInvoice: Invoice = {
+  const newInvoice: Invoice = finalizeInvoiceTax(s, {
     id: env.newId('INV'),
     invoiceNo: nextDocNumber(`INV-${env.fy}-`, s.invoices.map((i) => i.invoiceNo)),
     customerNumber: dc.customerNumber,
@@ -510,7 +525,7 @@ export const convertDeliveryChallanToInvoice: Action<{ challanId: string }, Invo
     balanceDue: totals.grandTotal,
     paymentMode: 'PENDING',
     raisedByUserId: env.actor?.id,
-  };
+  });
 
   const next = applyAdvancesToInvoice(
     {

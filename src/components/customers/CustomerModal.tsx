@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/api';
+import { COMPANY_STATE_CODE, INDIAN_STATES, customerStateCode, isInterState, isValidGstin } from '@/lib/gst';
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   const [address, setAddress] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [gstin, setGstin] = useState('');
+  const [stateCode, setStateCode] = useState(COMPANY_STATE_CODE);
   const [siteLocationMapLink, setSiteLocationMapLink] = useState('');
   const [amcActive, setAmcActive] = useState(false);
   const [amcRenewalDate, setAmcRenewalDate] = useState('');
@@ -42,6 +44,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
       setAddress(customer.address || '');
       setContactPerson(customer.contactPerson || '');
       setGstin(customer.gstin || '');
+      setStateCode(customerStateCode(customer));
       setSiteLocationMapLink(customer.siteLocationMapLink || '');
       setAmcActive(Boolean(customer.amcActive));
       setAmcRenewalDate(customer.amcRenewalDate || '');
@@ -52,6 +55,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
       setAddress('');
       setContactPerson('');
       setGstin('');
+      setStateCode(COMPANY_STATE_CODE);
       setSiteLocationMapLink('');
       setAmcActive(false);
       setAmcRenewalDate('');
@@ -59,6 +63,11 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   }, [customer, isOpen]);
 
   if (!isOpen) return null;
+
+  // Step 3: a valid GSTIN fixes the state (its first two digits); otherwise it is picked here.
+  // The state decides CGST+SGST (Tamil Nadu) or IGST on this customer's invoices.
+  const gstinValid = isValidGstin(gstin);
+  const effectiveState = gstinValid ? gstin.trim().slice(0, 2) : stateCode;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,20 +84,27 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
       toast.error('Customer site address is required');
       return;
     }
+    if (gstin.trim() && !gstinValid) {
+      toast.error('GSTIN is not valid — check it or leave it empty');
+      return;
+    }
 
     setSaving(true);
     try {
       if (customer) {
+        // Cleared fields are sent as '' — undefined is dropped on the way to the server and would
+        // leave the old value in place
         await updateCustomer(customer.id, {
           name: name.trim(),
           phone: phone.trim(),
-          email: email.trim() || undefined,
+          email: email.trim(),
           address: address.trim(),
-          contactPerson: contactPerson.trim() || undefined,
-          gstin: gstin.trim().toUpperCase() || undefined,
-          siteLocationMapLink: siteLocationMapLink.trim() || undefined,
+          contactPerson: contactPerson.trim(),
+          gstin: gstin.trim().toUpperCase(),
+          stateCode: effectiveState,
+          siteLocationMapLink: siteLocationMapLink.trim(),
           amcActive,
-          amcRenewalDate: amcActive && amcRenewalDate ? amcRenewalDate : undefined,
+          amcRenewalDate: amcActive && amcRenewalDate ? amcRenewalDate : '',
         });
 
         const updated = {
@@ -99,6 +115,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
           address: address.trim(),
           contactPerson: contactPerson.trim() || undefined,
           gstin: gstin.trim().toUpperCase() || undefined,
+          stateCode: effectiveState,
           siteLocationMapLink: siteLocationMapLink.trim() || undefined,
           amcActive,
           amcRenewalDate: amcActive && amcRenewalDate ? amcRenewalDate : undefined,
@@ -114,6 +131,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
           address: address.trim(),
           contactPerson: contactPerson.trim() || undefined,
           gstin: gstin.trim().toUpperCase() || undefined,
+          stateCode: effectiveState,
           siteLocationMapLink: siteLocationMapLink.trim() || undefined,
           amcActive,
           amcRenewalDate: amcActive && amcRenewalDate ? amcRenewalDate : undefined,
@@ -232,12 +250,37 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
               <div className="relative">
                 <Building className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                 <Input
-                  placeholder="33AABCG1234F1Z5"
+                  placeholder="33AABCG1234F1ZA"
                   value={gstin}
                   onChange={(e) => setGstin(e.target.value)}
                   className="pl-9 text-xs bg-white font-mono uppercase"
                 />
               </div>
+              {gstin.trim() && !gstinValid && (
+                <div className="mt-1 text-[11px] text-rose-600">GSTIN is not valid (check for a typing mistake)</div>
+              )}
+            </div>
+          </div>
+
+          {/* State (place of supply) */}
+          <div>
+            <label className="block text-slate-700 font-semibold mb-1">State</label>
+            <select
+              value={effectiveState}
+              disabled={gstinValid}
+              onChange={(e) => setStateCode(e.target.value)}
+              className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500 disabled:bg-slate-100"
+            >
+              {INDIAN_STATES.map((st) => (
+                <option key={st.code} value={st.code}>
+                  {st.name} ({st.code})
+                </option>
+              ))}
+            </select>
+            <div className="mt-1 text-[11px] text-slate-500">
+              {gstinValid ? 'Taken from the GSTIN. ' : ''}
+              Invoices for this customer use{' '}
+              <strong>{isInterState(effectiveState) ? 'IGST (outside Tamil Nadu)' : 'CGST + SGST (Tamil Nadu)'}</strong>.
             </div>
           </div>
 
