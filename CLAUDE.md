@@ -36,6 +36,7 @@ React 19, TypeScript (strict), Vite 6, Tailwind CSS 4 (via `@tailwindcss/vite`, 
 - Photos sent as `data:` URLs in action args are stored in the `photos` table and replaced by `/api/photos/<id>` links.
 - Dev: `npm run dev:server` (port 8080) with `npm run dev` (Vite proxies `/api`). Production: `npm run build` then `npm start` (serves `dist/` too).
 - `npx tsc -p server/tsconfig.json` type-checks the server (part of `npm run build`).
+- **Backups** (Step 3): `GET /api/admin/backup` (CEO) streams every `records` row, `meta` and photos — never `credentials` or `sessions` — and records `meta.lastBackup`; `Settings → Backups` (`BackupCard`). `npm run restore -- <file> [--replace]` (`server/src/restore.ts`, built to `server-dist/restore.js`) loads one into a database; see docs/DEPLOY-RAILWAY.md. A new collection needs no backup change, but new tables must be added to both files.
 
 ## Auth and roles
 

@@ -173,6 +173,11 @@ export class Store {
     return run;
   }
 
+  // Step 3: runs `fn` while no change can commit (e.g. reading a consistent backup)
+  exclusive<T>(fn: () => Promise<T>): Promise<T> {
+    return this.serialize(fn);
+  }
+
   // Applies a state transition and saves the changed records; the in-memory state only moves
   // forward once the database has committed
   commit(mutate: (state: ErpState) => ErpState, extra?: (tx: Queryable) => Promise<void>) {

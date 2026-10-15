@@ -134,13 +134,20 @@ export function createUsersRouter(db: Database, store: Store) {
 
   router.post('/:id/reset-pin', async (req, res) => {
     const id = req.params.id;
-    if (!store.state.users.some((u) => u.id === id)) throw new HttpError(404, 'Staff member not found.');
+    const user = store.state.users.find((u) => u.id === id);
+    if (!user) throw new HttpError(404, 'Staff member not found.');
     const { pin } = req.body ?? {};
     if (!isValidPin(pin)) throw new HttpError(400, 'The PIN must be exactly 4 digits.');
+    // Step 3: staff restored from a backup have no login yet — setting a PIN creates it
+    const phone = normalizePhone(user.phone);
+    if (phone.length !== 10) throw new HttpError(400, 'Add a 10-digit mobile number for this staff member first.');
+    await assertPhoneFree(phone, id);
     await db.transaction(async (tx) => {
       await tx.query(
-        'UPDATE credentials SET pin_hash = $2, failed_attempts = 0, locked_until = NULL, updated_at = now() WHERE user_id = $1',
-        [id, await hashPin(pin)]
+        `INSERT INTO credentials (user_id, phone, pin_hash) VALUES ($1, $3, $2)
+         ON CONFLICT (user_id) DO UPDATE
+           SET pin_hash = excluded.pin_hash, failed_attempts = 0, locked_until = NULL, updated_at = now()`,
+        [id, await hashPin(pin), phone]
       );
       await tx.query('DELETE FROM sessions WHERE user_id = $1', [id]);
     });

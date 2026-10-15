@@ -9,6 +9,7 @@ import { config } from './config';
 import { createAuth } from './auth';
 import { createUsersRouter, HttpError } from './users';
 import { createPhotosRouter, extractPhotos } from './photos';
+import { createBackupRouter } from './backup';
 import { checkPermission } from './permissions';
 import { scopeStateFor } from './scope';
 import { ACTIONS, ActionName } from '../../src/lib/erp/actions';
@@ -47,6 +48,7 @@ export function createApp(db: Database, store: Store) {
   app.use('/api/auth', auth.router);
   app.use('/api', auth.requireUser);
   app.use('/api/admin/users', createUsersRouter(db, store));
+  app.use('/api/admin/backup', createBackupRouter(db, store));
   app.use('/api/photos', createPhotosRouter(db));
 
   // Current data for this user. ?since=<version> returns 204 when nothing changed.

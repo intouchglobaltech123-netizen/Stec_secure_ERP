@@ -39,7 +39,31 @@ Every push to the `main` branch on GitHub redeploys automatically. Data stays in
 
 ## Backups
 
-Railway PostgreSQL → **Backups** tab: turn on scheduled backups. (Available on paid plans.)
+**Download (CEO, weekly):** Settings → **Backups** → **Download backup**. The file holds every record, the
+settings and the job photos — not staff PINs. Keep copies outside Railway (laptop, Google Drive). The card turns
+amber when the last download is more than 7 days old.
+
+Optional extra: Railway PostgreSQL → **Backups** tab → scheduled daily / weekly / monthly snapshots (kept 6 / 27 /
+89 days). These live inside the same Railway project, so they do not replace the downloaded copies.
+
+### Restoring a downloaded backup
+
+The restore script loads a backup file into a database. It refuses a database that already has data unless
+`--replace` is given.
+
+1. **Stop the app service** (Railway → app service → **⋮ → Remove** the active deployment, or `railway down`).
+   The running server keeps the data in memory and would not see the restore.
+2. On a computer with this repository: `npm install && npm run build`.
+3. Point the script at the database — copy `DATABASE_PUBLIC_URL` from Railway PostgreSQL → **Variables**:
+
+   ```bash
+   DATABASE_URL="<DATABASE_PUBLIC_URL>" PGSSL=true INITIAL_CEO_PIN=<new 4-digit PIN> npm run restore -- stecsecure-backup-2026-10-15-1121.json --replace
+   ```
+
+   `INITIAL_CEO_PIN` is only used when the CEO has no PIN on that database (a brand-new database). Staff whose
+   PIN is still on the server keep it; the script lists everyone else.
+4. **Redeploy the app service.** Log in as the CEO and set the listed staff members' PINs in Settings → Staff
+   Accounts → **Reset PIN**.
 
 ## Something wrong?
 
