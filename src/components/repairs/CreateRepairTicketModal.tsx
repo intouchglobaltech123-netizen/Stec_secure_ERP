@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
+import { errorMessage } from '@/lib/api';
+import { RepairTicket } from '@/lib/stecsecure-types';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +15,9 @@ interface CreateRepairTicketModalProps {
   initialJobId?: string | null;
   initialCustomerId?: string;
   initialSerialUnitId?: string;
-  onSuccess?: (ticketId: string) => void;
+  // `ticket` is the newly created ticket returned by the server — use it instead of
+  // looking the id up in context lists, which have not re-rendered yet at this point
+  onSuccess?: (ticketId: string, ticket: RepairTicket) => void;
 }
 
 export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = ({
@@ -58,6 +62,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
   const [assignedTechnicianId, setAssignedTechnicianId] = useState<string>('');
   const [initialNote, setInitialNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAddingCustomer, setIsAddingCustomer] = useState(false);
 
   // Sync initial props on open
   React.useEffect(() => {
@@ -117,28 +122,35 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
     });
   }, [serialUnits, products, serialSearch, selectedCustomerId, initialJobId]);
 
-  const handleQuickAddCustomer = (e: React.FormEvent) => {
+  const handleQuickAddCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustomerName.trim() || !newCustomerPhone.trim()) {
       toast.error('Customer name and phone number are required');
       return;
     }
 
-    const created = addCustomer({
-      name: newCustomerName.trim(),
-      phone: newCustomerPhone.trim(),
-      address: newCustomerAddress.trim() || 'Address on file',
-    });
+    setIsAddingCustomer(true);
+    try {
+      const created = await addCustomer({
+        name: newCustomerName.trim(),
+        phone: newCustomerPhone.trim(),
+        address: newCustomerAddress.trim() || 'Address on file',
+      });
 
-    setSelectedCustomerId(created.id);
-    setShowQuickAddCustomer(false);
-    setNewCustomerName('');
-    setNewCustomerPhone('');
-    setNewCustomerAddress('');
-    toast.success(`Customer ${created.name} added!`);
+      setSelectedCustomerId(created.id);
+      setShowQuickAddCustomer(false);
+      setNewCustomerName('');
+      setNewCustomerPhone('');
+      setNewCustomerAddress('');
+      toast.success(`Customer ${created.name} added!`);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setIsAddingCustomer(false);
+    }
   };
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
     if (!selectedCustomerId) {
@@ -168,7 +180,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
 
     setIsSubmitting(true);
     try {
-      const ticket = createRepairTicket({
+      const ticket = await createRepairTicket({
         customerId: selectedCustomerId,
         assignedTechnicianId,
         serialUnitId: unitMode === 'CATALOGUED' ? selectedSerialUnitId : undefined,
@@ -179,11 +191,10 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
       });
 
       toast.success(`Repair ticket ${ticket.ticketNumber} created successfully!`);
-      onSuccess?.(ticket.id);
+      onSuccess?.(ticket.id, ticket);
       handleResetAndClose();
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to create repair ticket');
+      toast.error(errorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -306,6 +317,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
                 type="button"
                 size="sm"
                 variant="primary"
+                disabled={isAddingCustomer}
                 onClick={handleQuickAddCustomer}
                 className="bg-orange-600 hover:bg-orange-700 text-white text-xs h-8"
               >

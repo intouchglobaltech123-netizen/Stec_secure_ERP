@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { formatINR } from '@/lib/utils';
+import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface AddProductUsedModalProps {
@@ -40,6 +41,7 @@ export const AddProductUsedModal: React.FC<AddProductUsedModalProps> = ({
   const [quantity, setQuantity] = useState<number>(1);
   const [selectedSerialIds, setSelectedSerialIds] = useState<string[]>([]);
   const [productSearch, setProductSearch] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Reset selections when opening or changing product
   useEffect(() => {
@@ -104,7 +106,7 @@ export const AddProductUsedModal: React.FC<AddProductUsedModalProps> = ({
     toast.info(`Auto-selected first ${toPick.length} in-stock serial(s).`);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProductId) {
       toast.error('Please select a product from catalog');
@@ -115,20 +117,27 @@ export const AddProductUsedModal: React.FC<AddProductUsedModalProps> = ({
       return;
     }
 
-    // Call context action: records JobProductUsage & immediately transitions serials to ALLOCATED
-    addJobProductUsage({
-      jobId: job.id,
-      productId: selectedProductId,
-      quantity,
-      serialUnitIds: selectedSerialIds,
-    });
+    setSaving(true);
+    try {
+      // Call context action: records JobProductUsage & immediately transitions serials to ALLOCATED
+      await addJobProductUsage({
+        jobId: job.id,
+        productId: selectedProductId,
+        quantity,
+        serialUnitIds: selectedSerialIds,
+      });
 
-    toast.success(
-      `Recorded ${quantity}x ${selectedProduct?.name} used for ${job.jobNumber}. Warehouse stock decremented.`
-    );
+      toast.success(
+        `Recorded ${quantity}x ${selectedProduct?.name} used for ${job.jobNumber}. Warehouse stock decremented.`
+      );
 
-    if (onAdded) onAdded();
-    onClose();
+      if (onAdded) onAdded();
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -407,7 +416,7 @@ export const AddProductUsedModal: React.FC<AddProductUsedModalProps> = ({
           <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-xl">
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="sm" className="rounded-xl font-semibold">
+          <Button type="submit" variant="primary" size="sm" disabled={saving} className="rounded-xl font-semibold">
             Add {quantity} {selectedProduct?.unit || 'Unit'}{quantity > 1 && !selectedProduct?.unit?.toLowerCase().endsWith('s') ? 's' : ''} to Job
           </Button>
         </div>

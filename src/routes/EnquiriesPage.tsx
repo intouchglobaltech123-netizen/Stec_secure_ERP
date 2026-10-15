@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import {
   Enquiry,
@@ -50,6 +50,7 @@ import { JobCreateModal } from '@/components/jobs/JobCreateModal';
 import { JobDetailModal } from '@/components/jobs/JobDetailModal';
 import { QuotationBuilderModal } from '@/components/quotations/QuotationBuilderModal';
 import { QuotationPreviewModal } from '@/components/quotations/QuotationPreviewModal';
+import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface EnquiriesPageProps {
@@ -106,6 +107,15 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
   const [quotationEnquiry, setQuotationEnquiry] = useState<Enquiry | null>(null);
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
   const [previewQuotation, setPreviewQuotation] = useState<Quotation | null>(null);
+
+  // Phase 21: a server action from one of the dialogs is in flight (blocks double submits)
+  const [saving, setSaving] = useState(false);
+
+  // Phase 21: keep the open enquiry in step with the list once the server reply lands
+  // (notes, reminders and status changes show up here without re-reading state after an action)
+  useEffect(() => {
+    setViewEnquiry((prev) => (prev ? enquiries.find((x) => x.id === prev.id) ?? prev : prev));
+  }, [enquiries]);
 
   const initReminderState = () => {
     const now = new Date();
@@ -198,8 +208,9 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
     setIsCreateModalOpen(true);
   };
 
-  const handleCreateEnquiry = (e: React.FormEvent) => {
+  const handleCreateEnquiry = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
 
     let targetCustName = '';
     let targetCustPhone = '';
@@ -211,86 +222,118 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
         toast.error('Please enter customer name, phone, and address');
         return;
       }
-      const created = addCustomer({
-        name: newCustName.trim(),
-        phone: newCustPhone.trim(),
-        address: newCustAddress.trim(),
-      });
-      targetCustName = created.name;
-      targetCustPhone = created.phone;
-      targetCustAddress = created.address;
-      targetCustId = created.id;
-    } else {
-      const cust = customers.find((c) => c.id === selectedCustomerId);
-      if (!cust) {
-        toast.error('Please select an existing customer or quick-add a new one');
-        return;
-      }
-      targetCustName = cust.name;
-      targetCustPhone = cust.phone;
-      targetCustAddress = cust.address;
-      targetCustId = cust.id;
+    } else if (!customers.find((c) => c.id === selectedCustomerId)) {
+      toast.error('Please select an existing customer or quick-add a new one');
+      return;
     }
 
+    // Checked before any server call so a failed check never leaves a half-created customer
     if (!formDescription.trim()) {
       toast.error('Please enter enquiry request details');
       return;
     }
 
-    const created = createEnquiry({
-      customerName: targetCustName,
-      customerPhone: targetCustPhone,
-      customerAddress: targetCustAddress,
-      customerId: targetCustId,
-      enquiryType: formType,
-      category: formCategory,
-      source: formSource,
-      description: formDescription.trim(),
-      createdByUserId: currentUser?.id || 'usr-ceo',
-    });
+    setSaving(true);
+    try {
+      if (isQuickAddCustomer) {
+        const created = await addCustomer({
+          name: newCustName.trim(),
+          phone: newCustPhone.trim(),
+          address: newCustAddress.trim(),
+        });
+        // Switch the form to the new customer so a retry does not add it twice
+        setSelectedCustomerId(created.id);
+        setIsQuickAddCustomer(false);
+        targetCustName = created.name;
+        targetCustPhone = created.phone;
+        targetCustAddress = created.address;
+        targetCustId = created.id;
+      } else {
+        const cust = customers.find((c) => c.id === selectedCustomerId)!;
+        targetCustName = cust.name;
+        targetCustPhone = cust.phone;
+        targetCustAddress = cust.address;
+        targetCustId = cust.id;
+      }
 
-    toast.success(`Enquiry ${created.enquiryNumber} recorded.`);
-    setIsCreateModalOpen(false);
-  };
+      const created = await createEnquiry({
+        customerName: targetCustName,
+        customerPhone: targetCustPhone,
+        customerAddress: targetCustAddress,
+        customerId: targetCustId,
+        enquiryType: formType,
+        category: formCategory,
+        source: formSource,
+        description: formDescription.trim(),
+        createdByUserId: currentUser?.id || 'usr-ceo',
+      });
 
-  const handleSaveNote = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!noteEnquiry || !noteText.trim()) return;
-
-    addEnquiryFollowUpNote(noteEnquiry.id, noteText.trim());
-    toast.success('Follow-up note recorded.');
-    setNoteText('');
-    setNoteEnquiry(null);
-
-    if (viewEnquiry && viewEnquiry.id === noteEnquiry.id) {
-      const updated = enquiries.find((x) => x.id === noteEnquiry.id);
-      if (updated) setViewEnquiry(updated);
+      toast.success(`Enquiry ${created.enquiryNumber} recorded.`);
+      setIsCreateModalOpen(false);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleConfirmApprove = (enquiry: Enquiry) => {
+  const handleSaveNote = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!noteEnquiry || !noteText.trim() || saving) return;
+
+    setSaving(true);
+    try {
+      await addEnquiryFollowUpNote(noteEnquiry.id, noteText.trim());
+      toast.success('Follow-up note recorded.');
+      setNoteText('');
+      setNoteEnquiry(null);
+      // The open enquiry view picks up the new note via the enquiries sync effect above
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleConfirmApprove = async (enquiry: Enquiry) => {
+    if (saving) return;
     if (window.confirm(`Approve enquiry ${enquiry.enquiryNumber}?`)) {
-      approveEnquiry(enquiry.id);
-      toast.success(`Enquiry ${enquiry.enquiryNumber} approved. Click "Assign Job" to dispatch crew.`);
-      if (viewEnquiry && viewEnquiry.id === enquiry.id) {
-        setViewEnquiry((prev) => (prev ? { ...prev, status: 'APPROVED' } : null));
+      setSaving(true);
+      try {
+        await approveEnquiry(enquiry.id);
+        toast.success(`Enquiry ${enquiry.enquiryNumber} approved. Click "Assign Job" to dispatch crew.`);
+        if (viewEnquiry && viewEnquiry.id === enquiry.id) {
+          setViewEnquiry((prev) => (prev ? { ...prev, status: 'APPROVED' } : null));
+        }
+      } catch (err) {
+        toast.error(errorMessage(err));
+      } finally {
+        setSaving(false);
       }
     }
   };
 
-  const handleConfirmCancel = (e: React.FormEvent) => {
+  const handleConfirmCancel = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!cancelModalEnquiry || !cancelReason.trim()) {
       toast.error('Please provide a cancellation reason');
       return;
     }
 
-    cancelEnquiry(cancelModalEnquiry.id, cancelReason.trim());
-    toast.info(`Enquiry ${cancelModalEnquiry.enquiryNumber} marked as cancelled.`);
-    setCancelModalEnquiry(null);
-    setCancelReason('');
-    if (viewEnquiry && viewEnquiry.id === cancelModalEnquiry.id) {
-      setViewEnquiry(null);
+    setSaving(true);
+    try {
+      await cancelEnquiry(cancelModalEnquiry.id, cancelReason.trim());
+      toast.info(`Enquiry ${cancelModalEnquiry.enquiryNumber} marked as cancelled.`);
+      setCancelModalEnquiry(null);
+      setCancelReason('');
+      if (viewEnquiry && viewEnquiry.id === cancelModalEnquiry.id) {
+        setViewEnquiry(null);
+      }
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -948,6 +991,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                       variant="success"
                       size="sm"
                       onClick={() => handleConfirmApprove(viewEnquiry)}
+                      disabled={saving}
                       className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center gap-1.5"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" /> Approve Enquiry
@@ -1175,7 +1219,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" size="md" className="rounded-xl text-xs font-semibold">
+              <Button type="submit" variant="primary" size="md" disabled={saving} className="rounded-xl text-xs font-semibold">
                 Save Enquiry
               </Button>
             </div>
@@ -1219,7 +1263,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" size="md" className="rounded-xl text-xs font-semibold">
+              <Button type="submit" variant="primary" size="md" disabled={saving} className="rounded-xl text-xs font-semibold">
                 Record Note
               </Button>
             </div>
@@ -1267,7 +1311,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
               >
                 Back
               </Button>
-              <Button type="submit" variant="danger" size="md" className="rounded-xl text-xs font-semibold">
+              <Button type="submit" variant="danger" size="md" disabled={saving} className="rounded-xl text-xs font-semibold">
                 Confirm Cancellation
               </Button>
             </div>
@@ -1359,7 +1403,8 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 variant="success"
                 size="md"
                 className="rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5"
-                onClick={() => {
+                disabled={saving}
+                onClick={async () => {
                   if (!remindDate || !remindTime) {
                     toast.error('Please select both date and time for the reminder.');
                     return;
@@ -1402,24 +1447,18 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   const scheduledBy = currentUser?.name || 'Staff';
                   const noteText = `Reminder scheduled for ${scheduledFormatted} (Scheduled by ${scheduledBy} on ${createdStr})`;
 
-                  addEnquiryFollowUpNote(reminderEnquiry.id, noteText);
+                  setSaving(true);
+                  try {
+                    await addEnquiryFollowUpNote(reminderEnquiry.id, noteText);
+                    // The open enquiry view picks up the server's note via the enquiries sync effect
 
-                  if (viewEnquiry && viewEnquiry.id === reminderEnquiry.id) {
-                    const newNote = {
-                      id: `fup-${Date.now()}`,
-                      text: noteText,
-                      createdAt: now.toISOString(),
-                      createdByUserId: currentUser?.id,
-                      createdByUserName: scheduledBy,
-                    };
-                    setViewEnquiry({
-                      ...viewEnquiry,
-                      followUpNotes: [newNote, ...viewEnquiry.followUpNotes],
-                    });
+                    toast.success(`Reminder scheduled for ${reminderEnquiry.customerName} on ${scheduledFormatted}`);
+                    setReminderEnquiry(null);
+                  } catch (err) {
+                    toast.error(errorMessage(err));
+                  } finally {
+                    setSaving(false);
                   }
-
-                  toast.success(`Reminder scheduled for ${reminderEnquiry.customerName} on ${scheduledFormatted}`);
-                  setReminderEnquiry(null);
                 }}
               >
                 <MessageCircle className="w-4 h-4" />
@@ -1464,13 +1503,21 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   variant="danger"
                   size="md"
                   className="rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5"
-                  onClick={() => {
-                    deleteEnquiry(deletingEnquiry.id);
-                    toast.success(`Enquiry ${deletingEnquiry.enquiryNumber} permanently deleted.`);
-                    if (viewEnquiry && viewEnquiry.id === deletingEnquiry.id) {
-                      setViewEnquiry(null);
+                  disabled={saving}
+                  onClick={async () => {
+                    setSaving(true);
+                    try {
+                      await deleteEnquiry(deletingEnquiry.id);
+                      toast.success(`Enquiry ${deletingEnquiry.enquiryNumber} permanently deleted.`);
+                      if (viewEnquiry && viewEnquiry.id === deletingEnquiry.id) {
+                        setViewEnquiry(null);
+                      }
+                      setDeletingEnquiry(null);
+                    } catch (err) {
+                      toast.error(errorMessage(err));
+                    } finally {
+                      setSaving(false);
                     }
-                    setDeletingEnquiry(null);
                   }}
                 >
                   Permanently Delete

@@ -39,6 +39,7 @@ import { InvoicePreviewModal } from '@/components/invoices/InvoicePreviewModal';
 import { RepairTicket } from '@/lib/stecsecure-types';
 import { CreateRepairTicketModal } from '@/components/repairs/CreateRepairTicketModal';
 import { RepairTicketDetailModal } from '@/components/repairs/RepairTicketDetailModal';
+import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
 
@@ -86,7 +87,34 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
   const [isCreateRepairModalOpen, setIsCreateRepairModalOpen] = React.useState(false);
   const [inspectingRepairTicket, setInspectingRepairTicket] = React.useState<RepairTicket | null>(null);
 
+  // Phase 21: server actions in flight (blocks double clicks)
+  const [isConvertingQuote, setIsConvertingQuote] = React.useState(false);
+  const [isResuming, setIsResuming] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
   if (!isOpen || !job) return null;
+
+  // Phase 21: show the synced copy of the inspected ticket so it refreshes after transitions
+  const liveInspectingRepairTicket = inspectingRepairTicket
+    ? visibleRepairTickets.find((t) => t.id === inspectingRepairTicket.id) ?? inspectingRepairTicket
+    : null;
+
+  const handleConvertQuoteToChallan = async (linkedQuotation: Quotation) => {
+    if (isConvertingQuote) return;
+    setIsConvertingQuote(true);
+    try {
+      const newDc = await convertQuotationToDeliveryChallan(linkedQuotation.id, job.id);
+      toast.success(
+        `Delivery Challan ${newDc.challanNo} created from Quotation ${linkedQuotation.quotationNo}`
+      );
+      setInspectingChallan(newDc);
+      setIsChallanModalOpen(true);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setIsConvertingQuote(false);
+    }
+  };
 
 
   const customer = getCustomer(job.customerNumber);
@@ -270,16 +298,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                       } else if (!isManagement) {
                         return;
                       } else if (linkedQuotation) {
-                        try {
-                          const newDc = convertQuotationToDeliveryChallan(linkedQuotation.id, job.id);
-                          toast.success(
-                            `Delivery Challan ${newDc.challanNo} created from Quotation ${linkedQuotation.quotationNo}`
-                          );
-                          setInspectingChallan(newDc);
-                          setIsChallanModalOpen(true);
-                        } catch (err: any) {
-                          toast.error(err.message || 'Failed to convert quotation to delivery challan');
-                        }
+                        void handleConvertQuoteToChallan(linkedQuotation);
                       } else {
                         setInspectingChallan(null);
                         setIsChallanModalOpen(true);
@@ -498,10 +517,18 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     size="sm"
                     variant="success"
                     className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 shadow-2xs cursor-pointer flex items-center gap-1"
-                    onClick={() => {
-                      resolveHoldEvent(hold.id);
-                      toast.success(`Hold resolved. Job ${job.jobNumber} resumed to In Progress.`);
-                      onClose();
+                    disabled={isResuming}
+                    onClick={async () => {
+                      setIsResuming(true);
+                      try {
+                        await resolveHoldEvent(hold.id);
+                        toast.success(`Hold resolved. Job ${job.jobNumber} resumed to In Progress.`);
+                        onClose();
+                      } catch (err) {
+                        toast.error(errorMessage(err));
+                      } finally {
+                        setIsResuming(false);
+                      }
                     }}
                   >
                     <Play className="w-3.5 h-3.5 mr-1" />
@@ -669,18 +696,8 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                         type="button"
                         size="sm"
                         variant="primary"
-                        onClick={() => {
-                          try {
-                            const newDc = convertQuotationToDeliveryChallan(linkedQuotation.id, job.id);
-                            toast.success(
-                              `Delivery Challan ${newDc.challanNo} created from Quotation ${linkedQuotation.quotationNo}`
-                            );
-                            setInspectingChallan(newDc);
-                            setIsChallanModalOpen(true);
-                          } catch (err: any) {
-                            toast.error(err.message || 'Failed to convert quotation');
-                          }
-                        }}
+                        onClick={() => void handleConvertQuoteToChallan(linkedQuotation)}
+                        disabled={isConvertingQuote}
                         className="text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white rounded-lg shadow-2xs"
                       >
                         <Truck className="w-3.5 h-3.5 mr-1" />
@@ -843,12 +860,20 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                 variant="danger"
                 size="md"
                 className="rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white"
-                onClick={() => {
+                disabled={isDeleting}
+                onClick={async () => {
                   const num = job.jobNumber;
-                  deleteJob(job.id);
-                  toast.success(`Job ${num} permanently deleted.`);
-                  setShowDeleteConfirm(false);
-                  onClose();
+                  setIsDeleting(true);
+                  try {
+                    await deleteJob(job.id);
+                    toast.success(`Job ${num} permanently deleted.`);
+                    setShowDeleteConfirm(false);
+                    onClose();
+                  } catch (err) {
+                    toast.error(errorMessage(err));
+                  } finally {
+                    setIsDeleting(false);
+                  }
                 }}
               >
                 Permanently Delete
@@ -930,17 +955,16 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
         initialJobId={job.id}
         initialCustomerId={customer?.id || job.customerNumber}
         initialSerialUnitId={linkedSerialUnit?.id}
-        onSuccess={(ticketId) => {
+        onSuccess={(_ticketId, ticket) => {
           setIsCreateRepairModalOpen(false);
-          const t = visibleRepairTickets.find((item) => item.id === ticketId);
-          if (t) setInspectingRepairTicket(t);
+          setInspectingRepairTicket(ticket);
         }}
       />
 
       {/* Phase 17: Repair Ticket Detail Modal */}
       <RepairTicketDetailModal
-        ticket={inspectingRepairTicket}
-        isOpen={Boolean(inspectingRepairTicket)}
+        ticket={liveInspectingRepairTicket}
+        isOpen={Boolean(liveInspectingRepairTicket)}
         onClose={() => setInspectingRepairTicket(null)}
       />
     </>

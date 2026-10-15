@@ -4,6 +4,7 @@ import { Job } from '@/lib/stecsecure-types';
 import { X, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface RaiseHoldModalProps {
@@ -21,20 +22,28 @@ export const RaiseHoldModal: React.FC<RaiseHoldModalProps> = ({
 }) => {
   const { raiseHold } = useStecSecure();
   const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
 
   if (!isOpen || !job) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reason.trim()) {
       toast.error('Please describe the obstacle causing this hold');
       return;
     }
 
-    raiseHold(job.id, reason.trim());
-    toast.warning(`Job ${job.jobNumber} placed on hold.`);
-    toast.info('Management notified.');
-    onHoldRaised();
+    setSaving(true);
+    try {
+      await raiseHold(job.id, reason.trim());
+      toast.warning(`Job ${job.jobNumber} placed on hold.`);
+      toast.info('Management notified.');
+      onHoldRaised();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -70,7 +79,7 @@ export const RaiseHoldModal: React.FC<RaiseHoldModalProps> = ({
             <Button type="button" variant="secondary" size="md" onClick={onClose} className="rounded-xl">
               Cancel
             </Button>
-            <Button type="submit" variant="warning" size="md" className="rounded-xl font-semibold">
+            <Button type="submit" variant="warning" size="md" disabled={saving} className="rounded-xl font-semibold">
               <AlertTriangle className="w-4 h-4 mr-1.5" />
               Raise Hold & Pause Timer
             </Button>

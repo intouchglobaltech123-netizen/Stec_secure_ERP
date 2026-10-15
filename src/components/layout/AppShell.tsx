@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import {
   LayoutDashboard,
@@ -17,6 +18,7 @@ import {
   AlertTriangle,
   ChevronDown,
   UserCheck,
+  KeyRound,
   RotateCcw,
   Layers,
   Inbox,
@@ -25,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { DEMO_MODE } from '@/lib/demo-mode';
+import { ChangePinModal } from '@/components/auth/ChangePinModal';
 import { AppSection } from '@/lib/stecsecure-types';
 
 // REPLACE WITH ACTUAL S TEC SECURE LOGO (white background version) — see /public/logo-placeholder.png
@@ -43,9 +46,6 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
   const {
     currentUser,
     logout,
-    users,
-    loginAsUser,
-    resetToDemoData,
     visibleJobs,
     visibleRepairTickets,
     holdEvents,
@@ -56,6 +56,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const [changePinOpen, setChangePinOpen] = useState(false);
 
   const visibleJobIds = new Set(visibleJobs.map((j) => j.id));
   const openHoldsCount = holdEvents.filter(
@@ -67,7 +68,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
   const installationJobsCount = visibleJobs.filter((j) => j.type === 'INSTALLATION').length;
 
   // Repair counts (scoped to visibleRepairTickets)
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localDateISO();
   const overdueRepairsCount = visibleRepairTickets.filter(
     (t) =>
       t.status === 'SENT_TO_VENDOR' &&
@@ -135,24 +136,10 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
     setMobileMenuOpen(false);
   };
 
-  const handleResetDemo = () => {
+  const handleSignOut = async () => {
     setRoleMenuOpen(false);
-    if (
-      !window.confirm(
-        'Reset to demo data? This permanently deletes ALL customers, jobs, invoices and payments in this browser.'
-      )
-    ) {
-      return;
-    }
-    resetToDemoData();
-    toast.info('ERP reset to initial demo seeds');
-  };
-
-  const handleRoleSwitch = (userId: string) => {
-    loginAsUser(userId);
-    setRoleMenuOpen(false);
-    const targetUser = users.find((u) => u.id === userId);
-    toast.success(`Switched role to ${targetUser?.name} (${targetUser?.role})`);
+    await logout();
+    toast.success('Signed out.');
   };
 
   const roleBadgeVariant =
@@ -195,7 +182,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
           </div>
         </div>
 
-        {/* Right: Quick Role Switcher + Logged In User Profile */}
+        {/* Right: Logged In User Profile */}
         <div className="flex items-center gap-3">
           {openHoldsCount > 0 && (
             <button
@@ -207,7 +194,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
             </button>
           )}
 
-          {/* Quick Persona Switcher Dropdown */}
+          {/* Account menu */}
           <div className="relative">
             <button
               type="button"
@@ -231,68 +218,27 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
 
             {roleMenuOpen && (
               <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white border border-slate-200 shadow-xl p-2 z-50 animate-in fade-in-50 zoom-in-95">
-                {DEMO_MODE ? (
-                <>
-                <div className="px-2 py-1.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 mb-1">
-                  Switch Active Persona (Demo)
-                </div>
-                <div className="space-y-1">
-                  {users.map((u) => {
-                    const isSelected = u.id === currentUser?.id;
-                    return (
-                      <button
-                        key={u.id}
-                        type="button"
-                        onClick={() => handleRoleSwitch(u.id)}
-                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-xs transition-colors cursor-pointer ${
-                          isSelected
-                            ? 'bg-orange-50 text-orange-700 border border-orange-200 font-semibold'
-                            : 'hover:bg-slate-50 text-slate-700'
-                        }`}
-                      >
-                        <div>
-                          <div className="font-medium text-slate-900">{u.name}</div>
-                          <div className="text-[10px] text-slate-500">PIN: {u.pin}</div>
-                        </div>
-                        <Badge
-                          variant={
-                            u.role === 'CEO'
-                              ? 'orange'
-                              : u.role === 'MANAGER'
-                              ? 'default'
-                              : 'success'
-                          }
-                          className="text-[10px]"
-                        >
-                          {u.role}
-                        </Badge>
-                      </button>
-                    );
-                  })}
-                </div>
-                </>
-                ) : (
-                  <div className="px-2 py-1.5">
-                    <div className="text-xs font-semibold text-slate-900">{currentUser?.name}</div>
-                    <div className="text-[10px] text-slate-500">{currentUser?.role}</div>
+                <div className="px-2 py-1.5">
+                  <div className="text-xs font-semibold text-slate-900">{currentUser?.name}</div>
+                  <div className="text-[10px] text-slate-500">
+                    {currentUser?.role} · {currentUser?.phone}
                   </div>
-                )}
+                </div>
 
                 <div className="pt-2 border-t border-slate-100 mt-2 flex items-center justify-between px-1">
-                  {DEMO_MODE && currentUser?.role === 'CEO' ? (
-                    <button
-                      type="button"
-                      onClick={handleResetDemo}
-                      className="text-[11px] text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
-                    >
-                      <RotateCcw className="w-3 h-3" /> Reset Demo
-                    </button>
-                  ) : (
-                    <span />
-                  )}
                   <button
                     type="button"
-                    onClick={logout}
+                    onClick={() => {
+                      setRoleMenuOpen(false);
+                      setChangePinOpen(true);
+                    }}
+                    className="text-[11px] text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+                  >
+                    <KeyRound className="w-3 h-3" /> Change PIN
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
                     className="text-[11px] text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer font-medium"
                   >
                     <LogOut className="w-3 h-3" /> Sign Out
@@ -448,7 +394,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={logout}
+                  onClick={handleSignOut}
                   className="w-full text-xs text-rose-600 hover:text-rose-700"
                 >
                   <LogOut className="w-3.5 h-3.5 mr-1.5" /> Sign Out
@@ -463,6 +409,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
           <div className="w-full min-w-0">{children}</div>
         </main>
       </div>
+      <ChangePinModal isOpen={changePinOpen} onClose={() => setChangePinOpen(false)} />
     </div>
   );
 };

@@ -22,6 +22,7 @@ import { Modal } from '@/components/ui/modal';
 import { formatINR, formatDate } from '@/lib/utils';
 import { exportElementToPdfWithToast } from '@/lib/pdf-generator';
 import { toast } from 'sonner';
+import { errorMessage } from '@/lib/api';
 
 interface InvoicePreviewModalProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'UPI' | 'NEFT' | 'CHEQUE' | 'PENDING'>('UPI');
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [terms, setTerms] = useState<string>('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (invoice) {
@@ -158,32 +160,40 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   const roundOff = Number((grandTotal - rawTotal).toFixed(2));
   const balanceDue = Math.max(0, grandTotal - amountPaid);
 
-  const handleSaveInvoiceChanges = (e: React.FormEvent) => {
+  const handleSaveInvoiceChanges = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (lineItems.length === 0) {
       toast.error('Please include at least one line item in the invoice');
       return;
     }
 
-    const updated = updateInvoice(activeInvoice.id, {
-      date: invoiceDate,
-      validityDays,
-      lineItems,
-      termsAndConditions: terms,
-      paymentMode,
-      amountPaid,
-      balanceDue,
-      totalAmount,
-      totalCgst,
-      totalSgst,
-      roundOff,
-      grandTotal,
-    });
+    setSaving(true);
+    try {
+      const updated = await updateInvoice(activeInvoice.id, {
+        date: invoiceDate,
+        validityDays,
+        lineItems,
+        termsAndConditions: terms,
+        paymentMode,
+        amountPaid,
+        balanceDue,
+        totalAmount,
+        totalCgst,
+        totalSgst,
+        roundOff,
+        grandTotal,
+      });
 
-    setActiveInvoice(updated);
-    toast.success(`Tax Invoice ${activeInvoice.invoiceNo} updated successfully (no duplicate created).`);
-    if (onInvoiceSaved) onInvoiceSaved(updated);
-    setMode('PREVIEW');
+      setActiveInvoice(updated);
+      toast.success(`Tax Invoice ${activeInvoice.invoiceNo} updated successfully (no duplicate created).`);
+      if (onInvoiceSaved) onInvoiceSaved(updated);
+      setMode('PREVIEW');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -669,7 +679,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
               <Button type="button" variant="secondary" size="md" onClick={() => setMode('PREVIEW')}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" size="md" className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs font-semibold">
+              <Button type="submit" variant="primary" size="md" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs font-semibold">
                 <FileText className="w-4 h-4 mr-1.5" />
                 Save Invoice Changes
               </Button>

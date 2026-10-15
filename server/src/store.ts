@@ -7,6 +7,7 @@ import { config } from './config';
 import { ErpState, getSeedState, makeEnv, normalizeSavedState } from '../../src/lib/erp/core';
 import { ACTIONS, ActionName } from '../../src/lib/erp/actions';
 import { User } from '../../src/lib/stecsecure-types';
+import { DEMO_ACCOUNT_PINS } from '../../src/lib/demo-accounts';
 
 type CollectionName = Exclude<keyof ErpState, 'accessControl'>;
 type AnyRecord = { id: string };
@@ -84,7 +85,8 @@ export class Store {
       await this.db.transaction(async (tx) => {
         await this.writeAll(tx, { ...seed, users: seed.users.map(stripPin) });
         for (const u of seed.users) {
-          if (u.pin) await this.insertCredential(tx, u.id, u.phone, u.pin);
+          const pin = DEMO_ACCOUNT_PINS[u.id];
+          if (pin) await this.insertCredential(tx, u.id, u.phone, pin);
         }
       });
       console.log('[store] empty database — loaded demo data');
@@ -120,8 +122,10 @@ export class Store {
     this.version = 1;
     for (const c of COLLECTIONS) {
       const list = state[c] as AnyRecord[];
-      // Lists are newest-first: the first record gets the highest sort key
-      for (let i = list.length - 1; i >= 0; i--) {
+      // Lists are newest-first, so the first record gets the highest sort key — except the staff
+      // list, which reads oldest-first
+      const order = c === 'users' ? list.map((_, i) => i) : list.map((_, i) => list.length - 1 - i);
+      for (const i of order) {
         await tx.query(
           'INSERT INTO records (collection, id, data, version, sort_key) VALUES ($1, $2, $3, $4, $5)',
           [c, list[i].id, JSON.stringify(list[i]), this.version, ++this.sortKey]

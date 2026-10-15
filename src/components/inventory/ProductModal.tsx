@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
+import { errorMessage } from '@/lib/api';
 import { Product, ServiceCategory, SERVICE_CATEGORIES } from '@/lib/stecsecure-types';
 import { generateInternalBarcode, copyBarcodeToClipboard } from '@/lib/barcode-utils';
 import { X, Package, ShieldCheck, ScanBarcode, Sparkles } from 'lucide-react';
@@ -25,6 +26,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
   const [gstRate, setGstRate] = useState<number>(18);
   const [description, setDescription] = useState('');
   const [barcode, setBarcode] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -50,39 +52,46 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       toast.error('Please enter product name');
       return;
     }
 
-    if (product) {
-      updateProduct(product.id, {
-        name: name.trim(),
-        category,
-        hsnSac: hsnSac.trim() || undefined,
-        unit: unit.trim() || 'Nos',
-        defaultRate: Number(defaultRate) || 0,
-        gstRate: Number(gstRate) || 0,
-        description: description.trim() || undefined,
-        barcode: barcode.trim() || undefined,
-      });
-      toast.success(`Product ${name} updated.`);
-    } else {
-      const created = addProduct({
-        name: name.trim(),
-        category,
-        hsnSac: hsnSac.trim() || undefined,
-        unit: unit.trim() || 'Nos',
-        defaultRate: Number(defaultRate) || 0,
-        gstRate: Number(gstRate) || 0,
-        description: description.trim() || undefined,
-        barcode: barcode.trim() || undefined,
-      });
-      toast.success(`Product ${created.name} added to catalog.`);
+    setSaving(true);
+    try {
+      if (product) {
+        await updateProduct(product.id, {
+          name: name.trim(),
+          category,
+          hsnSac: hsnSac.trim() || undefined,
+          unit: unit.trim() || 'Nos',
+          defaultRate: Number(defaultRate) || 0,
+          gstRate: Number(gstRate) || 0,
+          description: description.trim() || undefined,
+          barcode: barcode.trim() || undefined,
+        });
+        toast.success(`Product ${name} updated.`);
+      } else {
+        const created = await addProduct({
+          name: name.trim(),
+          category,
+          hsnSac: hsnSac.trim() || undefined,
+          unit: unit.trim() || 'Nos',
+          defaultRate: Number(defaultRate) || 0,
+          gstRate: Number(gstRate) || 0,
+          description: description.trim() || undefined,
+          barcode: barcode.trim() || undefined,
+        });
+        toast.success(`Product ${created.name} added to catalog.`);
+      }
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
     }
-    onClose();
   };
 
   return (
@@ -244,7 +253,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
           <Button type="button" variant="secondary" size="md" onClick={onClose} className="rounded-xl">
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="md" className="rounded-xl font-semibold">
+          <Button type="submit" variant="primary" size="md" disabled={saving} className="rounded-xl font-semibold">
             <ShieldCheck className="w-4 h-4 mr-1.5" />
             {product ? 'Save Changes' : 'Create Product'}
           </Button>

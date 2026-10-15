@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { formatINR, formatDateTime } from '@/lib/utils';
+import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface JobShareOtpModalProps {
@@ -52,6 +53,10 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
   const [partialAmountReceived, setPartialAmountReceived] = useState<number>(0);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('UPI');
   const [referenceNo, setReferenceNo] = useState<string>('');
+
+  // Busy flags while the server verifies the OTP / records the payment
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isSavingPayment, setIsSavingPayment] = useState(false);
 
   // The modal stays mounted between jobs: start every opening from step 1, or a previous
   // job's "OTP verified" state would let this job skip customer sign-off
@@ -85,21 +90,28 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
     toast.success(`Job summary and invoice shared to ${customer?.phone} via WhatsApp.`);
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!otpInput.trim()) {
       setOtpError('Please enter the 4-digit OTP');
       return;
     }
 
-    const success = verifyJobOtp(job.id, otpInput.trim());
-    if (success) {
-      toast.success(`OTP verified. Customer sign-off authenticated.`);
-      setIsOtpVerified(true);
-      setPartialAmountReceived(Math.round(grandTotal / 2));
-    } else {
-      setOtpError('Invalid OTP code. Please enter 1234');
-      toast.error('Invalid OTP. Use demo code 1234');
+    setIsVerifying(true);
+    try {
+      const success = await verifyJobOtp(job.id, otpInput.trim());
+      if (success) {
+        toast.success(`OTP verified. Customer sign-off authenticated.`);
+        setIsOtpVerified(true);
+        setPartialAmountReceived(Math.round(grandTotal / 2));
+      } else {
+        setOtpError('Invalid OTP code. Please enter 1234');
+        toast.error('Invalid OTP. Use demo code 1234');
+      }
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -108,39 +120,46 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
     setOtpError(null);
   };
 
-  const handleConfirmPayment = () => {
-    if (invoice) {
-      // Advances recorded earlier count towards the total
-      const outstanding = Math.max(0, grandTotal - (invoice.amountPaid || 0));
-      const amountReceived =
-        paymentOption === 'FULL'
-          ? outstanding
-          : paymentOption === 'PARTIAL'
-          ? Math.min(outstanding, Number(partialAmountReceived) || 0)
-          : 0;
+  const handleConfirmPayment = async () => {
+    setIsSavingPayment(true);
+    try {
+      if (invoice) {
+        // Advances recorded earlier count towards the total
+        const outstanding = Math.max(0, grandTotal - (invoice.amountPaid || 0));
+        const amountReceived =
+          paymentOption === 'FULL'
+            ? outstanding
+            : paymentOption === 'PARTIAL'
+            ? Math.min(outstanding, Number(partialAmountReceived) || 0)
+            : 0;
 
-      const payment = recordPaymentAfterOtp({
-        invoiceId: invoice.id,
-        customerNumber: job.customerNumber,
-        statusOption: paymentOption,
-        amountReceived,
-        paymentMode,
-        referenceNo: referenceNo.trim() || undefined,
-      });
+        const payment = await recordPaymentAfterOtp({
+          invoiceId: invoice.id,
+          customerNumber: job.customerNumber,
+          statusOption: paymentOption,
+          amountReceived,
+          paymentMode,
+          referenceNo: referenceNo.trim() || undefined,
+        });
 
-      if (amountReceived > 0 && !payment) {
-        toast.error('Payment not recorded — the customer OTP has not been verified for this job.');
-        return;
+        if (amountReceived > 0 && !payment) {
+          toast.error('Payment not recorded — the customer OTP has not been verified for this job.');
+          return;
+        }
+        const balance = Math.max(0, outstanding - amountReceived);
+        toast.success(
+          `Payment recorded: ${formatINR(amountReceived)} collected (Balance: ${formatINR(balance)}). Job ${job.jobNumber} closed.`
+        );
+      } else {
+        toast.success(`Job ${job.jobNumber} closed.`);
       }
-      const balance = Math.max(0, outstanding - amountReceived);
-      toast.success(
-        `Payment recorded: ${formatINR(amountReceived)} collected (Balance: ${formatINR(balance)}). Job ${job.jobNumber} closed.`
-      );
-    } else {
-      toast.success(`Job ${job.jobNumber} closed.`);
-    }
 
-    onJobClosed();
+      onJobClosed();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setIsSavingPayment(false);
+    }
   };
 
   return (
@@ -335,7 +354,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                       className="text-center font-mono text-base tracking-widest h-10 border-slate-300 focus:border-orange-500 bg-white"
                     />
                   </div>
-                  <Button type="submit" variant="primary" size="md" className="w-full sm:w-auto">
+                  <Button type="submit" variant="primary" size="md" disabled={isVerifying} className="w-full sm:w-auto">
                     <ShieldCheck className="w-4 h-4 mr-1.5" />
                     Verify OTP & Proceed to Payment
                     <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -510,6 +529,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                   type="button"
                   variant="success"
                   size="md"
+                  disabled={isSavingPayment}
                   onClick={handleConfirmPayment}
                   className="w-full sm:w-auto"
                 >

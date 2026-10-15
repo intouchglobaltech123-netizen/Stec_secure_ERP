@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import {
   Payment,
@@ -38,6 +39,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { formatINR, formatDate, formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
+import { errorMessage } from '@/lib/api';
 
 export const PaymentsPage: React.FC = () => {
   const {
@@ -74,7 +76,8 @@ export const PaymentsPage: React.FC = () => {
   const [manualAmount, setManualAmount] = useState<number | ''>('');
   const [manualMode, setManualMode] = useState<PaymentMode>('NEFT');
   const [manualReference, setManualReference] = useState('');
-  const [manualDate, setManualDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [manualDate, setManualDate] = useState<string>(localDateISO());
+  const [savingPayment, setSavingPayment] = useState(false);
 
   // TASK 1: Overview KPIs
   const totalInvoiced = invoices.reduce((sum, inv) => sum + inv.grandTotal, 0);
@@ -209,7 +212,7 @@ export const PaymentsPage: React.FC = () => {
     setManualAmount(targetInv ? targetInv.balanceDue : '');
     setManualMode('NEFT');
     setManualReference('');
-    setManualDate(new Date().toISOString().split('T')[0]);
+    setManualDate(localDateISO());
     setIsRecordModalOpen(true);
   };
 
@@ -231,8 +234,9 @@ export const PaymentsPage: React.FC = () => {
     }
   };
 
-  const handleSubmitManualPayment = (e: React.FormEvent) => {
+  const handleSubmitManualPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (savingPayment) return;
 
     const selectedInv = invoices.find((i) => i.id === manualInvoiceId);
     if (!selectedInv) {
@@ -253,22 +257,29 @@ export const PaymentsPage: React.FC = () => {
       return;
     }
 
-    const created = recordManualPayment({
-      invoiceId: selectedInv.id,
-      amount: numAmount,
-      paymentMode: manualMode,
-      referenceNo: manualReference.trim() || undefined,
-      date: manualDate,
-    });
+    setSavingPayment(true);
+    try {
+      const created = await recordManualPayment({
+        invoiceId: selectedInv.id,
+        amount: numAmount,
+        paymentMode: manualMode,
+        referenceNo: manualReference.trim() || undefined,
+        date: manualDate,
+      });
 
-    if (created) {
-      const remaining = selectedInv.balanceDue - numAmount;
-      toast.success(
-        `Payment of ${formatINR(numAmount)} recorded for ${selectedInv.invoiceNo}. Remaining: ${formatINR(remaining)}.`
-      );
-      setIsRecordModalOpen(false);
-    } else {
-      toast.error('Failed to record payment');
+      if (created) {
+        const remaining = selectedInv.balanceDue - numAmount;
+        toast.success(
+          `Payment of ${formatINR(numAmount)} recorded for ${selectedInv.invoiceNo}. Remaining: ${formatINR(remaining)}.`
+        );
+        setIsRecordModalOpen(false);
+      } else {
+        toast.error('Failed to record payment');
+      }
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSavingPayment(false);
     }
   };
 
@@ -1064,7 +1075,7 @@ export const PaymentsPage: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" size="md" className="rounded-xl font-semibold">
+              <Button type="submit" variant="primary" size="md" disabled={savingPayment} className="rounded-xl font-semibold">
                 Confirm & Post Payment
               </Button>
             </div>

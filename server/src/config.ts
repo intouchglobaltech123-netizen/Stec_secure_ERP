@@ -3,9 +3,12 @@ import path from 'node:path';
 
 const env = process.env;
 
+// Railway sets RAILWAY_ENVIRONMENT_NAME on every deployment
+const isProduction = env.NODE_ENV === 'production' || Boolean(env.RAILWAY_ENVIRONMENT_NAME);
+
 export const config = {
   port: Number(env.PORT) || 8080,
-  isProduction: env.NODE_ENV === 'production',
+  isProduction,
 
   // Railway's Postgres plugin provides DATABASE_URL. Without it, an embedded Postgres (PGlite)
   // stores data in .data/pglite — for local development only.
@@ -13,7 +16,8 @@ export const config = {
   localDataDir: env.LOCAL_DATA_DIR || path.resolve(process.cwd(), '.data', 'pglite'),
 
   // First start on an empty database: load the demo data (true) or create only the CEO account (false)
-  seedDemoData: env.SEED_DEMO_DATA === 'true',
+  // (defaults to demo data for local development, to a clean start in production)
+  seedDemoData: env.SEED_DEMO_DATA ? env.SEED_DEMO_DATA === 'true' : !isProduction,
   initialCeo: {
     name: env.INITIAL_CEO_NAME || 'CEO',
     phone: env.INITIAL_CEO_PHONE || '',

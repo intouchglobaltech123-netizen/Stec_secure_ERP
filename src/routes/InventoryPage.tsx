@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { formatINR, formatDate } from '@/lib/utils';
 import { ServiceCategory, SERVICE_CATEGORIES, Product, Vendor, SerialUnit, SerialStatus } from '@/lib/stecsecure-types';
 import { generateInternalBarcode, copyBarcodeToClipboard } from '@/lib/barcode-utils';
+import { errorMessage } from '@/lib/api';
 import { VendorModal } from '@/components/inventory/VendorModal';
 import { ProductModal } from '@/components/inventory/ProductModal';
 import { AddStockModal } from '@/components/inventory/AddStockModal';
@@ -57,6 +58,8 @@ export const InventoryPage: React.FC = () => {
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [selectedVendorForEdit, setSelectedVendorForEdit] = useState<Vendor | null>(null);
   const [inspectingSerial, setInspectingSerial] = useState<SerialUnit | null>(null);
+  // Product id whose barcode is being generated (one at a time, so two products never get the same code)
+  const [generatingBarcodeFor, setGeneratingBarcodeFor] = useState<string | null>(null);
 
   // Filters for Serial Tracker
   const [serialSearch, setSerialSearch] = useState('');
@@ -618,25 +621,33 @@ export const InventoryPage: React.FC = () => {
                           {isManagement && (
                             <button
                               type="button"
-                              onClick={(e) => {
+                              disabled={generatingBarcodeFor !== null}
+                              onClick={async (e) => {
                                 e.stopPropagation();
                                 const code = generateInternalBarcode(products);
-                                updateProduct(prod.id, { barcode: code });
-                                toast.success(
-                                  `Generated barcode ${code} for "${prod.name}" — you can print/write this on the item for future scanning.`,
-                                  {
-                                    duration: 10000,
-                                    action: {
-                                      label: 'Copy Barcode',
-                                      onClick: () => {
-                                        copyBarcodeToClipboard(code);
-                                        toast.success(`Copied "${code}" to clipboard!`);
+                                setGeneratingBarcodeFor(prod.id);
+                                try {
+                                  await updateProduct(prod.id, { barcode: code });
+                                  toast.success(
+                                    `Generated barcode ${code} for "${prod.name}" — you can print/write this on the item for future scanning.`,
+                                    {
+                                      duration: 10000,
+                                      action: {
+                                        label: 'Copy Barcode',
+                                        onClick: () => {
+                                          copyBarcodeToClipboard(code);
+                                          toast.success(`Copied "${code}" to clipboard!`);
+                                        },
                                       },
-                                    },
-                                  }
-                                );
+                                    }
+                                  );
+                                } catch (err) {
+                                  toast.error(errorMessage(err));
+                                } finally {
+                                  setGeneratingBarcodeFor(null);
+                                }
                               }}
-                              className="text-[10px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2 py-0.5 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                              className="text-[10px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2 py-0.5 rounded transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                             >
                               <Sparkles className="w-2.5 h-2.5" />
                               Generate Barcode Now

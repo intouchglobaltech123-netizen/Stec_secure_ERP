@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
+import { errorMessage } from '@/lib/api';
 import {
   Product,
   Vendor,
@@ -72,16 +74,22 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
 
   // STEP 3: Purchase Details State
   const [purchaseDate, setPurchaseDate] = useState(
-    new Date().toISOString().split('T')[0]
+    localDateISO()
   );
   const [purchaseCost, setPurchaseCost] = useState('');
 
   // STEP 4: Serial Numbers State
   const [bulkSerialsText, setBulkSerialsText] = useState('');
 
-  // Initialize on open
+  const [saving, setSaving] = useState(false);
+
+  // Initialize on open — only when the modal opens, not when `products` changes
+  // while it is open (e.g. after the inline-created product comes back from the server)
+  const wasOpenRef = useRef(false);
   useEffect(() => {
-    if (isOpen) {
+    const justOpened = isOpen && !wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+    if (justOpened) {
       if (defaultProductId) {
         const prod = products.find((p) => p.id === defaultProductId);
         if (prod) {
@@ -102,7 +110,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
       setSelectedVendor(null);
       setVendorSearch('');
       setIsCreatingVendor(false);
-      setPurchaseDate(new Date().toISOString().split('T')[0]);
+      setPurchaseDate(localDateISO());
       setPurchaseCost('');
       setBulkSerialsText('');
     }
@@ -226,61 +234,21 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
   };
 
   // Master confirmation submit handler
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
 
     // 1. Validate Product
-    let finalProductId = selectedProduct?.id;
-    let finalProductName = selectedProduct?.name || '';
-    let generatedInternalCode: string | null = null;
-
-    if (!selectedProduct) {
-      if (!isCreatingProduct || !newProductName.trim()) {
-        toast.error('Please select an existing product or fill in the new product details');
-        return;
-      }
-
-      let barcodeToAssign: string | undefined = undefined;
-      if (newProductBarcode.trim()) {
-        barcodeToAssign = newProductBarcode.trim();
-      } else if (generateInternalBarcodeChecked) {
-        barcodeToAssign = generateInternalBarcode(products);
-        generatedInternalCode = barcodeToAssign;
-      }
-
-      // Create new product inline
-      const createdProd = addProduct({
-        name: newProductName.trim(),
-        category: newProductCategory,
-        hsnSac: newProductHsn.trim() || undefined,
-        unit: newProductUnit.trim() || 'Nos',
-        defaultRate: Number(newProductRate) || 0,
-        gstRate: Number(newProductGst) || 18,
-        barcode: barcodeToAssign,
-      });
-      finalProductId = createdProd.id;
-      finalProductName = createdProd.name;
+    if (!selectedProduct && (!isCreatingProduct || !newProductName.trim())) {
+      toast.error('Please select an existing product or fill in the new product details');
+      return;
     }
 
     // 2. Validate Vendor
-    let finalVendorId = selectedVendor?.id;
-    let finalVendorName = selectedVendor?.name || 'Direct Supplier';
-
-    if (!selectedVendor) {
-      if (isCreatingVendor) {
-        if (!newVendorName.trim() || !newVendorPhone.trim() || !newVendorAddress.trim()) {
-          toast.error('Please enter vendor name, phone number, and address');
-          return;
-        }
-        // Create new vendor inline
-        const createdVend = addVendor({
-          name: newVendorName.trim(),
-          phone: newVendorPhone.trim(),
-          address: newVendorAddress.trim(),
-          gstin: newVendorGstin.trim() || undefined,
-        });
-        finalVendorId = createdVend.id;
-        finalVendorName = createdVend.name;
+    if (!selectedVendor && isCreatingVendor) {
+      if (!newVendorName.trim() || !newVendorPhone.trim() || !newVendorAddress.trim()) {
+        toast.error('Please enter vendor name, phone number, and address');
+        return;
       }
     }
 
@@ -290,44 +258,99 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
       return;
     }
 
-    // 4. Stock in all serials
-    const createdUnits = stockInSerials({
-      productId: finalProductId!,
-      serialNumbers: parsedSerials,
-      vendorId: finalVendorId,
-      purchaseDate,
-      purchaseCost: purchaseCost ? Number(purchaseCost) : undefined,
-    });
+    setSaving(true);
+    try {
+      let finalProductId = selectedProduct?.id;
+      let finalProductName = selectedProduct?.name || '';
+      let generatedInternalCode: string | null = null;
 
-    toast.success(
-      `Added ${createdUnits.length} unit(s) of "${finalProductName}" to stock from ${finalVendorName}.`
-    );
-    const skipped = parsedSerials.length - createdUnits.length;
-    if (skipped > 0) {
-      toast.warning(
-        `${skipped} serial number(s) skipped — already in stock records or entered twice.`
-      );
-    }
-
-    // TASK 3: If an internal barcode was generated, show clearly to the user
-    if (generatedInternalCode) {
-      const code = generatedInternalCode;
-      toast.success(
-        `Generated barcode ${code} for "${finalProductName}" — you can print/write this on the item for future scanning.`,
-        {
-          duration: 10000,
-          action: {
-            label: 'Copy Barcode',
-            onClick: () => {
-              copyBarcodeToClipboard(code);
-              toast.success(`Copied "${code}" to clipboard!`);
-            },
-          },
+      if (!selectedProduct) {
+        let barcodeToAssign: string | undefined = undefined;
+        if (newProductBarcode.trim()) {
+          barcodeToAssign = newProductBarcode.trim();
+        } else if (generateInternalBarcodeChecked) {
+          barcodeToAssign = generateInternalBarcode(products);
+          generatedInternalCode = barcodeToAssign;
         }
-      );
-    }
 
-    onClose();
+        // Create new product inline
+        const createdProd = await addProduct({
+          name: newProductName.trim(),
+          category: newProductCategory,
+          hsnSac: newProductHsn.trim() || undefined,
+          unit: newProductUnit.trim() || 'Nos',
+          defaultRate: Number(newProductRate) || 0,
+          gstRate: Number(newProductGst) || 18,
+          barcode: barcodeToAssign,
+        });
+        finalProductId = createdProd.id;
+        finalProductName = createdProd.name;
+        // Keep it selected so a retry after a later failure doesn't create it again
+        setSelectedProduct(createdProd);
+        setIsCreatingProduct(false);
+      }
+
+      let finalVendorId = selectedVendor?.id;
+      let finalVendorName = selectedVendor?.name || 'Direct Supplier';
+
+      if (!selectedVendor && isCreatingVendor) {
+        // Create new vendor inline
+        const createdVend = await addVendor({
+          name: newVendorName.trim(),
+          phone: newVendorPhone.trim(),
+          address: newVendorAddress.trim(),
+          gstin: newVendorGstin.trim() || undefined,
+        });
+        finalVendorId = createdVend.id;
+        finalVendorName = createdVend.name;
+        // Keep it selected so a retry after a later failure doesn't create it again
+        setSelectedVendor(createdVend);
+        setIsCreatingVendor(false);
+      }
+
+      // 4. Stock in all serials
+      const createdUnits = await stockInSerials({
+        productId: finalProductId!,
+        serialNumbers: parsedSerials,
+        vendorId: finalVendorId,
+        purchaseDate,
+        purchaseCost: purchaseCost ? Number(purchaseCost) : undefined,
+      });
+
+      toast.success(
+        `Added ${createdUnits.length} unit(s) of "${finalProductName}" to stock from ${finalVendorName}.`
+      );
+      const skipped = parsedSerials.length - createdUnits.length;
+      if (skipped > 0) {
+        toast.warning(
+          `${skipped} serial number(s) skipped — already in stock records or entered twice.`
+        );
+      }
+
+      // TASK 3: If an internal barcode was generated, show clearly to the user
+      if (generatedInternalCode) {
+        const code = generatedInternalCode;
+        toast.success(
+          `Generated barcode ${code} for "${finalProductName}" — you can print/write this on the item for future scanning.`,
+          {
+            duration: 10000,
+            action: {
+              label: 'Copy Barcode',
+              onClick: () => {
+                copyBarcodeToClipboard(code);
+                toast.success(`Copied "${code}" to clipboard!`);
+              },
+            },
+          }
+        );
+      }
+
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -1164,6 +1187,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
             variant="primary"
             size="md"
             disabled={
+              saving ||
               (!selectedProduct && (!isCreatingProduct || !newProductName.trim())) ||
               (!selectedVendor && isCreatingVendor && (!newVendorName.trim() || !newVendorPhone.trim() || !newVendorAddress.trim())) ||
               parsedSerials.length === 0

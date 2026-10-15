@@ -149,26 +149,10 @@ export const TechniciansPage: React.FC = () => {
                         {user.role}
                       </Badge>
 
-                      {/* Masked PIN with CEO reveal toggle */}
+                      {/* Login number (PINs are kept hashed on the server; the CEO resets them in Settings) */}
                       <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
                         <KeyRound className="w-3 h-3 text-slate-400" />
-                        <span className="font-mono text-xs text-slate-700">
-                          {isCeo && isPinRevealed ? user.pin : '••••'}
-                        </span>
-                        {isCeo && (
-                          <button
-                            type="button"
-                            onClick={(e) => toggleRevealPin(user.id, e)}
-                            title={isPinRevealed ? 'Hide PIN' : 'Reveal PIN (CEO Only)'}
-                            className="text-slate-400 hover:text-slate-800 cursor-pointer ml-1"
-                          >
-                            {isPinRevealed ? (
-                              <EyeOff className="w-3 h-3" />
-                            ) : (
-                              <Eye className="w-3 h-3" />
-                            )}
-                          </button>
-                        )}
+                        <span className="font-mono text-xs text-slate-700">{user.phone}</span>
                       </div>
                     </div>
 
@@ -269,18 +253,6 @@ export const TechniciansPage: React.FC = () => {
                       <span className="flex items-center gap-1">
                         <Mail className="w-3.5 h-3.5 text-slate-500" /> {selectedUser.email || `${selectedUser.name.toLowerCase().replace(/\s+/g, '.')}@stecsecure.com`}
                       </span>
-                      <span className="font-mono text-slate-500">
-                        PIN: {isCeo && revealedPins[selectedUser.id] ? selectedUser.pin : '••••'}
-                      </span>
-                      {isCeo && (
-                        <button
-                          type="button"
-                          onClick={(e) => toggleRevealPin(selectedUser.id, e)}
-                          className="text-xs text-orange-600 underline cursor-pointer font-semibold"
-                        >
-                          {revealedPins[selectedUser.id] ? 'Hide' : 'Reveal'}
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>

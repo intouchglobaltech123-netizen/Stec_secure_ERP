@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { RepairTicket, RepairStatus, RepairPath } from '@/lib/stecsecure-types';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,8 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
   const [showOverdueOnly, setShowOverdueOnly] = useState(false);
 
   // Computed metrics
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  // India date, recomputed each render so it rolls over at midnight
+  const todayStr = localDateISO();
 
   const overdueTickets = useMemo(() => {
     return visibleRepairTickets.filter(

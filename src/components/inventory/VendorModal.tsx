@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
+import { errorMessage } from '@/lib/api';
 import { Vendor } from '@/lib/stecsecure-types';
 import { X, Building2, Phone, MapPin, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ export const VendorModal: React.FC<VendorModalProps> = ({ isOpen, vendor, onClos
   const [address, setAddress] = useState('');
   const [gstin, setGstin] = useState('');
   const [contactPerson, setContactPerson] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (vendor) {
@@ -40,33 +42,40 @@ export const VendorModal: React.FC<VendorModalProps> = ({ isOpen, vendor, onClos
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim() || !address.trim()) {
       toast.error('Please enter vendor name, phone, and address');
       return;
     }
 
-    if (vendor) {
-      updateVendor(vendor.id, {
-        name: name.trim(),
-        phone: phone.trim(),
-        address: address.trim(),
-        gstin: gstin.trim() || undefined,
-        contactPerson: contactPerson.trim() || undefined,
-      });
-      toast.success(`Vendor ${name} updated.`);
-    } else {
-      const created = addVendor({
-        name: name.trim(),
-        phone: phone.trim(),
-        address: address.trim(),
-        gstin: gstin.trim() || undefined,
-        contactPerson: contactPerson.trim() || undefined,
-      });
-      toast.success(`Vendor ${created.name} registered.`);
+    setSaving(true);
+    try {
+      if (vendor) {
+        await updateVendor(vendor.id, {
+          name: name.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          gstin: gstin.trim() || undefined,
+          contactPerson: contactPerson.trim() || undefined,
+        });
+        toast.success(`Vendor ${name} updated.`);
+      } else {
+        const created = await addVendor({
+          name: name.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          gstin: gstin.trim() || undefined,
+          contactPerson: contactPerson.trim() || undefined,
+        });
+        toast.success(`Vendor ${created.name} registered.`);
+      }
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
     }
-    onClose();
   };
 
   return (
@@ -164,7 +173,7 @@ export const VendorModal: React.FC<VendorModalProps> = ({ isOpen, vendor, onClos
           <Button type="button" variant="secondary" size="md" onClick={onClose} className="rounded-xl">
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="md" className="rounded-xl font-semibold bg-orange-600 hover:bg-orange-700 text-white">
+          <Button type="submit" variant="primary" size="md" disabled={saving} className="rounded-xl font-semibold bg-orange-600 hover:bg-orange-700 text-white">
             <ShieldCheck className="w-4 h-4 mr-1.5" />
             {vendor ? 'Save Changes' : 'Add Vendor'}
           </Button>

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
+import { errorMessage } from '@/lib/api';
 import { RepairTicket, RepairStatus } from '@/lib/stecsecure-types';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
@@ -60,14 +62,14 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
   // Vendor form state
   const [selectedVendorId, setSelectedVendorId] = useState('');
   const [vendorSentDate, setVendorSentDate] = useState(
-    () => new Date().toISOString().split('T')[0]
+    () => localDateISO()
   );
   const [vendorExpectedReturnDate, setVendorExpectedReturnDate] = useState('');
   const [vendorRepairNotes, setVendorRepairNotes] = useState('');
 
   // Vendor return form state
   const [vendorActualReturnDate, setVendorActualReturnDate] = useState(
-    () => new Date().toISOString().split('T')[0]
+    () => localDateISO()
   );
   const [vendorReturnNotes, setVendorReturnNotes] = useState('');
 
@@ -78,6 +80,9 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
   // Write-off form state
   const [writeOffReason, setWriteOffReason] = useState('');
 
+  // Busy while a transition is being saved on the server
+  const [saving, setSaving] = useState(false);
+
   // Reset local state when ticket changes
   React.useEffect(() => {
     if (ticket) {
@@ -86,10 +91,10 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
       setAssignedTechId(ticket.inHouseRepairedByUserId || 'usr-tech-1');
       setInHouseNotes(ticket.inHouseRepairNotes || '');
       setSelectedVendorId(ticket.vendorId || vendors[0]?.id || '');
-      setVendorSentDate(ticket.vendorSentDate || new Date().toISOString().split('T')[0]);
+      setVendorSentDate(ticket.vendorSentDate || localDateISO());
       setVendorExpectedReturnDate(ticket.vendorExpectedReturnDate || '');
       setVendorRepairNotes(ticket.vendorRepairNotes || '');
-      setVendorActualReturnDate(ticket.vendorActualReturnDate || new Date().toISOString().split('T')[0]);
+      setVendorActualReturnDate(ticket.vendorActualReturnDate || localDateISO());
       setVendorReturnNotes(ticket.vendorRepairNotes || '');
       setReinstalledLocation(ticket.reinstalledLocation || '');
       setReinstallNotes('');
@@ -115,7 +120,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
   const isOverdue =
     ticket.status === 'SENT_TO_VENDOR' &&
     ticket.vendorExpectedReturnDate &&
-    new Date().toISOString().split('T')[0] > ticket.vendorExpectedReturnDate;
+    localDateISO() > ticket.vendorExpectedReturnDate;
 
   const overdueDays =
     isOverdue && ticket.vendorExpectedReturnDate
@@ -183,49 +188,70 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
   };
 
   // Transitions handlers
-  const handleMarkPickedUp = () => {
+  const handleMarkPickedUp = async () => {
     if (!isAssignedTechnician) {
       toast.error(`Only the assigned technician (${assignedTech?.name || 'assigned technician'}) can mark this unit as Picked Up`);
       return;
     }
-    transitionRepairTicket(ticket.id, 'PICKED_UP', {
-      note: genericNote.trim() || `Unit dismantled and collected from customer premises into transit by ${currentUser?.name || 'assigned technician'}.`,
-    });
-    toast.success('Ticket marked as Picked Up');
-    setActiveActionForm(null);
-    setGenericNote('');
+    setSaving(true);
+    try {
+      await transitionRepairTicket(ticket.id, 'PICKED_UP', {
+        note: genericNote.trim() || `Unit dismantled and collected from customer premises into transit by ${currentUser?.name || 'assigned technician'}.`,
+      });
+      toast.success('Ticket marked as Picked Up');
+      setActiveActionForm(null);
+      setGenericNote('');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleCheckInAtOffice = () => {
+  const handleCheckInAtOffice = async () => {
     if (!isManagement) {
       toast.error('Only Managers and CEO can check in units at the office');
       return;
     }
-    transitionRepairTicket(ticket.id, 'CHECKED_IN_AT_OFFICE', {
-      note: genericNote.trim() || 'Physical arrival confirmed at office service lab. Initial triage inspection completed.',
-    });
-    toast.success('Unit checked into office');
-    setActiveActionForm(null);
-    setGenericNote('');
+    setSaving(true);
+    try {
+      await transitionRepairTicket(ticket.id, 'CHECKED_IN_AT_OFFICE', {
+        note: genericNote.trim() || 'Physical arrival confirmed at office service lab. Initial triage inspection completed.',
+      });
+      toast.success('Unit checked into office');
+      setActiveActionForm(null);
+      setGenericNote('');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleStartInHouseRepair = () => {
+  const handleStartInHouseRepair = async () => {
     if (!isManagement) {
       toast.error('Only Managers and CEO can assign in-house repairs');
       return;
     }
     const tech = users.find((u) => u.id === assignedTechId);
-    transitionRepairTicket(ticket.id, 'IN_HOUSE_REPAIR', {
-      repairPath: 'IN_HOUSE',
-      inHouseRepairedByUserId: assignedTechId,
-      inHouseRepairNotes: inHouseNotes.trim() || 'Assigned for internal bench repair & diagnostic testing.',
-      note: `In-house repair initiated. Assigned to ${tech?.name || 'Technician'}. Notes: ${inHouseNotes.trim() || 'Diagnostic in progress'}`,
-    });
-    toast.success('In-house bench repair initiated');
-    setActiveActionForm(null);
+    setSaving(true);
+    try {
+      await transitionRepairTicket(ticket.id, 'IN_HOUSE_REPAIR', {
+        repairPath: 'IN_HOUSE',
+        inHouseRepairedByUserId: assignedTechId,
+        inHouseRepairNotes: inHouseNotes.trim() || 'Assigned for internal bench repair & diagnostic testing.',
+        note: `In-house repair initiated. Assigned to ${tech?.name || 'Technician'}. Notes: ${inHouseNotes.trim() || 'Diagnostic in progress'}`,
+      });
+      toast.success('In-house bench repair initiated');
+      setActiveActionForm(null);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSendToVendor = () => {
+  const handleSendToVendor = async () => {
     if (!isManagement) {
       toast.error('Only Managers and CEO can dispatch units to external vendors');
       return;
@@ -236,58 +262,86 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
     }
 
     const selVendor = vendors.find((v) => v.id === selectedVendorId);
-    transitionRepairTicket(ticket.id, 'SENT_TO_VENDOR', {
-      repairPath: 'VENDOR',
-      vendorId: selectedVendorId,
-      vendorSentDate,
-      vendorExpectedReturnDate,
-      vendorRepairNotes: vendorRepairNotes.trim() || undefined,
-      note: `Dispatched to vendor ${selVendor?.name || 'Vendor'}. Expected return date: ${vendorExpectedReturnDate}. ${vendorRepairNotes.trim()}`,
-    });
-    toast.success('Unit dispatched to vendor RMA');
-    setActiveActionForm(null);
+    setSaving(true);
+    try {
+      await transitionRepairTicket(ticket.id, 'SENT_TO_VENDOR', {
+        repairPath: 'VENDOR',
+        vendorId: selectedVendorId,
+        vendorSentDate,
+        vendorExpectedReturnDate,
+        vendorRepairNotes: vendorRepairNotes.trim() || undefined,
+        note: `Dispatched to vendor ${selVendor?.name || 'Vendor'}. Expected return date: ${vendorExpectedReturnDate}. ${vendorRepairNotes.trim()}`,
+      });
+      toast.success('Unit dispatched to vendor RMA');
+      setActiveActionForm(null);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleMarkInHouseFixed = () => {
+  const handleMarkInHouseFixed = async () => {
     if (!isManagement) {
       toast.error('Only Managers and CEO can mark repair as fixed and ready to reinstall');
       return;
     }
-    transitionRepairTicket(ticket.id, 'READY_TO_REINSTALL', {
-      inHouseRepairNotes: inHouseNotes.trim() || ticket.inHouseRepairNotes,
-      note: `In-house repair completed & soak-test passed. ${inHouseNotes.trim()}`,
-    });
-    toast.success('Unit marked Fixed and Ready to Reinstall');
-    setActiveActionForm(null);
+    setSaving(true);
+    try {
+      await transitionRepairTicket(ticket.id, 'READY_TO_REINSTALL', {
+        inHouseRepairNotes: inHouseNotes.trim() || ticket.inHouseRepairNotes,
+        note: `In-house repair completed & soak-test passed. ${inHouseNotes.trim()}`,
+      });
+      toast.success('Unit marked Fixed and Ready to Reinstall');
+      setActiveActionForm(null);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleMarkVendorReceived = () => {
+  const handleMarkVendorReceived = async () => {
     if (!isManagement) {
       toast.error('Only Managers and CEO can confirm vendor return delivery');
       return;
     }
-    transitionRepairTicket(ticket.id, 'READY_TO_REINSTALL', {
-      vendorActualReturnDate,
-      vendorRepairNotes: vendorReturnNotes.trim() || ticket.vendorRepairNotes,
-      note: `Received repaired unit from vendor on ${vendorActualReturnDate}. Tested OK. Notes: ${vendorReturnNotes.trim()}`,
-    });
-    toast.success('Received from vendor & verified working! Ready to reinstall.');
-    setActiveActionForm(null);
+    setSaving(true);
+    try {
+      await transitionRepairTicket(ticket.id, 'READY_TO_REINSTALL', {
+        vendorActualReturnDate,
+        vendorRepairNotes: vendorReturnNotes.trim() || ticket.vendorRepairNotes,
+        note: `Received repaired unit from vendor on ${vendorActualReturnDate}. Tested OK. Notes: ${vendorReturnNotes.trim()}`,
+      });
+      toast.success('Received from vendor & verified working! Ready to reinstall.');
+      setActiveActionForm(null);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleMarkWriteOff = () => {
+  const handleMarkWriteOff = async () => {
     if (!isManagement) {
       toast.error('Only Managers and CEO can write off hardware');
       return;
     }
-    transitionRepairTicket(ticket.id, 'WRITE_OFF', {
-      note: `Unit declared WRITE-OFF / Scrap: ${writeOffReason.trim() || 'Vendor deemed irreparable'}`,
-    });
-    toast.success('Unit marked as WRITE-OFF');
-    setActiveActionForm(null);
+    setSaving(true);
+    try {
+      await transitionRepairTicket(ticket.id, 'WRITE_OFF', {
+        note: `Unit declared WRITE-OFF / Scrap: ${writeOffReason.trim() || 'Vendor deemed irreparable'}`,
+      });
+      toast.success('Unit marked as WRITE-OFF');
+      setActiveActionForm(null);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleReinstallAtCustomer = () => {
+  const handleReinstallAtCustomer = async () => {
     if (!isAssignedTechnician) {
       toast.error(`Only the assigned technician (${assignedTech?.name || 'assigned technician'}) can record reinstallation at customer site`);
       return;
@@ -297,12 +351,19 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
       return;
     }
 
-    transitionRepairTicket(ticket.id, 'REINSTALLED', {
-      reinstalledLocation: reinstalledLocation.trim(),
-      note: `Reinstalled at customer site by ${currentUser?.name || 'assigned technician'}: ${reinstalledLocation.trim()}. Final testing verified. ${reinstallNotes.trim()}`,
-    });
-    toast.success('Unit reinstalled! Inventory Serial status restored to INSTALLED.');
-    setActiveActionForm(null);
+    setSaving(true);
+    try {
+      await transitionRepairTicket(ticket.id, 'REINSTALLED', {
+        reinstalledLocation: reinstalledLocation.trim(),
+        note: `Reinstalled at customer site by ${currentUser?.name || 'assigned technician'}: ${reinstalledLocation.trim()}. Final testing verified. ${reinstallNotes.trim()}`,
+      });
+      toast.success('Unit reinstalled! Inventory Serial status restored to INSTALLED.');
+      setActiveActionForm(null);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -521,6 +582,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
+                        disabled={saving}
                         onClick={handleMarkPickedUp}
                         className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
                       >
@@ -579,6 +641,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
+                        disabled={saving}
                         onClick={handleCheckInAtOffice}
                         className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
                       >
@@ -690,6 +753,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                       <div className="flex items-center gap-2 pt-1">
                         <Button
                           size="sm"
+                          disabled={saving}
                           onClick={handleStartInHouseRepair}
                           className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
                         >
@@ -776,6 +840,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                       <div className="flex items-center gap-2 pt-1">
                         <Button
                           size="sm"
+                          disabled={saving}
                           onClick={handleSendToVendor}
                           className="bg-rose-600 hover:bg-rose-700 text-white text-xs"
                         >
@@ -839,6 +904,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
+                        disabled={saving}
                         onClick={handleMarkInHouseFixed}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
                       >
@@ -955,6 +1021,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                       <div className="flex items-center gap-2 pt-1">
                         <Button
                           size="sm"
+                          disabled={saving}
                           onClick={handleMarkVendorReceived}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
                         >
@@ -990,6 +1057,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                       <div className="flex items-center gap-2 pt-1">
                         <Button
                           size="sm"
+                          disabled={saving}
                           onClick={handleMarkWriteOff}
                           className="bg-rose-600 hover:bg-rose-700 text-white text-xs"
                         >
@@ -1059,6 +1127,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                     <div className="flex items-center gap-2 pt-1">
                       <Button
                         size="sm"
+                        disabled={saving}
                         onClick={handleReinstallAtCustomer}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
                       >

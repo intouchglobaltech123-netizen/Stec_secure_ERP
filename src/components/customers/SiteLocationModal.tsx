@@ -5,6 +5,7 @@ import { X, MapPin, ExternalLink, Link2, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface SiteLocationModalProps {
@@ -22,6 +23,7 @@ export const SiteLocationModal: React.FC<SiteLocationModalProps> = ({
 }) => {
   const { updateCustomer } = useStecSecure();
   const [mapLink, setMapLink] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (customer) {
@@ -33,27 +35,34 @@ export const SiteLocationModal: React.FC<SiteLocationModalProps> = ({
 
   if (!isOpen || !customer) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanLink = mapLink.trim();
 
-    updateCustomer(customer.id, {
-      siteLocationMapLink: cleanLink || undefined,
-    });
-
-    toast.success(
-      cleanLink
-        ? `Site location map link saved for ${customer.name}.`
-        : `Site location link cleared for ${customer.name}.`
-    );
-
-    if (onSaved) {
-      onSaved({
-        ...customer,
+    setSaving(true);
+    try {
+      await updateCustomer(customer.id, {
         siteLocationMapLink: cleanLink || undefined,
       });
+
+      toast.success(
+        cleanLink
+          ? `Site location map link saved for ${customer.name}.`
+          : `Site location link cleared for ${customer.name}.`
+      );
+
+      if (onSaved) {
+        onSaved({
+          ...customer,
+          siteLocationMapLink: cleanLink || undefined,
+        });
+      }
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
     }
-    onClose();
   };
 
   const handleGenerateSearchLink = () => {
@@ -130,7 +139,7 @@ export const SiteLocationModal: React.FC<SiteLocationModalProps> = ({
             <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-xl">
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="sm" className="rounded-xl font-semibold">
+            <Button type="submit" variant="primary" size="sm" disabled={saving} className="rounded-xl font-semibold">
               Save Location Link
             </Button>
           </div>

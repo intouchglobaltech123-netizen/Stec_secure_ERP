@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { toast } from 'sonner';
+import { errorMessage } from '@/lib/api';
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -31,6 +32,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   const [siteLocationMapLink, setSiteLocationMapLink] = useState('');
   const [amcActive, setAmcActive] = useState(false);
   const [amcRenewalDate, setAmcRenewalDate] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (customer) {
@@ -58,8 +60,9 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
     if (!name.trim()) {
       toast.error('Customer name is required');
       return;
@@ -73,52 +76,59 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
       return;
     }
 
-    if (customer) {
-      updateCustomer(customer.id, {
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim() || undefined,
-        address: address.trim(),
-        contactPerson: contactPerson.trim() || undefined,
-        gstin: gstin.trim().toUpperCase() || undefined,
-        siteLocationMapLink: siteLocationMapLink.trim() || undefined,
-        amcActive,
-        amcRenewalDate: amcActive && amcRenewalDate ? amcRenewalDate : undefined,
-      });
+    setSaving(true);
+    try {
+      if (customer) {
+        await updateCustomer(customer.id, {
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim() || undefined,
+          address: address.trim(),
+          contactPerson: contactPerson.trim() || undefined,
+          gstin: gstin.trim().toUpperCase() || undefined,
+          siteLocationMapLink: siteLocationMapLink.trim() || undefined,
+          amcActive,
+          amcRenewalDate: amcActive && amcRenewalDate ? amcRenewalDate : undefined,
+        });
 
-      const updated = {
-        ...customer,
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim() || undefined,
-        address: address.trim(),
-        contactPerson: contactPerson.trim() || undefined,
-        gstin: gstin.trim().toUpperCase() || undefined,
-        siteLocationMapLink: siteLocationMapLink.trim() || undefined,
-        amcActive,
-        amcRenewalDate: amcActive && amcRenewalDate ? amcRenewalDate : undefined,
-      };
+        const updated = {
+          ...customer,
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim() || undefined,
+          address: address.trim(),
+          contactPerson: contactPerson.trim() || undefined,
+          gstin: gstin.trim().toUpperCase() || undefined,
+          siteLocationMapLink: siteLocationMapLink.trim() || undefined,
+          amcActive,
+          amcRenewalDate: amcActive && amcRenewalDate ? amcRenewalDate : undefined,
+        };
 
-      toast.success(`Customer ${name} updated successfully.`);
-      if (onSaved) onSaved(updated);
-    } else {
-      const created = addCustomer({
-        name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim() || undefined,
-        address: address.trim(),
-        contactPerson: contactPerson.trim() || undefined,
-        gstin: gstin.trim().toUpperCase() || undefined,
-        siteLocationMapLink: siteLocationMapLink.trim() || undefined,
-        amcActive,
-        amcRenewalDate: amcActive && amcRenewalDate ? amcRenewalDate : undefined,
-      });
+        toast.success(`Customer ${name} updated successfully.`);
+        if (onSaved) onSaved(updated);
+      } else {
+        const created = await addCustomer({
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim() || undefined,
+          address: address.trim(),
+          contactPerson: contactPerson.trim() || undefined,
+          gstin: gstin.trim().toUpperCase() || undefined,
+          siteLocationMapLink: siteLocationMapLink.trim() || undefined,
+          amcActive,
+          amcRenewalDate: amcActive && amcRenewalDate ? amcRenewalDate : undefined,
+        });
 
-      toast.success(`Customer ${created.name} (${created.id}) created.`);
-      if (onSaved) onSaved(created);
+        toast.success(`Customer ${created.name} (${created.id}) created.`);
+        if (onSaved) onSaved(created);
+      }
+
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
     }
-
-    onClose();
   };
 
   return (
@@ -310,7 +320,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
           <Button type="button" variant="outline" size="sm" onClick={onClose} className="rounded-xl">
             Cancel
           </Button>
-          <Button type="submit" variant="primary" size="sm" className="rounded-xl font-semibold">
+          <Button type="submit" variant="primary" size="sm" disabled={saving} className="rounded-xl font-semibold">
             {customer ? 'Save Changes' : 'Create Customer'}
           </Button>
         </div>

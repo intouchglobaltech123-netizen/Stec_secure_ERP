@@ -36,6 +36,7 @@ import { QuotationPreviewModal } from '@/components/quotations/QuotationPreviewM
 import { DeliveryChallanModal } from '@/components/jobs/DeliveryChallanModal';
 import { InvoicePreviewModal } from '@/components/invoices/InvoicePreviewModal';
 import { toast } from 'sonner';
+import { errorMessage } from '@/lib/api';
 
 export interface ProjectCommercialGroup {
   groupId: string;
@@ -119,6 +120,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
     return null;
   });
   const [invoiceMode, setInvoiceMode] = useState<'PREVIEW' | 'EDIT'>('PREVIEW');
+  const [converting, setConverting] = useState(false);
 
   const toggleGroupExpand = (groupId: string) => {
     setExpandedGroups((prev) => {
@@ -348,37 +350,51 @@ export const QuotationsInvoicesPage: React.FC = () => {
   const totalQuotationValue = quotations.reduce((sum, q) => sum + q.grandTotal, 0);
   const totalBalanceDue = invoices.reduce((sum, inv) => sum + inv.balanceDue, 0);
 
-  // Conversion Handlers
-  const handleConvertQuoteToChallan = (quot: Quotation, jobId?: string) => {
+  // Conversion Handlers (Phase 21: run on the server; one conversion at a time to avoid double clicks)
+  const handleConvertQuoteToChallan = async (quot: Quotation, jobId?: string) => {
+    if (converting) return;
+    setConverting(true);
     try {
-      const newDc = convertQuotationToDeliveryChallan(quot.id, jobId);
+      const newDc = await convertQuotationToDeliveryChallan(quot.id, jobId);
       toast.success(
         `Delivery Challan ${newDc.challanNo} created from Quotation ${quot.quotationNo} (${newDc.lineItems.length} physical goods, labor charges excluded).`
       );
       setPreviewChallan(newDc);
       setIsChallanModalOpen(true);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to convert quotation to delivery challan');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setConverting(false);
     }
   };
 
-  const handleConvertQuoteToInvoice = (quot: Quotation) => {
+  const handleConvertQuoteToInvoice = async (quot: Quotation) => {
+    if (converting) return;
+    setConverting(true);
     try {
-      const newInv = convertQuotationToInvoice(quot.id);
+      const newInv = await convertQuotationToInvoice(quot.id);
       toast.success(`Tax Invoice ${newInv.invoiceNo} raised from Quotation ${quot.quotationNo}.`);
+      setInvoiceMode('PREVIEW');
       setPreviewInvoice(newInv);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to convert quotation to invoice');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setConverting(false);
     }
   };
 
-  const handleConvertChallanToInvoice = (dc: DeliveryChallan) => {
+  const handleConvertChallanToInvoice = async (dc: DeliveryChallan) => {
+    if (converting) return;
+    setConverting(true);
     try {
-      const newInv = convertDeliveryChallanToInvoice(dc.id);
+      const newInv = await convertDeliveryChallanToInvoice(dc.id);
       toast.success(`Tax Invoice ${newInv.invoiceNo} generated from Delivery Challan ${dc.challanNo}.`);
+      setInvoiceMode('PREVIEW');
       setPreviewInvoice(newInv);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to convert delivery challan to invoice');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setConverting(false);
     }
   };
 
@@ -780,6 +796,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleConvertQuoteToChallan(quot, group.job?.id)}
+                                    disabled={converting}
                                     className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                                     title="Create Delivery Challan from Quotation items"
                                   >
@@ -850,6 +867,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleConvertChallanToInvoice(dc)}
+                                    disabled={converting}
                                     className="text-[10px] text-emerald-600 hover:text-emerald-800 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                                     title="Convert Delivery Challan to Tax Invoice"
                                   >
@@ -859,6 +877,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                   <button
                                     type="button"
                                     onClick={() => handleConvertQuoteToInvoice(quot)}
+                                    disabled={converting}
                                     className="text-[10px] text-emerald-600 hover:text-emerald-800 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                                     title="Convert Quotation directly to Tax Invoice"
                                   >
@@ -1060,6 +1079,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                   variant="primary"
                                                   className="h-7 text-xs flex-1 bg-orange-600 hover:bg-orange-700 text-white cursor-pointer shadow-2xs whitespace-nowrap"
                                                   onClick={() => handleConvertQuoteToChallan(quot, group.job?.id)}
+                                                  disabled={converting}
                                                 >
                                                   <Truck className="w-3 h-3 mr-1" /> &rarr; Challan
                                                 </Button>
@@ -1171,6 +1191,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                   variant="primary"
                                                   className="h-7 text-xs flex-1 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-2xs whitespace-nowrap"
                                                   onClick={() => handleConvertChallanToInvoice(dc)}
+                                                  disabled={converting}
                                                 >
                                                   <ReceiptText className="w-3 h-3 mr-1" /> &rarr; Invoice
                                                 </Button>
@@ -1182,6 +1203,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                               size="sm"
                                               variant="outline"
                                               className="h-7 text-xs w-full text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer"
+                                              disabled={converting}
                                               onClick={() => {
                                                 if (quot) {
                                                   handleConvertQuoteToChallan(quot, group.job?.id);
@@ -1299,6 +1321,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                               size="sm"
                                               variant="primary"
                                               className="h-7 text-xs w-full bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-2xs"
+                                              disabled={converting}
                                               onClick={() => {
                                                 if (dc) {
                                                   handleConvertChallanToInvoice(dc);
@@ -1573,6 +1596,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                 variant="primary"
                                 className="h-7 text-[11px] px-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                                 onClick={() => handleConvertChallanToInvoice(dc)}
+                                disabled={converting}
                               >
                                 &rarr; Raise Invoice
                               </Button>
@@ -1752,6 +1776,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
           setPreviewChallan(c);
         }}
         onConvertedToInvoice={(newInv) => {
+          setInvoiceMode('PREVIEW');
           setPreviewInvoice(newInv);
           setInvoiceMode('PREVIEW');
         }}

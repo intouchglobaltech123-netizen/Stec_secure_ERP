@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import {
   Job,
@@ -8,6 +8,7 @@ import {
   SERVICE_CATEGORIES,
   Enquiry,
   Quotation,
+  Customer,
 } from '@/lib/stecsecure-types';
 import {
   X,
@@ -31,6 +32,7 @@ import { Modal } from '@/components/ui/modal';
 import { QuotationBuilderModal } from '@/components/quotations/QuotationBuilderModal';
 import { QuotationPreviewModal } from '@/components/quotations/QuotationPreviewModal';
 import { formatDate } from '@/lib/utils';
+import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
 const JOB_FORM_DRAFT_KEY = 'stec_job_creation_draft_v1';
@@ -92,6 +94,11 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
   const [selectedQuotationId, setSelectedQuotationId] = useState<string>('');
   const [isQuotationBuilderOpen, setIsQuotationBuilderOpen] = useState(false);
   const [previewQuotation, setPreviewQuotation] = useState<Quotation | null>(null);
+
+  // Phase 21: actions run on the server — block double submits, and remember the customer
+  // this form already registered so a retry after a failed save does not add it twice
+  const [saving, setSaving] = useState(false);
+  const quickAddedCustomerRef = useRef<Customer | null>(null);
 
   // Audit Enquiry -> Linked Quotation handoff (Phase 12 Part C)
   const linkedEnquiryQuotation = React.useMemo(() => {
@@ -252,19 +259,43 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
 
   const currentCustomer = customers.find((c) => c.id === selectedCustomerId);
 
-  const handleSaveCustomerMapLink = () => {
+  const handleSaveCustomerMapLink = async () => {
     if (!siteLocationInput.trim()) return;
     if (selectedCustomerId) {
-      updateCustomer(selectedCustomerId, { siteLocationMapLink: siteLocationInput.trim() });
-      toast.success('Site location map link saved to customer profile.');
-      setSiteLocationInput('');
+      setSaving(true);
+      try {
+        await updateCustomer(selectedCustomerId, { siteLocationMapLink: siteLocationInput.trim() });
+        toast.success('Site location map link saved to customer profile.');
+        setSiteLocationInput('');
+      } catch (err) {
+        toast.error(errorMessage(err));
+      } finally {
+        setSaving(false);
+      }
     }
+  };
+
+  // Phase 21: add the quick-add customer once; a retry after a failed save reuses it
+  const registerQuickAddCustomer = async (): Promise<{ customer: Customer; isNew: boolean }> => {
+    const previous = quickAddedCustomerRef.current;
+    if (previous && previous.name === newCustName.trim() && previous.phone === newCustPhone.trim()) {
+      return { customer: previous, isNew: false };
+    }
+    const customer = await addCustomer({
+      name: newCustName.trim(),
+      phone: newCustPhone.trim(),
+      address: newCustAddress.trim(),
+      gstin: newCustGstin.trim() || undefined,
+      siteLocationMapLink: newCustSiteLocation.trim() || undefined,
+    });
+    quickAddedCustomerRef.current = customer;
+    return { customer, isNew: true };
   };
 
   // Quotation calculations
   const selectedQuotation = quotations.find((q) => q.id === selectedQuotationId);
 
-  const handleLaunchNewQuotation = () => {
+  const handleLaunchNewQuotation = async () => {
     let targetCustId = selectedCustomerId;
 
     if (isQuickAddCustomer) {
@@ -272,18 +303,20 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
         toast.error('Please enter customer name, phone, and address first');
         return;
       }
-      const created = addCustomer({
-        name: newCustName.trim(),
-        phone: newCustPhone.trim(),
-        address: newCustAddress.trim(),
-        gstin: newCustGstin.trim() || undefined,
-        siteLocationMapLink: newCustSiteLocation.trim() || undefined,
-      });
-      targetCustId = created.id;
+      setSaving(true);
+      try {
+        const { customer: created, isNew } = await registerQuickAddCustomer();
+        targetCustId = created.id;
 
-      setSelectedCustomerId(created.id);
-      setIsQuickAddCustomer(false);
-      toast.success(`Customer ${created.name} registered.`);
+        setSelectedCustomerId(created.id);
+        setIsQuickAddCustomer(false);
+        if (isNew) toast.success(`Customer ${created.name} registered.`);
+      } catch (err) {
+        toast.error(errorMessage(err));
+        return;
+      } finally {
+        setSaving(false);
+      }
     }
 
     if (!targetCustId) {
@@ -330,31 +363,17 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
     onClose();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
 
-    let targetCustomerId = selectedCustomerId;
-
+    // Validate everything before any server call, so a failed check never leaves a half-created customer
     if (isQuickAddCustomer) {
       if (!newCustName.trim() || !newCustPhone.trim() || !newCustAddress.trim()) {
         toast.error('Please enter customer name, phone, and address');
         return;
       }
-      const created = addCustomer({
-        name: newCustName.trim(),
-        phone: newCustPhone.trim(),
-        address: newCustAddress.trim(),
-        gstin: newCustGstin.trim() || undefined,
-        siteLocationMapLink: newCustSiteLocation.trim() || undefined,
-      });
-      targetCustomerId = created.id;
-
-      toast.success(`Customer ${created.name} added.`);
-    } else if (siteLocationInput.trim() && targetCustomerId) {
-      updateCustomer(targetCustomerId, { siteLocationMapLink: siteLocationInput.trim() });
-    }
-
-    if (!targetCustomerId) {
+    } else if (!selectedCustomerId) {
       toast.error('Please select or add a customer');
       return;
     }
@@ -371,38 +390,54 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
       return;
     }
 
-    const newJob = createJob({
-      type: jobType,
-      category,
-      customerNumber: targetCustomerId,
-      customerStatus,
-      assignedTeam,
-      teamLeadUserId: leadId,
-      enquiryId: initialEnquiry?.id,
-      quotationId: selectedQuotationId || linkedEnquiryQuotation?.id || undefined,
-      createdByUserId: currentUser?.id,
-      productModel: `${category} ${jobType === 'SERVICE' ? 'Service' : 'Installation'} Job`,
-      problemReported: problemReported.trim(),
-      serviceAmount: 0,
-      taxable: true,
-      status: 'ASSIGNED',
-    });
-
-
-
+    setSaving(true);
     try {
-      localStorage.removeItem(JOB_FORM_DRAFT_KEY);
-    } catch {
-      // ignore
-    }
+      let targetCustomerId = selectedCustomerId;
 
-    if (onJobCreated) {
-      onJobCreated(newJob);
-    }
+      if (isQuickAddCustomer) {
+        const { customer: created, isNew } = await registerQuickAddCustomer();
+        targetCustomerId = created.id;
 
-    const leadUser = users.find((u) => u.id === leadId);
-    toast.success(`Job ${newJob.jobNumber} assigned to ${leadUser?.name}.`);
-    onClose();
+        if (isNew) toast.success(`Customer ${created.name} added.`);
+      } else if (siteLocationInput.trim() && targetCustomerId) {
+        await updateCustomer(targetCustomerId, { siteLocationMapLink: siteLocationInput.trim() });
+      }
+
+      const newJob = await createJob({
+        type: jobType,
+        category,
+        customerNumber: targetCustomerId,
+        customerStatus,
+        assignedTeam,
+        teamLeadUserId: leadId,
+        enquiryId: initialEnquiry?.id,
+        quotationId: selectedQuotationId || linkedEnquiryQuotation?.id || undefined,
+        createdByUserId: currentUser?.id,
+        productModel: `${category} ${jobType === 'SERVICE' ? 'Service' : 'Installation'} Job`,
+        problemReported: problemReported.trim(),
+        serviceAmount: 0,
+        taxable: true,
+        status: 'ASSIGNED',
+      });
+
+      try {
+        localStorage.removeItem(JOB_FORM_DRAFT_KEY);
+      } catch {
+        // ignore
+      }
+
+      if (onJobCreated) {
+        onJobCreated(newJob);
+      }
+
+      const leadUser = users.find((u) => u.id === leadId);
+      toast.success(`Job ${newJob.jobNumber} assigned to ${leadUser?.name}.`);
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -593,6 +628,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                               <button
                                 type="button"
                                 onClick={handleSaveCustomerMapLink}
+                                disabled={saving}
                                 className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shrink-0 shadow-2xs cursor-pointer flex items-center gap-1"
                               >
                                 <Check className="w-3 h-3" /> Save Link
@@ -941,6 +977,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                     <button
                       type="button"
                       onClick={handleLaunchNewQuotation}
+                      disabled={saving}
                       className="w-full p-3 rounded-xl border border-dashed border-orange-300 bg-white hover:bg-orange-50/40 text-left transition-all cursor-pointer flex items-center justify-between group"
                     >
                       <div className="flex items-center gap-2.5">
@@ -975,7 +1012,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
             <Button type="button" variant="secondary" size="md" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="md">
+            <Button type="submit" variant="primary" size="md" disabled={saving}>
               <ShieldCheck className="w-4 h-4 mr-1.5" />
               Create & Assign {jobType === 'SERVICE' ? 'Service' : 'Installation'} Job
             </Button>

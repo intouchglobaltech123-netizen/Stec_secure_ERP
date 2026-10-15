@@ -1,24 +1,48 @@
 import React, { useState } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
-import { UserRole } from '@/lib/stecsecure-types';
-import { Shield, Lock, UserCheck, KeyRound, AlertCircle, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { KeyRound, AlertCircle, ArrowRight, Phone, Loader2 } from 'lucide-react';
 import { COMPANY_LOGO_SRC } from '@/components/layout/AppShell';
 import { toast } from 'sonner';
 import { DEMO_MODE } from '@/lib/demo-mode';
+import { SEED_USERS } from '@/lib/seed-data';
+import { DEMO_ACCOUNT_PINS } from '@/lib/demo-accounts';
 
+// Phase 21: staff log in with their mobile number and 4-digit PIN, checked by the server
 export const LoginScreen: React.FC = () => {
-  const { users, loginWithPin, loginAsUser } = useStecSecure();
+  const { login } = useStecSecure();
+  const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const phoneDigits = phone.replace(/\D/g, '').slice(-10);
+  const phoneValid = phoneDigits.length === 10;
+
+  const submit = async (phoneToSubmit: string, pinToSubmit: string) => {
+    if (submitting) return;
+    if (phoneToSubmit.replace(/\D/g, '').length < 10) {
+      setError('Enter your 10-digit mobile number first.');
+      setPin('');
+      return;
+    }
+    setSubmitting(true);
+    const res = await login(phoneToSubmit, pinToSubmit);
+    setSubmitting(false);
+    if (res.success) {
+      toast.success('Logged in successfully.');
+    } else {
+      setError(res.message || 'Wrong phone number or PIN.');
+      setPin('');
+    }
+  };
 
   const handleKeypadPress = (digit: string) => {
-    if (pin.length < 4) {
+    if (pin.length < 4 && !submitting) {
       const newPin = pin + digit;
       setPin(newPin);
       setError(null);
       if (newPin.length === 4) {
-        submitPin(newPin);
+        void submit(phone, newPin);
       }
     }
   };
@@ -28,20 +52,10 @@ export const LoginScreen: React.FC = () => {
     setError(null);
   };
 
-  const submitPin = (pinToSubmit: string) => {
-    const res = loginWithPin(pinToSubmit);
-    if (res.success) {
-      toast.success('Logged in successfully.');
-    } else {
-      setError(res.message || 'Invalid PIN');
-      setPin('');
-      toast.error(DEMO_MODE ? 'Invalid PIN. Please try again or click a demo profile.' : 'Invalid PIN. Please try again.');
-    }
-  };
-
-  const handleQuickLogin = (userId: string, userName: string, role: string) => {
-    loginAsUser(userId);
-    toast.success(`Logged in as ${userName} (${role})`);
+  const handleDemoLogin = (demoPhone: string, demoPin: string) => {
+    setPhone(demoPhone);
+    setPin(demoPin);
+    void submit(demoPhone, demoPin);
   };
 
   return (
@@ -75,19 +89,39 @@ export const LoginScreen: React.FC = () => {
           </p>
         </div>
 
-        {/* PIN Login Card */}
-        <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-xl space-y-6 border border-slate-200 text-slate-900">
+        {/* Phone + PIN Login Card */}
+        <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-xl space-y-5 border border-slate-200 text-slate-900">
           <div className="text-center space-y-1">
             <h2 className="text-base font-bold text-slate-900 flex items-center justify-center gap-2 font-display">
-              <KeyRound className="w-4 h-4 text-orange-600" /> Enter 4-Digit Security PIN
+              <KeyRound className="w-4 h-4 text-orange-600" /> Staff Login
             </h2>
-            <p className="text-xs text-slate-500">
-              Access the command console with your assigned PIN
-            </p>
+            <p className="text-xs text-slate-500">Enter your mobile number, then your 4-digit PIN</p>
+          </div>
+
+          <div>
+            <label htmlFor="login-phone" className="block text-xs font-semibold text-slate-700 mb-1">
+              Mobile number
+            </label>
+            <div className="relative">
+              <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                id="login-phone"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                placeholder="98xxxxxxxx"
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  setError(null);
+                }}
+                className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-300 bg-white text-base font-mono tracking-wide text-slate-900 focus:outline-none focus:border-orange-500"
+              />
+            </div>
           </div>
 
           {/* PIN Dots Indicator */}
-          <div className="flex justify-center items-center gap-4 py-2">
+          <div className="flex justify-center items-center gap-4 py-1">
             {[0, 1, 2, 3].map((idx) => {
               const isFilled = pin.length > idx;
               return (
@@ -116,8 +150,9 @@ export const LoginScreen: React.FC = () => {
               <button
                 key={digit}
                 type="button"
+                disabled={submitting}
                 onClick={() => handleKeypadPress(digit)}
-                className="h-12 rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 text-lg font-bold text-slate-800 border border-slate-200 transition-all flex items-center justify-center cursor-pointer shadow-2xs font-mono"
+                className="h-12 rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 text-lg font-bold text-slate-800 border border-slate-200 transition-all flex items-center justify-center cursor-pointer shadow-2xs font-mono disabled:opacity-50"
               >
                 {digit}
               </button>
@@ -131,81 +166,48 @@ export const LoginScreen: React.FC = () => {
             </button>
             <button
               type="button"
+              disabled={submitting}
               onClick={() => handleKeypadPress('0')}
-              className="h-12 rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 text-lg font-bold text-slate-800 border border-slate-200 transition-all flex items-center justify-center cursor-pointer shadow-2xs font-mono"
+              className="h-12 rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 text-lg font-bold text-slate-800 border border-slate-200 transition-all flex items-center justify-center cursor-pointer shadow-2xs font-mono disabled:opacity-50"
             >
               0
             </button>
             <button
               type="button"
-              disabled={pin.length !== 4}
-              onClick={() => submitPin(pin)}
+              aria-label="Log in"
+              disabled={pin.length !== 4 || !phoneValid || submitting}
+              onClick={() => void submit(phone, pin)}
               className="h-12 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-30 disabled:pointer-events-none active:scale-95 text-xs font-semibold text-white transition-all flex items-center justify-center cursor-pointer shadow-sm shadow-orange-500/25"
             >
-              <ArrowRight className="w-5 h-5" />
+              {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
             </button>
           </div>
 
-          {/* One-click personas (with their PINs) exist only in demo mode */}
+          <p className="text-center text-[11px] text-slate-500">
+            Forgot your PIN? Ask the CEO to reset it in Settings → Staff Accounts.
+          </p>
+
+          {/* Demo logins (demo data only) */}
           {DEMO_MODE && (
-          <>
-          <div className="relative py-1">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-3 text-slate-500 font-bold tracking-wider text-[10px]">
-                Or One-Click Demo Login
-              </span>
-            </div>
-          </div>
-
-          {/* Quick Demo Personas */}
-          <div className="space-y-2">
-            {users.map((u) => {
-              const roleColor =
-                u.role === 'CEO'
-                  ? 'border-orange-200 hover:border-orange-300 bg-orange-50/40 text-orange-950'
-                  : u.role === 'MANAGER'
-                  ? 'border-blue-200 hover:border-blue-300 bg-blue-50/40 text-blue-950'
-                  : 'border-emerald-200 hover:border-emerald-300 bg-emerald-50/40 text-emerald-950';
-
-              const roleBadge =
-                u.role === 'CEO'
-                  ? 'bg-orange-100 text-orange-800 border-orange-200'
-                  : u.role === 'MANAGER'
-                  ? 'bg-blue-100 text-blue-800 border-blue-200'
-                  : 'bg-emerald-100 text-emerald-800 border-emerald-200';
-
-              return (
+            <div className="space-y-2 pt-1">
+              <div className="text-center text-[10px] uppercase font-bold tracking-wider text-slate-500">
+                Demo accounts
+              </div>
+              {SEED_USERS.filter((u) => DEMO_ACCOUNT_PINS[u.id]).map((u) => (
                 <button
                   key={u.id}
                   type="button"
-                  onClick={() => handleQuickLogin(u.id, u.name, u.role)}
-                  className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all text-left group cursor-pointer shadow-2xs ${roleColor}`}
+                  disabled={submitting}
+                  onClick={() => handleDemoLogin(u.phone, DEMO_ACCOUNT_PINS[u.id])}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-orange-300 bg-slate-50/60 transition-all text-left cursor-pointer text-xs"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-800 shadow-2xs">
-                      {u.name.charAt(0)}
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
-                        {u.name}
-                      </div>
-                      <div className="text-[11px] text-slate-500">PIN: {u.pin}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${roleBadge}`}>
-                      {u.role}
-                    </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-orange-600 transition-colors" />
-                  </div>
+                  <span className="font-bold text-slate-900">{u.name}</span>
+                  <span className="text-slate-500 font-mono">
+                    {u.phone} · PIN {DEMO_ACCOUNT_PINS[u.id]} · {u.role}
+                  </span>
                 </button>
-              );
-            })}
-          </div>
-          </>
+              ))}
+            </div>
           )}
         </div>
 

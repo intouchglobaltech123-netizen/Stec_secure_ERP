@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { formatDate } from '@/lib/utils';
 import { exportElementToPdfWithToast } from '@/lib/pdf-generator';
+import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface DeliveryChallanModalProps {
@@ -75,6 +76,10 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
     ]
   );
 
+  // Phase 21: server actions in flight (blocks double submits)
+  const [saving, setSaving] = useState(false);
+  const [converting, setConverting] = useState(false);
+
   useEffect(() => {
     if (initialChallan) {
       setActiveChallan(initialChallan);
@@ -116,8 +121,9 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
     handleUpdateItem(index, { itemDescription: productName });
   };
 
-  const handleCreateOrUpdate = (e: React.FormEvent) => {
+  const handleCreateOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
 
     const validItems = lineItems.filter((item) => item.itemDescription.trim());
     if (validItems.length === 0) {
@@ -125,49 +131,59 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
       return;
     }
 
-    if (activeChallan) {
-      // Independent edit of existing challan
-      updateDeliveryChallan(activeChallan.id, {
-        customerNumber: customerId,
-        lineItems: validItems,
-        transportedBy,
-      });
-      const updated = {
-        ...activeChallan,
-        customerNumber: customerId,
-        lineItems: validItems,
-        transportedBy,
-      };
-      setActiveChallan(updated);
-      toast.success(`Delivery Challan ${activeChallan.challanNo} updated.`);
-      if (onChallanSaved) onChallanSaved(updated);
-      setMode('PREVIEW');
-    } else {
-      const created = createDeliveryChallan({
-        customerNumber: customerId,
-        lineItems: validItems,
-        transportedBy,
-        jobId,
-        quotationId,
-      });
+    setSaving(true);
+    try {
+      if (activeChallan) {
+        // Independent edit of existing challan
+        await updateDeliveryChallan(activeChallan.id, {
+          customerNumber: customerId,
+          lineItems: validItems,
+          transportedBy,
+        });
+        const updated = {
+          ...activeChallan,
+          customerNumber: customerId,
+          lineItems: validItems,
+          transportedBy,
+        };
+        setActiveChallan(updated);
+        toast.success(`Delivery Challan ${activeChallan.challanNo} updated.`);
+        if (onChallanSaved) onChallanSaved(updated);
+        setMode('PREVIEW');
+      } else {
+        const created = await createDeliveryChallan({
+          customerNumber: customerId,
+          lineItems: validItems,
+          transportedBy,
+          jobId,
+          quotationId,
+        });
 
-      toast.success(`Delivery Challan ${created.challanNo} created.`);
-      setActiveChallan(created);
-      if (onChallanSaved) onChallanSaved(created);
-      setMode('PREVIEW');
+        toast.success(`Delivery Challan ${created.challanNo} created.`);
+        setActiveChallan(created);
+        if (onChallanSaved) onChallanSaved(created);
+        setMode('PREVIEW');
+      }
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleConvertToInvoice = () => {
-    if (!activeChallan) return;
+  const handleConvertToInvoice = async () => {
+    if (!activeChallan || converting) return;
+    setConverting(true);
     try {
-      const inv = convertDeliveryChallanToInvoice(activeChallan.id);
+      const inv = await convertDeliveryChallanToInvoice(activeChallan.id);
       toast.success(`Tax Invoice ${inv.invoiceNo} created from Delivery Challan ${activeChallan.challanNo}`);
       if (onConvertedToInvoice) {
         onConvertedToInvoice(inv);
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to convert delivery challan to invoice');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setConverting(false);
     }
   };
 
@@ -344,7 +360,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                   Cancel
                 </Button>
               )}
-              <Button type="submit" variant="primary" size="md" className="bg-orange-600 hover:bg-orange-700 text-white">
+              <Button type="submit" variant="primary" size="md" disabled={saving} className="bg-orange-600 hover:bg-orange-700 text-white">
                 <FileText className="w-4 h-4 mr-1.5" />
                 {activeChallan ? 'Save Challan Changes' : 'Generate Challan'}
               </Button>
@@ -511,6 +527,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                       variant="success"
                       size="sm"
                       onClick={handleConvertToInvoice}
+                      disabled={converting}
                       className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     >
                       <ReceiptText className="w-3.5 h-3.5" />

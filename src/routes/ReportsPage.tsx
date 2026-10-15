@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { SERVICE_CATEGORIES, ServiceCategory, Job, Customer, User } from '@/lib/stecsecure-types';
 import {
@@ -57,7 +58,7 @@ function exportToCSV(filename: string, headers: string[], rows: (string | number
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute('download', `${filename}_${localDateISO()}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { Quotation, LineItem, Customer } from '@/lib/stecsecure-types';
 import {
@@ -21,6 +22,7 @@ import { formatINR, formatDate } from '@/lib/utils';
 import { CANARA_BANK_DETAILS } from '@/lib/seed-data';
 import { Modal } from '@/components/ui/modal';
 import { toast } from 'sonner';
+import { errorMessage } from '@/lib/api';
 
 interface QuotationBuilderModalProps {
   isOpen: boolean;
@@ -52,10 +54,11 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
   const [newCustPhone, setNewCustPhone] = useState('');
   const [newCustAddress, setNewCustAddress] = useState('');
   const [newCustGstin, setNewCustGstin] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Quotation Meta
   const [quotationDate, setQuotationDate] = useState<string>(
-    quotationToEdit?.date || new Date().toISOString().split('T')[0]
+    quotationToEdit?.date || localDateISO()
   );
   const [validityDays, setValidityDays] = useState<number>(quotationToEdit?.validityDays || 15);
 
@@ -216,7 +219,8 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
     hsnMap[code].sgst += item.sgst;
   });
 
-  const handleSaveQuotation = (status: 'DRAFT' | 'SENT') => {
+  const handleSaveQuotation = async (status: 'DRAFT' | 'SENT') => {
+    if (saving) return;
     let finalCustId = customerId;
 
     if (isQuickAdd) {
@@ -224,23 +228,53 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
         toast.error('Please complete customer details');
         return;
       }
-      const createdCust = addCustomer({
-        name: newCustName.trim(),
-        phone: newCustPhone.trim(),
-        address: newCustAddress.trim(),
-        gstin: newCustGstin.trim() || undefined,
-      });
-      finalCustId = createdCust.id;
     }
 
-    if (!finalCustId) {
+    if (!isQuickAdd && !finalCustId) {
       toast.error('Please select or add a customer');
       return;
     }
 
-    if (quotationToEdit) {
-      // In-place update: preserves same quotationNo and same id, no duplicate created
-      const updated = updateQuotation(quotationToEdit.id, {
+    setSaving(true);
+    try {
+      if (isQuickAdd) {
+        const createdCust = await addCustomer({
+          name: newCustName.trim(),
+          phone: newCustPhone.trim(),
+          address: newCustAddress.trim(),
+          gstin: newCustGstin.trim() || undefined,
+        });
+        finalCustId = createdCust.id;
+        // Customer now exists — select it so a retry after a failed save doesn't add it twice
+        setCustomerId(createdCust.id);
+        setIsQuickAdd(false);
+      }
+
+      if (quotationToEdit) {
+        // In-place update: preserves same quotationNo and same id, no duplicate created
+        const updated = await updateQuotation(quotationToEdit.id, {
+          customerNumber: finalCustId,
+          date: quotationDate,
+          validityDays,
+          lineItems,
+          termsAndConditions: terms,
+          totalAmount,
+          totalCgst,
+          totalSgst,
+          roundOff,
+          grandTotal,
+          bankDetails: CANARA_BANK_DETAILS,
+          status,
+          enquiryId: quotationToEdit.enquiryId || initialEnquiryId,
+        });
+
+        toast.success(`Quotation ${quotationToEdit.quotationNo} updated successfully (no duplicate created).`);
+        if (onQuotationSaved) onQuotationSaved(updated);
+        onClose();
+        return;
+      }
+
+      const created = await createQuotation({
         customerNumber: finalCustId,
         date: quotationDate,
         validityDays,
@@ -253,34 +287,17 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
         grandTotal,
         bankDetails: CANARA_BANK_DETAILS,
         status,
-        enquiryId: quotationToEdit.enquiryId || initialEnquiryId,
+        enquiryId: initialEnquiryId,
       });
 
-      toast.success(`Quotation ${quotationToEdit.quotationNo} updated successfully (no duplicate created).`);
-      if (onQuotationSaved) onQuotationSaved(updated);
+      toast.success(`Quotation ${created.quotationNo} generated.`);
+      if (onQuotationSaved) onQuotationSaved(created);
       onClose();
-      return;
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
     }
-
-    const created = createQuotation({
-      customerNumber: finalCustId,
-      date: quotationDate,
-      validityDays,
-      lineItems,
-      termsAndConditions: terms,
-      totalAmount,
-      totalCgst,
-      totalSgst,
-      roundOff,
-      grandTotal,
-      bankDetails: CANARA_BANK_DETAILS,
-      status,
-      enquiryId: initialEnquiryId,
-    });
-
-    toast.success(`Quotation ${created.quotationNo} generated.`);
-    if (onQuotationSaved) onQuotationSaved(created);
-    onClose();
   };
 
   return (
@@ -662,6 +679,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
               variant="outline"
               size="md"
               onClick={() => handleSaveQuotation('DRAFT')}
+              disabled={saving}
             >
               {quotationToEdit ? 'Save Changes as Draft' : 'Save Draft'}
             </Button>
@@ -670,6 +688,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
               variant="primary"
               size="md"
               onClick={() => handleSaveQuotation('SENT')}
+              disabled={saving}
             >
               <FileSpreadsheet className="w-4 h-4 mr-1.5" />
               {quotationToEdit ? 'Update Quotation' : 'Save & Finalize Quotation'}

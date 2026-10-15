@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
+import { errorMessage } from '@/lib/api';
 import { formatINR, formatDateTime, formatDate } from '@/lib/utils';
 import {
   SERVICE_CATEGORIES,
@@ -67,6 +68,9 @@ export const DashboardPage: React.FC = () => {
     canResumeHold,
     isManagement,
   } = useStecSecure();
+
+  // Hold being resumed on the server (disables its button meanwhile)
+  const [resumingHoldId, setResumingHoldId] = useState<string | null>(null);
 
   const serviceJobs = visibleJobs.filter((j) => j.type === 'SERVICE');
   const installationJobs = visibleJobs.filter((j) => j.type === 'INSTALLATION');
@@ -896,9 +900,17 @@ export const DashboardPage: React.FC = () => {
                     <Button
                       size="sm"
                       variant="success"
-                      onClick={() => {
-                        resolveHoldEvent(hold.id);
-                        toast.success(`Hold cleared on ${job?.jobNumber}. Work resumed.`);
+                      disabled={resumingHoldId === hold.id}
+                      onClick={async () => {
+                        setResumingHoldId(hold.id);
+                        try {
+                          await resolveHoldEvent(hold.id);
+                          toast.success(`Hold cleared on ${job?.jobNumber}. Work resumed.`);
+                        } catch (err) {
+                          toast.error(errorMessage(err));
+                        } finally {
+                          setResumingHoldId(null);
+                        }
                       }}
                       className="shrink-0 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs"
                     >

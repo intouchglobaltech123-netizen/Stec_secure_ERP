@@ -37,7 +37,6 @@ export const SEED_USERS: User[] = [
     name: 'Santhosh',
     role: 'CEO',
     phone: '8148562605',
-    pin: '1111',
     email: 'stecsecure@gmail.com',
   },
   {
@@ -45,7 +44,6 @@ export const SEED_USERS: User[] = [
     name: 'Rajesh Verma',
     role: 'MANAGER',
     phone: '9840234567',
-    pin: '2222',
     email: 'rajesh.v@stecsecure.com',
   },
   {
@@ -53,7 +51,6 @@ export const SEED_USERS: User[] = [
     name: 'Anand Raj',
     role: 'TECHNICIAN',
     phone: '9840345678',
-    pin: '3331',
     email: 'anand.r@stecsecure.com',
   },
   {
@@ -61,7 +58,6 @@ export const SEED_USERS: User[] = [
     name: 'Vikram Singh',
     role: 'TECHNICIAN',
     phone: '9840456789',
-    pin: '3332',
     email: 'vikram.s@stecsecure.com',
   },
   {
@@ -69,7 +65,6 @@ export const SEED_USERS: User[] = [
     name: 'Karthik Selvan',
     role: 'TECHNICIAN',
     phone: '9840567890',
-    pin: '3333',
     email: 'karthik.s@stecsecure.com',
   },
 ];

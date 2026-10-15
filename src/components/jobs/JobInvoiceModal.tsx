@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { formatINR } from '@/lib/utils';
+import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface JobInvoiceModalProps {
@@ -26,6 +27,7 @@ export const JobInvoiceModal: React.FC<JobInvoiceModalProps> = ({
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'UPI' | 'NEFT' | 'CHEQUE' | 'PENDING'>('UPI');
   const [amountPaid, setAmountPaid] = useState<number>(0);
+  const [saving, setSaving] = useState(false);
   const [terms, setTerms] = useState<string>(
     '1. Payment due within 7 days of invoice.\n2. Standard 1-Year hardware warranty on installed devices.\n3. Physical damages, unauthorized tampering or power surges not covered under warranty.'
   );
@@ -159,24 +161,31 @@ export const JobInvoiceModal: React.FC<JobInvoiceModalProps> = ({
   const grandTotal = Math.round(rawTotal);
   const roundOff = Number((grandTotal - rawTotal).toFixed(2));
 
-  const handleGenerateInvoice = () => {
+  const handleGenerateInvoice = async () => {
     if (lineItems.length === 0) {
       toast.error('Please include at least one invoice line item');
       return;
     }
 
-    const created = raiseJobInvoice(job.id, {
-      lineItems,
-      termsAndConditions: terms,
-      paymentMode,
-      amountPaid: Number(amountPaid) || 0,
-      validityDays: 15,
-      beforePhotoUrl: job.beforePhotoUrl,
-      afterPhotoUrl: job.afterPhotoUrl,
-    });
+    setSaving(true);
+    try {
+      const created = await raiseJobInvoice(job.id, {
+        lineItems,
+        termsAndConditions: terms,
+        paymentMode,
+        amountPaid: Number(amountPaid) || 0,
+        validityDays: 15,
+        beforePhotoUrl: job.beforePhotoUrl,
+        afterPhotoUrl: job.afterPhotoUrl,
+      });
 
-    toast.success(`Invoice ${created.invoiceNo} generated. Job status updated to Awaiting OTP.`);
-    onInvoiceCreated(created);
+      toast.success(`Invoice ${created.invoiceNo} generated. Job status updated to Awaiting OTP.`);
+      onInvoiceCreated(created);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -381,7 +390,7 @@ export const JobInvoiceModal: React.FC<JobInvoiceModalProps> = ({
         <Button type="button" variant="secondary" size="md" onClick={onClose} className="rounded-xl">
           Cancel
         </Button>
-        <Button type="button" variant="success" size="md" onClick={handleGenerateInvoice} className="rounded-xl font-semibold">
+        <Button type="button" variant="success" size="md" onClick={handleGenerateInvoice} disabled={saving} className="rounded-xl font-semibold">
           <ReceiptText className="w-4 h-4 mr-1.5" />
           Raise Invoice & Proceed to OTP
           <ArrowRight className="w-4 h-4 ml-1.5" />

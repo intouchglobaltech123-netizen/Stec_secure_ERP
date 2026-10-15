@@ -22,6 +22,7 @@ import { Modal } from '@/components/ui/modal';
 import { formatINR, formatDate } from '@/lib/utils';
 import { exportElementToPdfWithToast } from '@/lib/pdf-generator';
 import { toast } from 'sonner';
+import { errorMessage } from '@/lib/api';
 
 interface QuotationPreviewModalProps {
   isOpen: boolean;
@@ -47,6 +48,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
   const [whatsAppSentAt, setWhatsAppSentAt] = useState<string | null>(null);
   const [generatedChallan, setGeneratedChallan] = useState<DeliveryChallan | null>(null);
   const [isChallanModalOpen, setIsChallanModalOpen] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   useEffect(() => {
     if (quotation?.whatsappSharedAt) {
@@ -76,7 +78,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
     window.print();
   };
 
-  const handleShareWhatsApp = () => {
+  const handleShareWhatsApp = async () => {
     const now = new Date();
     const timestamp =
       now.toLocaleDateString('en-IN', {
@@ -91,29 +93,58 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
         hour12: true,
       });
 
-    setWhatsAppSentAt(timestamp);
-
-    // Persist to quotation in ERP state
-    updateQuotation(quotation.id, {
-      whatsappSharedAt: timestamp,
-      status: quotation.status === 'DRAFT' ? 'SENT' : quotation.status,
-    });
-
-    // If linked to enquiry, also log follow-up note
-    if (quotation.enquiryId) {
-      addEnquiryFollowUpNote(
-        quotation.enquiryId,
-        `Quotation ${quotation.quotationNo} (₹${quotation.grandTotal.toLocaleString('en-IN')}) shared with customer via WhatsApp on ${timestamp}`
-      );
-    }
-
-    toast.success(`Sent via WhatsApp ✓ (${timestamp})`);
-
+    // Open WhatsApp right away (still inside the click) so popup blockers allow it
     const phone = customer?.phone.replace(/\D/g, '') || '';
     const msg = `Dear ${customer?.name || 'Customer'},\nHere is your official S Tec Secure Quotation ${quotation.quotationNo} for ₹${quotation.grandTotal.toLocaleString('en-IN')}.\nValid for ${quotation.validityDays} days.\nThank you.`;
     const encoded = encodeURIComponent(msg);
     if (phone) {
       window.open(`https://wa.me/91${phone}?text=${encoded}`, '_blank');
+    }
+
+    try {
+      // Persist to quotation in ERP state
+      await updateQuotation(quotation.id, {
+        whatsappSharedAt: timestamp,
+        status: quotation.status === 'DRAFT' ? 'SENT' : quotation.status,
+      });
+      setWhatsAppSentAt(timestamp);
+
+      // If linked to enquiry, also log follow-up note
+      if (quotation.enquiryId) {
+        await addEnquiryFollowUpNote(
+          quotation.enquiryId,
+          `Quotation ${quotation.quotationNo} (₹${quotation.grandTotal.toLocaleString('en-IN')}) shared with customer via WhatsApp on ${timestamp}`
+        );
+      }
+
+      toast.success(`Sent via WhatsApp ✓ (${timestamp})`);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  };
+
+  const handleConvertToChallan = async () => {
+    if (converting) return;
+    setConverting(true);
+    try {
+      const linkedJob = jobs.find(
+        (j) =>
+          j.quotationId === quotation.id ||
+          j.quotationId === quotation.quotationNo
+      );
+      const newDc = await convertQuotationToDeliveryChallan(
+        quotation.id,
+        linkedJob?.id
+      );
+      toast.success(
+        `Delivery Challan ${newDc.challanNo} created from Quotation ${quotation.quotationNo} (${newDc.lineItems.length} physical items, labor charges excluded).`
+      );
+      setGeneratedChallan(newDc);
+      setIsChallanModalOpen(true);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setConverting(false);
     }
   };
 
@@ -184,26 +215,8 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
           <Button
             size="sm"
             variant="primary"
-            onClick={() => {
-              try {
-                const linkedJob = jobs.find(
-                  (j) =>
-                    j.quotationId === quotation.id ||
-                    j.quotationId === quotation.quotationNo
-                );
-                const newDc = convertQuotationToDeliveryChallan(
-                  quotation.id,
-                  linkedJob?.id
-                );
-                toast.success(
-                  `Delivery Challan ${newDc.challanNo} created from Quotation ${quotation.quotationNo} (${newDc.lineItems.length} physical items, labor charges excluded).`
-                );
-                setGeneratedChallan(newDc);
-                setIsChallanModalOpen(true);
-              } catch (err: any) {
-                toast.error(err.message || 'Failed to convert quotation to delivery challan');
-              }
-            }}
+            onClick={handleConvertToChallan}
+            disabled={converting}
             className="h-8 text-xs rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Truck className="w-3.5 h-3.5" />

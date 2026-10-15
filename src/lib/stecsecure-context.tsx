@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
-import { toast } from 'sonner';
 import {
   User,
   Customer,
@@ -26,20 +25,11 @@ import {
   RepairPath,
   AppSection,
   ConfigurableRole,
+  UserRole,
 } from './stecsecure-types';
-import { DEMO_MODE } from './demo-mode';
-import {
-  ErpState,
-  Action,
-  getSeedState,
-  normalizeSavedState,
-  makeEnv,
-  getJobQuotation as getJobQuotationIn,
-} from './erp/core';
-import { ACTIONS, ActionName, ActionArgs, ActionReturn } from './erp/actions';
-
-const STORAGE_KEY = 'stecsecure_erp_v1';
-const AUTH_KEY = 'stecsecure_erp_auth_user_id';
+import { ErpState, normalizeSavedState, getJobQuotation as getJobQuotationIn } from './erp/core';
+import type { ActionName, ActionArgs, ActionReturn } from './erp/actions';
+import { api, ApiError, errorMessage } from './api';
 
 export interface StecSecureContextType extends ErpState {
   currentUser: User | null;
@@ -52,24 +42,32 @@ export interface StecSecureContextType extends ErpState {
 
   // Phase 18: Access control (CEO-managed)
   canAccessSection: (section: AppSection) => boolean;
-  updateAccessControl: (role: ConfigurableRole, sections: AppSection[]) => void;
+  updateAccessControl: (role: ConfigurableRole, sections: AppSection[]) => Promise<void>;
 
-  // Auth
-  loginWithPin: (pin: string) => { success: boolean; message?: string };
-  loginAsUser: (userId: string) => void;
-  logout: () => void;
+  // Auth (Phase 21: server sessions, phone + PIN)
+  login: (phone: string, pin: string) => Promise<{ success: boolean; message?: string }>;
+  logout: () => Promise<void>;
+  changeOwnPin: (currentPin: string, newPin: string) => Promise<void>;
 
-  // Actions
-  resetToDemoData: () => void;
-  createJob: (jobData: Omit<Job, 'id' | 'createdAt' | 'jobNumber'> & { jobNumber?: string; teamLeadUserId?: string; enquiryId?: string; createdByUserId?: string }) => Job;
-  deleteJob: (jobId: string) => void;
-  updateJobStatus: (id: string, status: JobStatus) => void;
-  updateJob: (id: string, updates: Partial<Job>) => void;
-  startJob: (jobId: string, beforePhotoUrl?: string) => void;
-  addWorkLogNote: (jobId: string, note: string) => void;
-  addMaterialUsage: (jobId: string, materialName: string, deliveredQty: number, returnedQty: number) => void;
-  raiseHold: (jobId: string, reason: string) => void;
-  resolveHoldEvent: (holdId: string) => void;
+  // Staff accounts (CEO only)
+  listStaff: () => Promise<StaffAccount[]>;
+  createStaff: (data: { name: string; role: UserRole; phone: string; pin: string; email?: string }) => Promise<void>;
+  updateStaff: (
+    id: string,
+    data: Partial<{ name: string; role: UserRole; phone: string; email: string; active: boolean }>
+  ) => Promise<void>;
+  resetStaffPin: (id: string, pin: string) => Promise<void>;
+
+  // Actions — each runs on the server; the promise rejects with a message to show the user
+  createJob: (jobData: Omit<Job, 'id' | 'createdAt' | 'jobNumber'> & { jobNumber?: string; teamLeadUserId?: string; enquiryId?: string; createdByUserId?: string }) => Promise<Job>;
+  deleteJob: (jobId: string) => Promise<void>;
+  updateJobStatus: (id: string, status: JobStatus) => Promise<void>;
+  updateJob: (id: string, updates: Partial<Job>) => Promise<void>;
+  startJob: (jobId: string, beforePhotoUrl?: string) => Promise<void>;
+  addWorkLogNote: (jobId: string, note: string) => Promise<void>;
+  addMaterialUsage: (jobId: string, materialName: string, deliveredQty: number, returnedQty: number) => Promise<void>;
+  raiseHold: (jobId: string, reason: string) => Promise<void>;
+  resolveHoldEvent: (holdId: string) => Promise<void>;
   completeJob: (
     jobId: string,
     completionData?: {
@@ -79,7 +77,7 @@ export interface StecSecureContextType extends ErpState {
       actionTaken?: string;
       installedLocation?: string;
     }
-  ) => Invoice | void;
+  ) => Promise<Invoice | void>;
   raiseJobInvoice: (jobId: string, invoiceData: {
     lineItems: LineItem[];
     termsAndConditions?: string;
@@ -88,8 +86,8 @@ export interface StecSecureContextType extends ErpState {
     validityDays?: number;
     beforePhotoUrl?: string;
     afterPhotoUrl?: string;
-  }) => Invoice;
-  verifyJobOtp: (jobId: string, enteredCode: string) => boolean;
+  }) => Promise<Invoice>;
+  verifyJobOtp: (jobId: string, enteredCode: string) => Promise<boolean>;
   recordPaymentAfterOtp: (data: {
     invoiceId: string;
     customerNumber: string;
@@ -97,64 +95,64 @@ export interface StecSecureContextType extends ErpState {
     amountReceived: number;
     paymentMode?: PaymentMode;
     referenceNo?: string;
-  }) => Payment | null;
+  }) => Promise<Payment | null>;
   recordManualPayment: (data: {
     invoiceId: string;
     amount: number;
     paymentMode: PaymentMode;
     referenceNo?: string;
     date?: string;
-  }) => Payment | null;
+  }) => Promise<Payment | null>;
   createDeliveryChallan: (data: {
     customerNumber: string;
     lineItems: { itemDescription: string; qty: number }[];
     transportedBy?: string;
     jobId?: string;
     quotationId?: string;
-  }) => DeliveryChallan;
-  updateDeliveryChallan: (id: string, updates: Partial<DeliveryChallan>) => void;
-  convertQuotationToDeliveryChallan: (quotationId: string, jobId?: string) => DeliveryChallan;
-  convertDeliveryChallanToInvoice: (challanId: string) => Invoice;
+  }) => Promise<DeliveryChallan>;
+  updateDeliveryChallan: (id: string, updates: Partial<DeliveryChallan>) => Promise<void>;
+  convertQuotationToDeliveryChallan: (quotationId: string, jobId?: string) => Promise<DeliveryChallan>;
+  convertDeliveryChallanToInvoice: (challanId: string) => Promise<Invoice>;
 
   // Enquiry Module Actions
-  createEnquiry: (data: Omit<Enquiry, 'id' | 'enquiryNumber' | 'createdAt' | 'followUpNotes' | 'status'> & { status?: EnquiryStatus }) => Enquiry;
-  deleteEnquiry: (enquiryId: string) => void;
-  addEnquiryFollowUpNote: (enquiryId: string, noteText: string) => void;
-  approveEnquiry: (enquiryId: string) => void;
-  cancelEnquiry: (enquiryId: string, reason: string) => void;
-  convertEnquiryToJob: (enquiryId: string, jobId: string) => void;
+  createEnquiry: (data: Omit<Enquiry, 'id' | 'enquiryNumber' | 'createdAt' | 'followUpNotes' | 'status'> & { status?: EnquiryStatus }) => Promise<Enquiry>;
+  deleteEnquiry: (enquiryId: string) => Promise<void>;
+  addEnquiryFollowUpNote: (enquiryId: string, noteText: string) => Promise<void>;
+  approveEnquiry: (enquiryId: string) => Promise<void>;
+  cancelEnquiry: (enquiryId: string, reason: string) => Promise<void>;
+  convertEnquiryToJob: (enquiryId: string, jobId: string) => Promise<void>;
   getEnquiry: (id: string) => Enquiry | undefined;
 
-  addCustomer: (cust: Omit<Customer, 'id' | 'createdAt'>) => Customer;
-  updateCustomer: (id: string, updates: Partial<Customer>) => void;
-  addProduct: (prod: Omit<Product, 'id'>) => Product;
-  updateProduct: (id: string, updates: Partial<Product>) => void;
-  addVendor: (vendor: Omit<Vendor, 'id'>) => Vendor;
-  updateVendor: (id: string, updates: Partial<Vendor>) => void;
-  addSerialUnit: (unit: Omit<SerialUnit, 'id'>) => SerialUnit;
-  updateSerialUnit: (id: string, updates: Partial<SerialUnit>) => void;
+  addCustomer: (cust: Omit<Customer, 'id' | 'createdAt'>) => Promise<Customer>;
+  updateCustomer: (id: string, updates: Partial<Customer>) => Promise<void>;
+  addProduct: (prod: Omit<Product, 'id'>) => Promise<Product>;
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
+  addVendor: (vendor: Omit<Vendor, 'id'>) => Promise<Vendor>;
+  updateVendor: (id: string, updates: Partial<Vendor>) => Promise<void>;
+  addSerialUnit: (unit: Omit<SerialUnit, 'id'>) => Promise<SerialUnit>;
+  updateSerialUnit: (id: string, updates: Partial<SerialUnit>) => Promise<void>;
   stockInSerials: (data: {
     productId: string;
     serialNumbers: string[];
     vendorId?: string;
     purchaseDate?: string;
     purchaseCost?: number;
-  }) => SerialUnit[];
-  allocateSerialToJob: (serialId: string, jobId: string) => void;
-  installJobSerials: (jobId: string, customerId: string, location: string) => void;
-  markSerialReturned: (serialId: string, reason?: string) => void;
+  }) => Promise<SerialUnit[]>;
+  allocateSerialToJob: (serialId: string, jobId: string) => Promise<void>;
+  installJobSerials: (jobId: string, customerId: string, location: string) => Promise<void>;
+  markSerialReturned: (serialId: string, reason?: string) => Promise<void>;
   addJobProductUsage: (data: {
     jobId: string;
     productId: string;
     quantity: number;
     serialUnitIds?: string[];
-  }) => JobProductUsage;
+  }) => Promise<JobProductUsage>;
 
-  createQuotation: (data: Omit<Quotation, 'id' | 'quotationNo'> & { quotationNo?: string; status?: 'DRAFT' | 'SENT' | 'CONVERTED'; enquiryId?: string }) => Quotation;
-  updateQuotation: (id: string, updates: Partial<Quotation>) => Quotation;
-  convertQuotationToInvoice: (quotationId: string) => Invoice;
-  updateInvoice: (id: string, updates: Partial<Invoice>) => Invoice;
-  addPayment: (payment: Omit<Payment, 'id'>) => Payment;
+  createQuotation: (data: Omit<Quotation, 'id' | 'quotationNo'> & { quotationNo?: string; status?: 'DRAFT' | 'SENT' | 'CONVERTED'; enquiryId?: string }) => Promise<Quotation>;
+  updateQuotation: (id: string, updates: Partial<Quotation>) => Promise<Quotation>;
+  convertQuotationToInvoice: (quotationId: string) => Promise<Invoice>;
+  updateInvoice: (id: string, updates: Partial<Invoice>) => Promise<Invoice>;
+  addPayment: (payment: Omit<Payment, 'id'>) => Promise<Payment>;
 
   // Phase 17 & 17.5: Repair & RMA Ticket Actions
   createRepairTicket: (data: {
@@ -165,7 +163,7 @@ export interface StecSecureContextType extends ErpState {
     sourceJobId?: string | null;
     faultDescription: string;
     initialNote?: string;
-  }) => RepairTicket;
+  }) => Promise<RepairTicket>;
   transitionRepairTicket: (
     ticketId: string,
     nextStatus: RepairStatus,
@@ -181,7 +179,7 @@ export interface StecSecureContextType extends ErpState {
       inHouseRepairNotes?: string;
       reinstalledLocation?: string;
     }
-  ) => void;
+  ) => Promise<void>;
   getRepairTicket: (id: string) => RepairTicket | undefined;
 
   // Helpers
@@ -207,87 +205,173 @@ export interface StecSecureContextType extends ErpState {
   };
 }
 
-const StecSecureContext = createContext<StecSecureContextType | undefined>(undefined);
-
-function getInitialState(): ErpState {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  try {
-    if (raw) return normalizeSavedState(JSON.parse(raw));
-  } catch (err) {
-    console.error('Failed to parse state from localStorage', err);
-    // Keep the unreadable save instead of letting the demo data overwrite it
-    try {
-      if (raw) localStorage.setItem(`${STORAGE_KEY}_unreadable_${Date.now()}`, raw);
-    } catch {
-      // storage full — nothing more we can do here
-    }
-  }
-  return getSeedState();
+export interface StaffAccount extends User {
+  active: boolean;
+  locked: boolean;
 }
 
+const StecSecureContext = createContext<StecSecureContextType | undefined>(undefined);
+
+type CollectionName = Exclude<keyof ErpState, 'accessControl'>;
+interface StateChanges {
+  upserts: Partial<Record<CollectionName, { id: string }[]>>;
+  deletes: Partial<Record<CollectionName, string[]>>;
+  accessControl?: ErpState['accessControl'];
+}
+
+const EMPTY_STATE: ErpState = normalizeSavedState({}, { browserLegacyFixes: false });
+const POLL_MS = 15_000;
+
+// Applies the records an action changed on the server to the local copy
+function applyChanges(state: ErpState, changes: StateChanges): ErpState {
+  const next: ErpState = { ...state };
+  const collections = new Set([
+    ...Object.keys(changes.upserts),
+    ...Object.keys(changes.deletes),
+  ]) as Set<CollectionName>;
+  for (const c of collections) {
+    const deleted = new Set(changes.deletes[c] ?? []);
+    const byId = new Map((changes.upserts[c] ?? []).map((r) => [r.id, r]));
+    const list = (state[c] as { id: string }[])
+      .filter((r) => !deleted.has(r.id))
+      .map((r) => {
+        const updated = byId.get(r.id);
+        if (updated) byId.delete(r.id);
+        return updated ?? r;
+      });
+    // Records not seen before are new: lists are newest-first, except the staff list
+    const fresh = [...byId.values()];
+    (next as any)[c] = c === 'users' ? [...list, ...fresh] : [...fresh, ...list];
+  }
+  if (changes.accessControl) next.accessControl = changes.accessControl;
+  return next;
+}
+
+type Status = 'checking' | 'logged-out' | 'loading' | 'ready';
+
 export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [erpState, setErpState] = useState<ErpState>(getInitialState);
-  // Latest state, readable synchronously: an action always sees the result of the previous one,
-  // even when a handler runs several actions in a row
-  const stateRef = useRef(erpState);
+  const [status, setStatus] = useState<Status>('checking');
+  const [erpState, setErpState] = useState<ErpState>(EMPTY_STATE);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const versionRef = useRef(0);
+  // Identical actions already on their way to the server (double clicks) share one request
+  const inFlightRef = useRef(new Map<string, Promise<unknown>>());
 
-  // Auth state
-  // No stored session means logged out — never fall back to a default user
-  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
-    return localStorage.getItem(AUTH_KEY);
-  });
+  const signedOut = () => {
+    setCurrentUser(null);
+    setErpState(EMPTY_STATE);
+    versionRef.current = 0;
+    setStatus('logged-out');
+  };
 
-  // Persist ERP state to localStorage — a failed save must be visible, not just logged
-  const saveFailedRef = useRef(false);
-  useEffect(() => {
+  // Full (first time) or incremental refresh of this user's data
+  const refreshState = async () => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(erpState));
-      if (saveFailedRef.current) {
-        saveFailedRef.current = false;
-        toast.success('Saving works again — all changes are stored.');
-      }
+      const data = await api<{ version: number; state: ErpState } | undefined>(
+        `/state${versionRef.current ? `?since=${versionRef.current}` : ''}`
+      );
+      if (!data) return; // nothing changed
+      versionRef.current = data.version;
+      setErpState(data.state);
     } catch (err) {
-      console.error('Failed to persist ERP state to localStorage', err);
-      if (!saveFailedRef.current) {
-        saveFailedRef.current = true;
-        toast.error('Storage is full — recent changes are NOT saved and will be lost on reload.', {
-          duration: Infinity,
-        });
-      }
+      if (err instanceof ApiError && err.status === 401) signedOut();
+      else throw err;
     }
-  }, [erpState]);
+  };
 
-  // Persist Current User ID
+  // Restore an existing session on start
   useEffect(() => {
-    if (currentUserId) {
-      localStorage.setItem(AUTH_KEY, currentUserId);
-    } else {
-      localStorage.removeItem(AUTH_KEY);
+    (async () => {
+      try {
+        const { user } = await api<{ user: User }>('/auth/me');
+        setCurrentUser(user);
+        setStatus('loading');
+        await refreshState();
+        setStatus('ready');
+      } catch {
+        signedOut();
+      }
+    })();
+  }, []);
+
+  // Pick up other people's changes: every 15 seconds and whenever the app comes back to the screen
+  useEffect(() => {
+    if (status !== 'ready') return;
+    const tick = () => {
+      if (document.visibilityState === 'visible') refreshState().catch(() => undefined);
+    };
+    const timer = window.setInterval(tick, POLL_MS);
+    document.addEventListener('visibilitychange', tick);
+    window.addEventListener('focus', tick);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', tick);
+      window.removeEventListener('focus', tick);
+    };
+  }, [status]);
+
+  // Phase 21: every business action runs on the server (shared src/lib/erp/actions + server-side
+  // permissions); the reply carries the changed records, which are merged into the local copy
+  const run = <N extends ActionName>(name: N, args: ActionArgs<N>): Promise<ActionReturn<N>> => {
+    const key = `${name}:${JSON.stringify(args)}`;
+    const pending = inFlightRef.current.get(key);
+    if (pending) return pending as Promise<ActionReturn<N>>;
+
+    const request = (async () => {
+      try {
+        const res = await api<{ result: ActionReturn<N>; version: number; changes: StateChanges }>(
+          `/actions/${name}`,
+          { body: { args } }
+        );
+        setErpState((prev) => applyChanges(prev, res.changes));
+        if (res.version === versionRef.current + 1) {
+          versionRef.current = res.version;
+        } else {
+          // Someone else changed data in between — fetch everything so nothing is missed
+          versionRef.current = 0;
+          refreshState().catch(() => undefined);
+        }
+        return res.result;
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) signedOut();
+        throw err;
+      } finally {
+        inFlightRef.current.delete(key);
+      }
+    })();
+    inFlightRef.current.set(key, request);
+    return request;
+  };
+
+  const login = async (phone: string, pin: string) => {
+    try {
+      const { user } = await api<{ user: User }>('/auth/login', { body: { phone, pin } });
+      setCurrentUser(user);
+      setStatus('loading');
+      versionRef.current = 0;
+      await refreshState();
+      setStatus('ready');
+      return { success: true };
+    } catch (err) {
+      return { success: false, message: errorMessage(err) };
     }
-  }, [currentUserId]);
-
-  const currentUser = useMemo(() => {
-    if (!currentUserId) return null;
-    return erpState.users.find((u) => u.id === currentUserId) || null;
-  }, [currentUserId, erpState.users]);
-  const currentUserRef = useRef(currentUser);
-  currentUserRef.current = currentUser;
-
-  const commit = (next: ErpState) => {
-    if (next === stateRef.current) return;
-    stateRef.current = next;
-    setErpState(next);
   };
 
-  // Phase 20: every business action is a pure function in src/lib/erp/actions, shared with the server
-  const run = <N extends ActionName>(name: N, args: ActionArgs<N>): ActionReturn<N> => {
-    const action = ACTIONS[name] as unknown as Action<ActionArgs<N>, ActionReturn<N>>;
-    const { state, result } = action(stateRef.current, makeEnv(currentUserRef.current), args);
-    commit(state);
-    return result;
+  const logout = async () => {
+    try {
+      await api('/auth/logout', { body: {} });
+    } finally {
+      signedOut();
+    }
   };
 
-  const isAuthenticated = Boolean(currentUser);
+  // Staff changes alter the user list, so the local copy is refreshed afterwards
+  const afterStaffChange = async () => {
+    versionRef.current = 0;
+    await refreshState();
+  };
+
+  const isAuthenticated = status === 'ready' && Boolean(currentUser);
   const isManagement = currentUser?.role === 'CEO' || currentUser?.role === 'MANAGER';
   const canResolveHold = isManagement;
 
@@ -309,13 +393,15 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
   }, [currentUser, erpState.jobs]);
 
-  // Phase 17.5: Strict per-assignment visibility for Repair Tickets
+  // Phase 17.5: Strict per-assignment visibility for Repair Tickets (assigned or bench technician)
   const visibleRepairTickets = useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.role === 'CEO' || currentUser.role === 'MANAGER') {
       return erpState.repairTickets;
     }
-    return erpState.repairTickets.filter((t) => t.assignedTechnicianId === currentUser.id);
+    return erpState.repairTickets.filter(
+      (t) => t.assignedTechnicianId === currentUser.id || t.inHouseRepairedByUserId === currentUser.id
+    );
   }, [currentUser, erpState.repairTickets]);
 
   // Phase 10 Part D: Self-resume hold resolution permission
@@ -327,39 +413,6 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const isRaiser = hold ? hold.raisedByUserId === currentUser.id : false;
     // Management can always authorize resumption (RaiseHoldModal promises this)
     return isManagement || isLead || isRaiser;
-  };
-
-  const loginWithPin = (pin: string) => {
-    const user = erpState.users.find((u) => u.pin === pin.trim());
-    if (user) {
-      setCurrentUserId(user.id);
-      return { success: true };
-    }
-    return { success: false, message: 'Invalid 4-digit PIN. Please try again.' };
-  };
-
-  // One-click persona login is a demo-only feature: without a PIN it would let anyone become CEO
-  const loginAsUser = (userId: string) => {
-    if (!DEMO_MODE) return;
-    const user = erpState.users.find((u) => u.id === userId);
-    if (user) {
-      setCurrentUserId(user.id);
-    }
-  };
-
-  const logout = () => {
-    setCurrentUserId(null);
-  };
-
-  const resetToDemoData = () => {
-    if (!DEMO_MODE || currentUser?.role !== 'CEO') return;
-    const fresh = getSeedState();
-    commit(fresh);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
-    } catch (e) {
-      console.error(e);
-    }
   };
 
   const getTechnicianStats = (userId: string) => {
@@ -399,6 +452,14 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     };
   };
 
+  if (status === 'checking' || status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-sm text-slate-500">
+        {status === 'checking' ? 'Starting S Tec Secure ERP…' : 'Loading your data…'}
+      </div>
+    );
+  }
+
   return (
     <StecSecureContext.Provider
       value={{
@@ -412,10 +473,24 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         visibleRepairTickets,
         canAccessSection,
         updateAccessControl: (role, sections) => run('updateAccessControl', { role, sections }),
-        loginWithPin,
-        loginAsUser,
+        login,
         logout,
-        resetToDemoData,
+        changeOwnPin: async (currentPin, newPin) => {
+          await api('/auth/change-pin', { body: { currentPin, newPin } });
+        },
+
+        listStaff: async () => (await api<{ users: StaffAccount[] }>('/admin/users')).users,
+        createStaff: async (data) => {
+          await api('/admin/users', { body: data });
+          await afterStaffChange();
+        },
+        updateStaff: async (id, data) => {
+          await api(`/admin/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: data });
+          await afterStaffChange();
+        },
+        resetStaffPin: async (id, pin) => {
+          await api(`/admin/users/${encodeURIComponent(id)}/reset-pin`, { body: { pin } });
+        },
 
         // Jobs
         createJob: (jobData) => run('createJob', jobData),

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
+import { errorMessage } from '@/lib/api';
 import { SerialUnit } from '@/lib/stecsecure-types';
 import {
   X,
@@ -43,6 +44,7 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
 
   const [isReturning, setIsReturning] = useState(false);
   const [returnReason, setReturnReason] = useState('');
+  const [saving, setSaving] = useState(false);
 
   if (!isOpen || !serial) return null;
 
@@ -51,17 +53,24 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
   const customer = customers.find((c) => c.id === serial.soldToCustomerId);
   const job = jobs.find((j) => j.id === serial.installedAtJobId);
 
-  const handleReturn = (e: React.FormEvent) => {
+  const handleReturn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!returnReason.trim()) {
       toast.error('Please specify a return reason');
       return;
     }
 
-    markSerialReturned(serial.id, returnReason.trim());
-    toast.warning(`Unit ${serial.serialNumber} marked as RETURNED (Defect / RMA)`);
-    setIsReturning(false);
-    onClose();
+    setSaving(true);
+    try {
+      await markSerialReturned(serial.id, returnReason.trim());
+      toast.warning(`Unit ${serial.serialNumber} marked as RETURNED (Defect / RMA)`);
+      setIsReturning(false);
+      onClose();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const statusVariant =
@@ -245,7 +254,7 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" variant="danger" size="sm" className="h-7 text-xs">
+                    <Button type="submit" variant="danger" size="sm" disabled={saving} className="h-7 text-xs">
                       Confirm Return
                     </Button>
                   </div>

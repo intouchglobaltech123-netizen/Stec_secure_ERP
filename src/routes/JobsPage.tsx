@@ -53,6 +53,7 @@ import { JobPhotoUpload } from '@/components/jobs/JobPhotoUpload';
 import { AddProductUsedModal } from '@/components/jobs/AddProductUsedModal';
 import { SiteLocationModal } from '@/components/customers/SiteLocationModal';
 import { SAMPLE_BEFORE_PHOTO, SAMPLE_AFTER_PHOTO } from '@/lib/seed-data';
+import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface JobsPageProps {
@@ -223,6 +224,11 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
   >({});
   const [serialAttachInputs, setSerialAttachInputs] = useState<Record<string, string>>({});
 
+  // Busy flags while a server action is in flight (prevents double submission)
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [isCompletingSaving, setIsCompletingSaving] = useState(false);
+  const [isDeletingSaving, setIsDeletingSaving] = useState(false);
+
   // Synchronize updated state into selectedDetailJob if changed
   useEffect(() => {
     if (selectedDetailJob) {
@@ -249,57 +255,79 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
     );
   });
 
-  const handleStartJobWithPhoto = (job: Job) => {
+  const handleStartJobWithPhoto = async (job: Job) => {
     const photo = beforePhotoMap[job.id] || job.beforePhotoUrl;
     if (!photo) {
       toast.error('Before Photo is mandatory before starting the job session');
       return;
     }
 
-    startJob(job.id, photo);
-    toast.success(`Job ${job.jobNumber} started.`);
+    setBusyAction(`start-${job.id}`);
+    try {
+      await startJob(job.id, photo);
+      toast.success(`Job ${job.jobNumber} started.`);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusyAction(null);
+    }
   };
 
-  const handleAttachSerial = (jobId: string) => {
+  const handleAttachSerial = async (jobId: string) => {
     const serialId = serialAttachInputs[jobId];
     if (!serialId) {
       toast.error('Please select an in-stock serial unit to attach');
       return;
     }
-    allocateSerialToJob(serialId, jobId);
     const sn = serialUnits.find((s) => s.id === serialId)?.serialNumber;
-    toast.success(`Serial ${sn} attached and allocated to job.`);
-    setSerialAttachInputs((prev) => ({ ...prev, [jobId]: '' }));
+    try {
+      await allocateSerialToJob(serialId, jobId);
+      toast.success(`Serial ${sn} attached and allocated to job.`);
+      setSerialAttachInputs((prev) => ({ ...prev, [jobId]: '' }));
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
   };
 
-  const handleAddNote = (jobId: string) => {
+  const handleAddNote = async (jobId: string) => {
     const note = noteInputs[jobId]?.trim();
     if (!note) {
       toast.error('Please enter a note');
       return;
     }
-    addWorkLogNote(jobId, note);
-    setNoteInputs((prev) => ({ ...prev, [jobId]: '' }));
-    toast.success('Work note recorded in job log');
+    setBusyAction(`note-${jobId}`);
+    try {
+      await addWorkLogNote(jobId, note);
+      setNoteInputs((prev) => ({ ...prev, [jobId]: '' }));
+      toast.success('Work note recorded in job log');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusyAction(null);
+    }
   };
 
-  const handleAddMaterial = (jobId: string) => {
+  const handleAddMaterial = async (jobId: string) => {
     const input = materialInputs[jobId];
     if (!input || !input.name?.trim()) {
       toast.error('Please enter material name');
       return;
     }
-    addMaterialUsage(
-      jobId,
-      input.name.trim(),
-      Number(input.delivered) || 0,
-      Number(input.returned) || 0
-    );
-    setMaterialInputs((prev) => ({
-      ...prev,
-      [jobId]: { name: '', delivered: 1, returned: 0 },
-    }));
-    toast.success('Material usage ledger updated');
+    try {
+      await addMaterialUsage(
+        jobId,
+        input.name.trim(),
+        Number(input.delivered) || 0,
+        Number(input.returned) || 0
+      );
+      setMaterialInputs((prev) => ({
+        ...prev,
+        [jobId]: { name: '', delivered: 1, returned: 0 },
+      }));
+      toast.success('Material usage ledger updated');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
   };
 
   const completingQuotation = completingJob ? getJobQuotation(completingJob) : undefined;
@@ -325,7 +353,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
     setInstalledLocationInput('Main Site Entrance');
   };
 
-  const confirmCompleteJob = (e: React.FormEvent) => {
+  const confirmCompleteJob = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!completingJob) return;
 
@@ -334,30 +362,44 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
       return;
     }
 
-    // Complete the job with photo, rate, and GST choice
-    const generatedInvoice = completeJob(completingJob.id, {
-      afterPhotoUrl: afterPhotoInput,
-      serviceAmount: Number(serviceRateInput) || 0,
-      serviceGstChoice: gstChoiceInput,
-      actionTaken: actionTakenInput.trim(),
-      installedLocation: installedLocationInput.trim(),
-    });
-
-    toast.success(
-      `Job ${completingJob.jobNumber} completed. Invoice generated with work photos.`
-    );
-
     const targetJob = completingJob;
-    setCompletingJob(null);
+    setIsCompletingSaving(true);
+    try {
+      // Complete the job with photo, rate, and GST choice
+      const generatedInvoice = await completeJob(targetJob.id, {
+        afterPhotoUrl: afterPhotoInput,
+        serviceAmount: Number(serviceRateInput) || 0,
+        serviceGstChoice: gstChoiceInput,
+        actionTaken: actionTakenInput.trim(),
+        installedLocation: installedLocationInput.trim(),
+      });
 
-    // Open WhatsApp / OTP modal immediately
-    setSelectedShareJob(targetJob);
-    setActiveCreatedInvoice(generatedInvoice || null);
+      toast.success(
+        `Job ${targetJob.jobNumber} completed. Invoice generated with work photos.`
+      );
+
+      setCompletingJob(null);
+
+      // Open WhatsApp / OTP modal immediately
+      setSelectedShareJob(targetJob);
+      setActiveCreatedInvoice(generatedInvoice || null);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setIsCompletingSaving(false);
+    }
   };
 
-  const handleResolveHold = (holdId: string, jobNumber: string) => {
-    resolveHoldEvent(holdId);
-    toast.success(`Hold cleared. Job ${jobNumber} resumed.`);
+  const handleResolveHold = async (holdId: string, jobNumber: string) => {
+    setBusyAction(`resume-${holdId}`);
+    try {
+      await resolveHoldEvent(holdId);
+      toast.success(`Hold cleared. Job ${jobNumber} resumed.`);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusyAction(null);
+    }
   };
 
   // Helper to render the complete interactive panel for any job
@@ -498,7 +540,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                       <Button
                         variant="primary"
                         size="sm"
-                        disabled={!currentBeforePhoto}
+                        disabled={!currentBeforePhoto || busyAction === `start-${job.id}`}
                         className="w-full text-xs font-semibold rounded-md shadow-2xs"
                         onClick={() => handleStartJobWithPhoto(job)}
                       >
@@ -554,6 +596,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                       size="sm"
                       variant="success"
                       className="w-full text-xs font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
+                      disabled={busyAction === `resume-${openHold.id}`}
                       onClick={() => handleResolveHold(openHold.id, job.jobNumber)}
                     >
                       <Play className="w-3.5 h-3.5" /> Resume Work
@@ -700,6 +743,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
             <Button
               size="sm"
               variant="outline"
+              disabled={busyAction === `note-${job.id}`}
               onClick={() => handleAddNote(job.id)}
               className="h-8 text-xs font-semibold rounded-md shrink-0 border-slate-300 hover:bg-slate-100"
             >
@@ -1239,6 +1283,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 type="submit"
                 variant="success"
                 size="md"
+                disabled={isCompletingSaving}
                 className="rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 Complete & Generate Invoice
@@ -1309,7 +1354,8 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
 
       <JobShareOtpModal
         isOpen={Boolean(selectedShareJob)}
-        job={selectedShareJob}
+        // Always the latest copy of the job (e.g. with the after photo saved by completion)
+        job={selectedShareJob ? visibleJobs.find((j) => j.id === selectedShareJob.id) ?? selectedShareJob : null}
         invoice={activeCreatedInvoice}
         onClose={() => {
           setSelectedShareJob(null);
@@ -1355,13 +1401,22 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 variant="danger"
                 size="md"
                 className="rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white"
-                onClick={() => {
-                  const num = deletingJob.jobNumber;
-                  deleteJob(deletingJob.id);
-                  toast.success(`Job ${num} permanently deleted.`);
-                  setDeletingJob(null);
-                  if (selectedDetailJob?.id === deletingJob.id) {
-                    setSelectedDetailJob(null);
+                disabled={isDeletingSaving}
+                onClick={async () => {
+                  const target = deletingJob;
+                  const num = target.jobNumber;
+                  setIsDeletingSaving(true);
+                  try {
+                    await deleteJob(target.id);
+                    toast.success(`Job ${num} permanently deleted.`);
+                    setDeletingJob(null);
+                    if (selectedDetailJob?.id === target.id) {
+                      setSelectedDetailJob(null);
+                    }
+                  } catch (err) {
+                    toast.error(errorMessage(err));
+                  } finally {
+                    setIsDeletingSaving(false);
                   }
                 }}
               >
