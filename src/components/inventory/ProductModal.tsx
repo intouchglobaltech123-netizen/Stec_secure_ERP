@@ -112,7 +112,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
             <h2 className="text-base font-bold text-slate-900 font-display">
               {product ? 'Edit Product' : 'Add New Product to Catalog'}
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-[13px] text-slate-500">
               Manage equipment metadata, HSN/SAC codes and default pricing
             </p>
           </div>
@@ -126,7 +126,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-xs">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-[13px]">
         <div className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain">
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Product / Model Name *</label>
@@ -135,7 +135,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
               placeholder="e.g. ONEVU 4G Smart Solar Dual Camera"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="text-xs h-9 bg-white"
+              className="text-[13px] h-9 bg-white"
             />
           </div>
 
@@ -145,7 +145,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as ServiceCategory)}
-                className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
               >
                 {SERVICE_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -161,7 +161,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
                 placeholder="e.g. 85258090"
                 value={hsnSac}
                 onChange={(e) => setHsnSac(e.target.value)}
-                className="text-xs h-9 font-mono bg-white"
+                className="text-[13px] h-9 font-mono bg-white"
               />
             </div>
           </div>
@@ -180,7 +180,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
                     setBarcode(code);
                     toast.success(`Generated internal barcode: ${code}`);
                   }}
-                  className="text-[11px] text-orange-600 hover:text-orange-700 font-semibold flex items-center gap-1 cursor-pointer"
+                  className="text-xs text-orange-600 hover:text-orange-700 font-semibold flex items-center gap-1 cursor-pointer"
                 >
                   <Sparkles className="w-3 h-3" />
                   + Generate Internal Barcode
@@ -191,9 +191,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
               placeholder="e.g. 8901234567890 or STS-INT-0001"
               value={barcode}
               onChange={(e) => setBarcode(e.target.value)}
-              className="text-xs h-9 font-mono bg-white"
+              className="text-[13px] h-9 font-mono bg-white"
             />
-            <p className="text-[10px] text-slate-500 mt-1">
+            <p className="text-[11px] text-slate-500 mt-1">
               Used for high-speed scanner stock-in. Leave blank if product has no physical barcode and manual entry is preferred.
             </p>
           </div>
@@ -205,7 +205,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
                 placeholder="Nos / Mtr / Set"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                className="text-xs h-9 bg-white"
+                className="text-[13px] h-9 bg-white"
               />
             </div>
 
@@ -216,7 +216,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
                 min="0"
                 value={defaultRate}
                 onChange={(e) => setDefaultRate(Number(e.target.value))}
-                className="text-xs h-9 font-mono bg-white font-bold"
+                className="text-[13px] h-9 font-mono bg-white font-bold"
               />
             </div>
 
@@ -225,7 +225,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
               <select
                 value={gstRate}
                 onChange={(e) => setGstRate(Number(e.target.value))}
-                className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-900 focus:outline-none focus:border-orange-500 font-mono"
+                className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 font-mono"
               >
                 <option value={0}>0% (Exempt)</option>
                 <option value={5}>5%</option>
@@ -243,7 +243,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
               placeholder="Technical specifications, lens size, port configuration..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+              className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
             />
           </div>
 

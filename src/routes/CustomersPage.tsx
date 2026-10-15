@@ -48,17 +48,11 @@ export const CustomersPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="orange" className="text-xs">
-              <Users className="w-3.5 h-3.5 text-orange-600" />
-              Client Registry & Site Maps
-            </Badge>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight font-display">
-            Customer Directory & Accounts
+          <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
+            Customers
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Clients, residential societies, GPS site map links, and live outstanding balance tracking
+          <p className="text-sm text-slate-500 mt-0.5">
+            Contact details, site locations and balances
           </p>
         </div>
 
@@ -70,7 +64,7 @@ export const CustomersPage: React.FC = () => {
               setSelectedCustomerForEdit(null);
               setIsCustomerModalOpen(true);
             }}
-            className="text-xs font-semibold"
+            className="text-[13px] font-semibold"
           >
             <Plus className="w-4 h-4 mr-1" /> Add Customer
           </Button>
@@ -85,10 +79,10 @@ export const CustomersPage: React.FC = () => {
             placeholder="Search customers by name, phone, address, or GST..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 text-xs bg-white"
+            className="pl-9 text-[13px] bg-white"
           />
         </div>
-        <div className="text-xs text-slate-500 font-medium">
+        <div className="text-[13px] text-slate-500 font-medium">
           Showing {filteredCustomers.length} of {customers.length} client accounts
         </div>
       </div>
@@ -110,23 +104,23 @@ export const CustomersPage: React.FC = () => {
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs text-orange-600 font-bold">{cust.id}</span>
+                    <span className="font-mono text-[13px] text-orange-600 font-bold">{cust.id}</span>
                     {cust.siteLocationMapLink && (
-                      <Badge variant="outline" className="text-[9px] bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
+                      <Badge variant="outline" className="text-[11px] bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
                         <MapPin className="w-2.5 h-2.5 text-blue-600" /> Map Pinned
                       </Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-[11px]">
                       {customerJobs.length} Jobs
                     </Badge>
                     {outstandingBalance > 0 ? (
-                      <Badge variant="danger" className="text-[10px] font-bold">
+                      <Badge variant="danger" className="text-[11px] font-bold">
                         Due: ₹{outstandingBalance.toLocaleString('en-IN')}
                       </Badge>
                     ) : (
-                      <Badge variant="success" className="text-[10px]">
+                      <Badge variant="success" className="text-[11px]">
                         Cleared
                       </Badge>
                     )}
@@ -149,11 +143,11 @@ export const CustomersPage: React.FC = () => {
                 </CardTitle>
 
                 {cust.contactPerson && (
-                  <p className="text-xs text-slate-500 font-medium">Contact: {cust.contactPerson}</p>
+                  <p className="text-[13px] text-slate-500 font-medium">Contact: {cust.contactPerson}</p>
                 )}
               </CardHeader>
 
-              <CardContent className="space-y-2.5 text-xs text-slate-700 flex-1 flex flex-col justify-between">
+              <CardContent className="space-y-2.5 text-[13px] text-slate-700 flex-1 flex flex-col justify-between">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 font-medium">
                     <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -173,7 +167,7 @@ export const CustomersPage: React.FC = () => {
                           href={cust.siteLocationMapLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-blue-600 hover:text-blue-800 hover:underline"
                         >
                           <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                           <span>Open in Google Maps</span>
@@ -182,18 +176,18 @@ export const CustomersPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setSelectedCustomerForLocation(cust)}
-                          className="text-[10px] text-slate-400 hover:text-slate-700 underline cursor-pointer"
+                          className="text-[11px] text-slate-400 hover:text-slate-700 underline cursor-pointer"
                         >
                           Edit
                         </button>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between w-full">
-                        <span className="text-[11px] text-slate-400 italic">No GPS map link</span>
+                        <span className="text-xs text-slate-400 italic">No GPS map link</span>
                         <button
                           type="button"
                           onClick={() => setSelectedCustomerForLocation(cust)}
-                          className="inline-flex items-center gap-1 text-[11px] text-orange-600 hover:text-orange-700 font-semibold cursor-pointer"
+                          className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 font-semibold cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
                           <span>Add site location</span>
@@ -205,21 +199,21 @@ export const CustomersPage: React.FC = () => {
 
                 {/* Account Balances */}
                 <div className="space-y-2 pt-2">
-                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 grid grid-cols-3 gap-1 text-[11px] text-center pt-1.5">
+                  <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 grid grid-cols-3 gap-1 text-xs text-center pt-1.5">
                     <div>
-                      <div className="text-[9px] text-slate-500 uppercase font-bold">Billed</div>
+                      <div className="text-[11px] text-slate-500 uppercase font-bold">Billed</div>
                       <div className="font-mono font-semibold text-slate-800">
                         ₹{totalBilled.toLocaleString('en-IN')}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[9px] text-slate-500 uppercase font-bold">Paid</div>
+                      <div className="text-[11px] text-slate-500 uppercase font-bold">Paid</div>
                       <div className="font-mono font-bold text-emerald-700">
                         ₹{totalPaid.toLocaleString('en-IN')}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[9px] text-slate-500 uppercase font-bold">Balance</div>
+                      <div className="text-[11px] text-slate-500 uppercase font-bold">Balance</div>
                       <div
                         className={`font-mono font-bold ${
                           outstandingBalance > 0 ? 'text-rose-600' : 'text-slate-500'
@@ -233,7 +227,7 @@ export const CustomersPage: React.FC = () => {
                   {cust.gstin && (
                     <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
                       <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="font-mono text-[11px] text-orange-600 font-semibold">
+                      <span className="font-mono text-xs text-orange-600 font-semibold">
                         GST: {cust.gstin}
                       </span>
                     </div>

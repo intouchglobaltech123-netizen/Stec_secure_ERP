@@ -444,20 +444,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
       {/* Top Header & Overview */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="orange" className="text-xs">
-              <FolderGit2 className="w-3.5 h-3.5 text-orange-600 mr-1" />
-              Project Commercial Chain
-            </Badge>
-            <span className="text-xs text-slate-500 font-medium">
-              Quotations &bull; Delivery Challans &bull; Tax Invoices &bull; Lifecycle Grouping
-            </span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight font-display">
-            Quotations & Commercial Documents
+          <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
+            Quotations & Invoices
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Track and manage full commercial chains grouped by project/job, edit estimates in-place with zero duplicates, and convert stages seamlessly.
+          <p className="text-sm text-slate-500 mt-0.5">
+            Quotations, delivery challans, tax invoices and credit notes — grouped by job
           </p>
         </div>
 
@@ -472,10 +463,10 @@ export const QuotationsInvoicesPage: React.FC = () => {
               setBuilderEnquiryId(undefined);
               setIsBuilderOpen(true);
             }}
-            className="text-xs font-semibold shrink-0 shadow-2xs"
+            className="text-[13px] font-semibold shrink-0 shadow-2xs"
           >
             <Plus className="w-4 h-4 mr-1.5" />
-            + New Quotation (A-Series)
+            New Quotation
           </Button>
         )}
       </div>
@@ -488,7 +479,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
               <FolderGit2 className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">Projects / Jobs</div>
+              <div className="text-xs font-bold uppercase text-slate-500 tracking-wider">Projects / Jobs</div>
               <div className="text-xl font-extrabold text-slate-900 font-mono">{projectGroups.length}</div>
             </div>
           </CardContent>
@@ -500,9 +491,9 @@ export const QuotationsInvoicesPage: React.FC = () => {
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">Quotations (A-Series)</div>
+              <div className="text-xs font-bold uppercase text-slate-500 tracking-wider">Quotations (A-Series)</div>
               <div className="text-xl font-extrabold text-slate-900 font-mono">{quotations.length}</div>
-              <div className="text-[10px] text-slate-500 font-mono">{formatINR(totalQuotationValue)}</div>
+              <div className="text-[11px] text-slate-500 font-mono">{formatINR(totalQuotationValue)}</div>
             </div>
           </CardContent>
         </Card>
@@ -513,9 +504,9 @@ export const QuotationsInvoicesPage: React.FC = () => {
               <Truck className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">Delivery Challans</div>
+              <div className="text-xs font-bold uppercase text-slate-500 tracking-wider">Delivery Challans</div>
               <div className="text-xl font-extrabold text-slate-900 font-mono">{deliveryChallans.length}</div>
-              <div className="text-[10px] text-slate-500">Material transfers</div>
+              <div className="text-[11px] text-slate-500">Material transfers</div>
             </div>
           </CardContent>
         </Card>
@@ -526,9 +517,9 @@ export const QuotationsInvoicesPage: React.FC = () => {
               <ReceiptText className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase text-slate-500 tracking-wider">Invoiced / Balance Due</div>
+              <div className="text-xs font-bold uppercase text-slate-500 tracking-wider">Invoiced / Balance Due</div>
               <div className="text-xl font-extrabold text-slate-900 font-mono">{invoices.length} Invoices</div>
-              <div className="text-[10px] font-mono">
+              <div className="text-[11px] font-mono">
                 Due: <span className={totalBalanceDue > 0 ? 'text-rose-600 font-bold' : 'text-emerald-700 font-bold'}>{formatINR(totalBalanceDue)}</span>
               </div>
             </div>
@@ -541,66 +532,66 @@ export const QuotationsInvoicesPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('PROJECT_GROUPS')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'PROJECT_GROUPS'
               ? 'bg-orange-600 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200'
           }`}
         >
           <FolderGit2 className="w-3.5 h-3.5" />
-          <span>Grouped by Project / Job ({projectGroups.length})</span>
+          <span>By job ({projectGroups.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('QUOTATIONS')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'QUOTATIONS'
               ? 'bg-orange-600 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200'
           }`}
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />
-          <span>All Quotations (A-Series) ({quotations.length})</span>
+          <span>Quotations ({quotations.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('CHALLANS')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'CHALLANS'
               ? 'bg-orange-600 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200'
           }`}
         >
           <Truck className="w-3.5 h-3.5" />
-          <span>All Delivery Challans ({deliveryChallans.length})</span>
+          <span>Challans ({deliveryChallans.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('INVOICES')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'INVOICES'
               ? 'bg-orange-600 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200'
           }`}
         >
           <ReceiptText className="w-3.5 h-3.5" />
-          <span>All Tax Invoices ({invoices.length})</span>
+          <span>Invoices ({invoices.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('CREDIT_NOTES')}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
             activeTab === 'CREDIT_NOTES'
               ? 'bg-orange-600 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200'
           }`}
         >
           <FileMinus className="w-3.5 h-3.5" />
-          <span>Credit Notes ({creditNotes.length})</span>
+          <span>Credit notes ({creditNotes.length})</span>
         </button>
       </div>
 
@@ -615,7 +606,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                 placeholder="Search by Job ID, Enquiry #, Customer, Quotation #, DC #, or Invoice #..."
                 value={projectSearch}
                 onChange={(e) => setProjectSearch(e.target.value)}
-                className="pl-9 text-xs bg-white"
+                className="pl-9 text-[13px] bg-white"
               />
             </div>
 
@@ -623,7 +614,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
               <select
                 value={projectFilter}
                 onChange={(e) => setProjectFilter(e.target.value as any)}
-                className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-700 focus:outline-none focus:border-orange-500 cursor-pointer"
+                className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-700 focus:outline-none focus:border-orange-500 cursor-pointer"
               >
                 <option value="ALL">All Projects / Jobs ({projectGroups.length})</option>
                 <option value="WITH_QUOTATION">With Quotations</option>
@@ -639,15 +630,15 @@ export const QuotationsInvoicesPage: React.FC = () => {
           <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
-                      <th className="p-3 w-10 text-center"></th>
-                      <th className="p-3 min-w-[200px]">Project / Job Ref</th>
-                      <th className="p-3 min-w-[190px]">Customer / Client</th>
-                      <th className="p-3 min-w-[170px]">1. Quotation</th>
-                      <th className="p-3 min-w-[150px]">2. Delivery Challan</th>
-                      <th className="p-3 min-w-[160px]">3. Tax Invoice</th>
+                      <th className="p-3 w-10 text-center hidden lg:table-cell"></th>
+                      <th className="p-3 min-w-[170px]">Job / Enquiry</th>
+                      <th className="p-3 min-w-[150px]">Customer</th>
+                      <th className="p-3 min-w-[140px]">Quotation</th>
+                      <th className="p-3 min-w-[120px]">Challan</th>
+                      <th className="p-3 min-w-[140px]">Invoice</th>
                       <th className="p-3 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -674,7 +665,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               onClick={() => toggleGroupExpand(group.groupId)}
                             >
                               {/* Expand Toggle */}
-                              <td className="p-3 text-center">
+                              <td className="p-3 text-center hidden lg:table-cell">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -703,15 +694,15 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                         ? 'orange'
                                         : 'secondary'
                                     }
-                                    className="text-[9px] uppercase font-bold tracking-wider"
+                                    className="text-[11px] uppercase font-bold tracking-wider"
                                   >
                                     {group.projectType}
                                   </Badge>
-                                  <span className="font-mono font-bold text-slate-900 text-xs">
+                                  <span className="font-mono font-bold text-slate-900 text-[13px]">
                                     {group.referenceId}
                                   </span>
                                 </div>
-                                <div className="text-[11px] text-slate-500 truncate max-w-[220px] mt-0.5" title={group.title}>
+                                <div className="text-xs text-slate-500 truncate max-w-[220px] mt-0.5" title={group.title}>
                                   {group.title}
                                 </div>
                               </td>
@@ -721,9 +712,9 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                 <div className="font-semibold text-slate-900">
                                   {group.customerName}
                                 </div>
-                                <div className="text-[11px] text-slate-500 truncate max-w-[200px] flex items-center gap-1">
+                                <div className="text-xs text-slate-500 truncate max-w-[200px] flex items-center gap-1">
                                   {group.customerPhone && (
-                                    <span className="font-mono text-[10px] text-slate-600">
+                                    <span className="font-mono text-[11px] text-slate-600">
                                       {group.customerPhone}
                                     </span>
                                   )}
@@ -744,12 +735,12 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                       </span>
                                       <Badge
                                         variant={quotationStatusMeta(quot.status).variant}
-                                        className="text-[9px] px-1 py-0"
+                                        className="text-[11px] px-1 py-0"
                                       >
                                         {quotationStatusMeta(quot.status).label}
                                       </Badge>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[11px]">
+                                    <div className="flex items-center gap-2 text-xs">
                                       <span className="font-mono font-bold text-slate-800">
                                         {formatINR(quot.grandTotal)}
                                       </span>
@@ -762,7 +753,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                             setBuilderEnquiryId(quot.enquiryId);
                                             setIsBuilderOpen(true);
                                           }}
-                                          className="text-orange-600 hover:text-orange-800 hover:underline font-semibold text-[10px] flex items-center gap-0.5 cursor-pointer"
+                                          className="text-orange-600 hover:text-orange-800 hover:underline font-semibold text-[11px] flex items-center gap-0.5 cursor-pointer"
                                           title="Edit quotation line items in-place (no duplicate record)"
                                         >
                                           <Edit className="w-2.5 h-2.5" /> Edit
@@ -772,13 +763,13 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                   </div>
                                 ) : (
                                   <div className="flex items-center gap-1.5">
-                                    <span className="text-slate-400 italic text-[11px]">None</span>
+                                    <span className="text-slate-400 italic text-xs">None</span>
                                     {isManagement && (
                                       <Button
                                         type="button"
                                         size="sm"
                                         variant="outline"
-                                        className="h-6 px-1.5 text-[10px] text-orange-600 border-orange-200 hover:bg-orange-50 font-semibold cursor-pointer"
+                                        className="h-6 px-1.5 text-[11px] text-orange-600 border-orange-200 hover:bg-orange-50 font-semibold cursor-pointer"
                                         onClick={() => {
                                           setQuotationToEdit(null);
                                           setBuilderCustomerId(group.customer?.id || (group.job ? group.job.customerNumber : undefined));
@@ -809,11 +800,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                       >
                                         {dc.challanNo}
                                       </span>
-                                      <Badge variant="outline" className="text-[9px] px-1 py-0 text-blue-700 bg-blue-50 border-blue-200">
+                                      <Badge variant="outline" className="text-[11px] px-1 py-0 text-blue-700 bg-blue-50 border-blue-200">
                                         {dc.lineItems.length} Goods
                                       </Badge>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px]">
+                                    <div className="flex items-center gap-2 text-[11px]">
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -845,7 +836,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                     type="button"
                                     onClick={() => handleConvertQuoteToChallan(quot, group.job?.id)}
                                     disabled={converting}
-                                    className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                                    className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                                     title="Create Delivery Challan from Quotation items"
                                   >
                                     <Plus className="w-3 h-3" /> Create DC
@@ -870,11 +861,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                       >
                                         {inv.invoiceNo}
                                       </span>
-                                      <Badge variant={invoiceBadge(inv).variant} className="text-[9px] px-1 py-0">
+                                      <Badge variant={invoiceBadge(inv).variant} className="text-[11px] px-1 py-0">
                                         {invoiceBadge(inv).label}
                                       </Badge>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] font-mono">
+                                    <div className="flex items-center gap-2 text-[11px] font-mono">
                                       {inv.balanceDue > 0 ? (
                                         <span className="text-rose-600 font-semibold">
                                           Due: {formatINR(inv.balanceDue)}
@@ -913,7 +904,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                     type="button"
                                     onClick={() => handleConvertChallanToInvoice(dc)}
                                     disabled={converting}
-                                    className="text-[10px] text-emerald-600 hover:text-emerald-800 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                                    className="text-[11px] text-emerald-600 hover:text-emerald-800 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                                     title="Convert Delivery Challan to Tax Invoice"
                                   >
                                     <ReceiptText className="w-3 h-3" /> Raise Inv
@@ -923,7 +914,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                     type="button"
                                     onClick={() => handleConvertQuoteToInvoice(quot)}
                                     disabled={converting}
-                                    className="text-[10px] text-emerald-600 hover:text-emerald-800 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                                    className="text-[11px] text-emerald-600 hover:text-emerald-800 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                                     title="Convert Quotation directly to Tax Invoice"
                                   >
                                     <ReceiptText className="w-3 h-3" /> Raise Inv
@@ -939,7 +930,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 px-2.5 text-xs text-slate-700 hover:text-orange-700 hover:bg-orange-50 border-slate-300 font-semibold cursor-pointer"
+                                  className="h-7 px-2.5 text-[13px] text-slate-700 hover:text-orange-700 hover:bg-orange-50 border-slate-300 font-semibold cursor-pointer"
                                   onClick={() => toggleGroupExpand(group.groupId)}
                                 >
                                   {isExpanded ? 'Hide Chain' : 'View Chain'}
@@ -959,17 +950,17 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                   <div className="space-y-4">
                                     <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-200">
                                       <div className="flex items-center gap-2">
-                                        <div className="w-7 h-7 rounded-lg bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600 font-bold text-xs shadow-2xs">
+                                        <div className="w-7 h-7 rounded-lg bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600 font-bold text-[13px] shadow-2xs">
                                           ⛓
                                         </div>
                                         <div>
-                                          <h4 className="font-bold text-slate-900 text-xs sm:text-sm font-display uppercase tracking-wider flex items-center gap-2">
+                                          <h4 className="font-bold text-slate-900 text-[13px] sm:text-sm font-display uppercase tracking-wider flex items-center gap-2">
                                             <span>Commercial Document Chain</span>
                                             <span className="text-slate-300 font-normal">&bull;</span>
                                             <span className="text-orange-600 font-mono">{group.referenceId}</span>
-                                            <span className="text-slate-500 font-normal font-sans text-xs">({group.customerName})</span>
+                                            <span className="text-slate-500 font-normal font-sans text-[13px]">({group.customerName})</span>
                                           </h4>
-                                          <p className="text-[11px] text-slate-500">
+                                          <p className="text-xs text-slate-500">
                                             Stage 1: Estimate &rarr; Stage 2: Goods Dispatch &rarr; Stage 3: Official Billing Invoice
                                           </p>
                                         </div>
@@ -981,7 +972,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                             type="button"
                                             size="sm"
                                             variant="outline"
-                                            className="h-7 text-xs text-orange-700 hover:bg-orange-50 border-orange-300 font-semibold cursor-pointer shadow-2xs"
+                                            className="h-7 text-[13px] text-orange-700 hover:bg-orange-50 border-orange-300 font-semibold cursor-pointer shadow-2xs"
                                             onClick={() => {
                                               setQuotationToEdit(quot);
                                               setBuilderCustomerId(quot.customerNumber);
@@ -997,7 +988,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                             type="button"
                                             size="sm"
                                             variant="outline"
-                                            className="h-7 text-xs text-blue-700 hover:bg-blue-50 border-blue-300 font-semibold cursor-pointer shadow-2xs"
+                                            className="h-7 text-[13px] text-blue-700 hover:bg-blue-50 border-blue-300 font-semibold cursor-pointer shadow-2xs"
                                             onClick={() => {
                                               setPreviewChallan(dc);
                                               setChallanMode('EDIT');
@@ -1012,7 +1003,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                             type="button"
                                             size="sm"
                                             variant="outline"
-                                            className="h-7 text-xs text-emerald-700 hover:bg-emerald-50 border-emerald-300 font-semibold cursor-pointer shadow-2xs"
+                                            className="h-7 text-[13px] text-emerald-700 hover:bg-emerald-50 border-emerald-300 font-semibold cursor-pointer shadow-2xs"
                                             onClick={() => {
                                               setPreviewInvoice(inv);
                                               setInvoiceMode('EDIT');
@@ -1030,19 +1021,19 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                       <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-3 flex flex-col justify-between h-full min-h-[200px]">
                                         <div className="space-y-2">
                                           <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                                               <FileSpreadsheet className="w-4 h-4 text-orange-600" />
                                               Stage 1: Quotation
                                             </span>
                                             {quot ? (
                                               <Badge
                                                 variant={quotationStatusMeta(quot.status).variant}
-                                                className="text-[9px]"
+                                                className="text-[11px]"
                                               >
                                                 {quotationStatusMeta(quot.status).label}
                                               </Badge>
                                             ) : (
-                                              <Badge variant="secondary" className="text-[9px]">NOT ISSUED</Badge>
+                                              <Badge variant="secondary" className="text-[11px]">NOT ISSUED</Badge>
                                             )}
                                           </div>
 
@@ -1051,10 +1042,10 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                               <div className="font-mono font-bold text-orange-600 text-sm">
                                                 {quot.quotationNo}
                                               </div>
-                                              <div className="text-[11px] text-slate-500 font-mono">
+                                              <div className="text-xs text-slate-500 font-mono">
                                                 Date: {formatDate(quot.date)} &bull; {quot.lineItems.length} item(s)
                                               </div>
-                                              <div className="text-xs font-bold text-slate-900 font-mono mt-1">
+                                              <div className="text-[13px] font-bold text-slate-900 font-mono mt-1">
                                                 Grand Total: {formatINR(quot.grandTotal)}
                                               </div>
                                               {isManagement && (
@@ -1066,18 +1057,18 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                     setBuilderEnquiryId(quot.enquiryId);
                                                     setIsBuilderOpen(true);
                                                   }}
-                                                  className="text-[10px] text-orange-600 hover:text-orange-800 hover:underline font-semibold flex items-center gap-1 cursor-pointer mt-1"
+                                                  className="text-[11px] text-orange-600 hover:text-orange-800 hover:underline font-semibold flex items-center gap-1 cursor-pointer mt-1"
                                                   title="Edit quotation in-place"
                                                 >
                                                   <Edit className="w-2.5 h-2.5" /> Edit Quotation In-Place
                                                 </button>
                                               )}
-                                              <div className="text-[10px] text-slate-500 mt-1 truncate">
+                                              <div className="text-[11px] text-slate-500 mt-1 truncate">
                                                 Scope: {quot.lineItems.map((i) => i.itemName).join(', ')}
                                               </div>
                                             </div>
                                           ) : (
-                                            <div className="p-3 bg-slate-50 rounded-lg text-slate-500 italic text-[11px] text-center">
+                                            <div className="p-3 bg-slate-50 rounded-lg text-slate-500 italic text-xs text-center">
                                               No quotation generated for this project yet.
                                             </div>
                                           )}
@@ -1090,7 +1081,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                 type="button"
                                                 size="sm"
                                                 variant="outline"
-                                                className="h-7 text-xs flex-1 cursor-pointer"
+                                                className="h-7 text-[13px] flex-1 cursor-pointer"
                                                 onClick={() => setPreviewQuotation(quot)}
                                               >
                                                 <Eye className="w-3 h-3 mr-1" /> Preview PDF
@@ -1100,7 +1091,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                   type="button"
                                                   size="sm"
                                                   variant="outline"
-                                                  className="h-7 text-xs flex-1 text-orange-700 border-orange-200 hover:bg-orange-50 cursor-pointer"
+                                                  className="h-7 text-[13px] flex-1 text-orange-700 border-orange-200 hover:bg-orange-50 cursor-pointer"
                                                   onClick={() => {
                                                     setQuotationToEdit(quot);
                                                     setBuilderCustomerId(quot.customerNumber);
@@ -1116,7 +1107,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                   type="button"
                                                   size="sm"
                                                   variant="primary"
-                                                  className="h-7 text-xs flex-1 bg-orange-600 hover:bg-orange-700 text-white cursor-pointer shadow-2xs whitespace-nowrap"
+                                                  className="h-7 text-[13px] flex-1 bg-orange-600 hover:bg-orange-700 text-white cursor-pointer shadow-2xs whitespace-nowrap"
                                                   onClick={() => handleConvertQuoteToChallan(quot, group.job?.id)}
                                                   disabled={converting}
                                                 >
@@ -1129,7 +1120,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                               type="button"
                                               size="sm"
                                               variant="primary"
-                                              className="h-7 text-xs w-full bg-orange-600 hover:bg-orange-700 text-white cursor-pointer shadow-2xs"
+                                              className="h-7 text-[13px] w-full bg-orange-600 hover:bg-orange-700 text-white cursor-pointer shadow-2xs"
                                               onClick={() => {
                                                 setQuotationToEdit(null);
                                                 setBuilderCustomerId(group.customer?.id || (group.job ? group.job.customerNumber : undefined));
@@ -1147,16 +1138,16 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                       <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-3 flex flex-col justify-between h-full min-h-[200px]">
                                         <div className="space-y-2">
                                           <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                                               <Truck className="w-4 h-4 text-blue-600" />
                                               Stage 2: Delivery Challan
                                             </span>
                                             {dc ? (
-                                              <Badge variant="outline" className="text-[9px] text-blue-700 bg-blue-50 border-blue-200">
+                                              <Badge variant="outline" className="text-[11px] text-blue-700 bg-blue-50 border-blue-200">
                                                 Dispatched
                                               </Badge>
                                             ) : (
-                                              <Badge variant="secondary" className="text-[9px]">NOT ISSUED</Badge>
+                                              <Badge variant="secondary" className="text-[11px]">NOT ISSUED</Badge>
                                             )}
                                           </div>
 
@@ -1165,10 +1156,10 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                               <div className="font-mono font-bold text-blue-600 text-sm">
                                                 {dc.challanNo}
                                               </div>
-                                              <div className="text-[11px] text-slate-500 font-mono">
+                                              <div className="text-xs text-slate-500 font-mono">
                                                 Date: {formatDate(dc.date)} &bull; {dc.lineItems.length} goods item(s)
                                               </div>
-                                              <div className="text-[11px] text-slate-600 mt-1">
+                                              <div className="text-xs text-slate-600 mt-1">
                                                 Transit: <strong className="text-slate-800">{dc.transportedBy || 'Field Transit'}</strong>
                                               </div>
                                               <button
@@ -1178,17 +1169,17 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                   setChallanMode('EDIT');
                                                   setIsChallanModalOpen(true);
                                                 }}
-                                                className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline font-semibold flex items-center gap-1 cursor-pointer mt-1"
+                                                className="text-[11px] text-blue-600 hover:text-blue-800 hover:underline font-semibold flex items-center gap-1 cursor-pointer mt-1"
                                                 title="Edit delivery challan items and quantities"
                                               >
                                                 <Edit className="w-2.5 h-2.5" /> Edit DC In-Place
                                               </button>
-                                              <div className="text-[10px] text-slate-500 mt-1 truncate">
+                                              <div className="text-[11px] text-slate-500 mt-1 truncate">
                                                 Cargo: {dc.lineItems.map((li) => `${li.itemDescription} (${li.qty})`).join(', ')}
                                               </div>
                                             </div>
                                           ) : (
-                                            <div className="p-3 bg-slate-50 rounded-lg text-slate-500 italic text-[11px] text-center">
+                                            <div className="p-3 bg-slate-50 rounded-lg text-slate-500 italic text-xs text-center">
                                               No delivery challan issued for this project yet.
                                             </div>
                                           )}
@@ -1201,7 +1192,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                 type="button"
                                                 size="sm"
                                                 variant="outline"
-                                                className="h-7 text-xs flex-1 cursor-pointer"
+                                                className="h-7 text-[13px] flex-1 cursor-pointer"
                                                 onClick={() => {
                                                   setPreviewChallan(dc);
                                                   setChallanMode('PREVIEW');
@@ -1214,7 +1205,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                 type="button"
                                                 size="sm"
                                                 variant="outline"
-                                                className="h-7 text-xs flex-1 text-blue-700 border-blue-200 hover:bg-blue-50 cursor-pointer"
+                                                className="h-7 text-[13px] flex-1 text-blue-700 border-blue-200 hover:bg-blue-50 cursor-pointer"
                                                 onClick={() => {
                                                   setPreviewChallan(dc);
                                                   setChallanMode('EDIT');
@@ -1228,7 +1219,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                   type="button"
                                                   size="sm"
                                                   variant="primary"
-                                                  className="h-7 text-xs flex-1 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-2xs whitespace-nowrap"
+                                                  className="h-7 text-[13px] flex-1 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-2xs whitespace-nowrap"
                                                   onClick={() => handleConvertChallanToInvoice(dc)}
                                                   disabled={converting}
                                                 >
@@ -1241,7 +1232,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                               type="button"
                                               size="sm"
                                               variant="outline"
-                                              className="h-7 text-xs w-full text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer"
+                                              className="h-7 text-[13px] w-full text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer"
                                               disabled={converting}
                                               onClick={() => {
                                                 if (quot) {
@@ -1266,16 +1257,16 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                       <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-3 flex flex-col justify-between h-full min-h-[200px]">
                                         <div className="space-y-2">
                                           <div className="flex items-center justify-between">
-                                            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
+                                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
                                               <ReceiptText className="w-4 h-4 text-emerald-600" />
                                               Stage 3: Tax Invoice
                                             </span>
                                             {inv ? (
-                                              <Badge variant={invoiceBadge(inv).variant} className="text-[9px]">
+                                              <Badge variant={invoiceBadge(inv).variant} className="text-[11px]">
                                                 {invoiceBadge(inv).label}
                                               </Badge>
                                             ) : (
-                                              <Badge variant="secondary" className="text-[9px]">NOT INVOICED</Badge>
+                                              <Badge variant="secondary" className="text-[11px]">NOT INVOICED</Badge>
                                             )}
                                           </div>
 
@@ -1284,13 +1275,13 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                               <div className="font-mono font-bold text-emerald-700 text-sm">
                                                 {inv.invoiceNo}
                                               </div>
-                                              <div className="text-[11px] text-slate-500 font-mono">
+                                              <div className="text-xs text-slate-500 font-mono">
                                                 Date: {formatDate(inv.date)} &bull; Mode: {inv.paymentMode}
                                               </div>
-                                              <div className="text-xs font-bold text-slate-900 font-mono mt-1">
+                                              <div className="text-[13px] font-bold text-slate-900 font-mono mt-1">
                                                 Grand Total: {formatINR(inv.grandTotal)}
                                               </div>
-                                              <div className="text-[11px] font-mono mt-0.5">
+                                              <div className="text-xs font-mono mt-0.5">
                                                 {inv.balanceDue > 0 ? (
                                                   <span className="text-rose-600 font-bold">
                                                     Balance Due: {formatINR(inv.balanceDue)}
@@ -1307,17 +1298,17 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                   setPreviewInvoice(inv);
                                                   setInvoiceMode('EDIT');
                                                 }}
-                                                className="text-[10px] text-emerald-700 hover:text-emerald-900 hover:underline font-semibold flex items-center gap-1 cursor-pointer mt-1"
+                                                className="text-[11px] text-emerald-700 hover:text-emerald-900 hover:underline font-semibold flex items-center gap-1 cursor-pointer mt-1"
                                                 title="Edit tax invoice in-place"
                                               >
                                                 <Edit className="w-2.5 h-2.5" /> Edit Invoice In-Place
                                               </button>
-                                              <div className="text-[10px] text-slate-500 mt-1 truncate">
+                                              <div className="text-[11px] text-slate-500 mt-1 truncate">
                                                 Scope: {inv.lineItems.map((li) => li.itemName).join(', ')}
                                               </div>
                                             </div>
                                           ) : (
-                                            <div className="p-3 bg-slate-50 rounded-lg text-slate-500 italic text-[11px] text-center">
+                                            <div className="p-3 bg-slate-50 rounded-lg text-slate-500 italic text-xs text-center">
                                               No tax invoice billed for this project yet.
                                             </div>
                                           )}
@@ -1330,7 +1321,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                 type="button"
                                                 size="sm"
                                                 variant="outline"
-                                                className="h-7 text-xs flex-1 cursor-pointer text-slate-800"
+                                                className="h-7 text-[13px] flex-1 cursor-pointer text-slate-800"
                                                 onClick={() => {
                                                   setPreviewInvoice(inv);
                                                   setInvoiceMode('PREVIEW');
@@ -1342,7 +1333,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                                 type="button"
                                                 size="sm"
                                                 variant="outline"
-                                                className="h-7 text-xs flex-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50 cursor-pointer"
+                                                className="h-7 text-[13px] flex-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50 cursor-pointer"
                                                 onClick={() => {
                                                   setPreviewInvoice(inv);
                                                   setInvoiceMode('EDIT');
@@ -1356,7 +1347,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                               type="button"
                                               size="sm"
                                               variant="primary"
-                                              className="h-7 text-xs w-full bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-2xs"
+                                              className="h-7 text-[13px] w-full bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-2xs"
                                               disabled={converting}
                                               onClick={() => {
                                                 if (dc) {
@@ -1400,13 +1391,13 @@ export const QuotationsInvoicesPage: React.FC = () => {
                 placeholder="Search quotation no, customer, or equipment..."
                 value={quotationSearch}
                 onChange={(e) => setQuotationSearch(e.target.value)}
-                className="pl-9 text-xs bg-white"
+                className="pl-9 text-[13px] bg-white"
               />
             </div>
             <select
               value={quotationStatusFilter}
               onChange={(e) => setQuotationStatusFilter(e.target.value as any)}
-              className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-700 focus:outline-none focus:border-orange-500 cursor-pointer w-full sm:w-auto"
+              className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-700 focus:outline-none focus:border-orange-500 cursor-pointer w-full sm:w-auto"
             >
               <option value="ALL">All Statuses</option>
               {(Object.keys(QUOTATION_STATUS_META) as QuotationStatus[]).map((st) => (
@@ -1420,7 +1411,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
           <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="p-3">Quotation No</th>
@@ -1458,16 +1449,16 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               <div className="font-semibold text-slate-900">
                                 {customer?.name || q.customerNumber}
                               </div>
-                              <div className="text-[11px] text-slate-500 truncate max-w-xs">
+                              <div className="text-xs text-slate-500 truncate max-w-xs">
                                 {customer?.address}
                               </div>
                             </td>
-                            <td className="p-3 text-slate-500 font-mono text-[11px]">
+                            <td className="p-3 text-slate-500 font-mono text-xs">
                               {formatDate(q.date)}
                             </td>
                             <td className="p-3 text-slate-700">
                               <div className="font-medium">{q.lineItems.length} items</div>
-                              <div className="text-[10px] text-slate-500 truncate max-w-xs">
+                              <div className="text-[11px] text-slate-500 truncate max-w-xs">
                                 {q.lineItems.map((i) => i.itemName).join(', ')}
                               </div>
                             </td>
@@ -1479,11 +1470,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
                             </td>
                             <td className="p-3 text-center">
                               <div className="flex flex-col items-center gap-1">
-                                <Badge variant={statusMeta.variant} className="text-[10px]" title={q.statusNote}>
+                                <Badge variant={statusMeta.variant} className="text-[11px]" title={q.statusNote}>
                                   {statusMeta.label}
                                 </Badge>
                                 {q.whatsappSharedAt && (
-                                  <Badge variant="success" className="text-[9px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                                  <Badge variant="success" className="text-[11px] bg-emerald-50 text-emerald-700 border-emerald-200">
                                     WhatsApp Sent
                                   </Badge>
                                 )}
@@ -1495,7 +1486,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 text-[11px] px-2 text-orange-700 border-orange-300 hover:bg-orange-50 font-semibold"
+                                  className="h-7 text-xs px-2 text-orange-700 border-orange-300 hover:bg-orange-50 font-semibold"
                                   onClick={() => {
                                     setQuotationToEdit(q);
                                     setBuilderCustomerId(q.customerNumber);
@@ -1512,7 +1503,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                 <select
                                   value=""
                                   onChange={(e) => void handleSetQuotationStatus(q, e.target.value as QuotationStatus)}
-                                  className="h-7 rounded-md border border-slate-300 bg-white px-1.5 text-[11px] text-slate-700 cursor-pointer align-middle"
+                                  className="h-7 rounded-md border border-slate-300 bg-white px-1.5 text-xs text-slate-700 cursor-pointer align-middle"
                                   title="Change status"
                                 >
                                   <option value="" disabled>
@@ -1529,7 +1520,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 text-[11px] px-2"
+                                  className="h-7 text-xs px-2"
                                   onClick={() => setAdvanceQuotation(q)}
                                   title="Record an advance received against this quotation"
                                 >
@@ -1539,7 +1530,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-[11px] px-2"
+                                className="h-7 text-xs px-2"
                                 onClick={() => setPreviewQuotation(q)}
                               >
                                 Preview PDF
@@ -1563,7 +1554,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
         <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-3">Credit Note</th>
@@ -1592,10 +1583,10 @@ export const QuotationsInvoicesPage: React.FC = () => {
                         <td className="p-3 font-mono font-bold text-orange-700">{cn.creditNoteNo}</td>
                         <td className="p-3 font-mono">{cn.invoiceNo}</td>
                         <td className="p-3 font-semibold text-slate-900">{cn.billTo.name}</td>
-                        <td className="p-3 text-slate-500 font-mono text-[11px]">{formatDate(cn.date)}</td>
+                        <td className="p-3 text-slate-500 font-mono text-xs">{formatDate(cn.date)}</td>
                         <td className="p-3 text-slate-600">
                           {creditNoteReasonLabel(cn.reason)}
-                          {cn.reasonNote && <div className="text-[10px] text-slate-500">{cn.reasonNote}</div>}
+                          {cn.reasonNote && <div className="text-[11px] text-slate-500">{cn.reasonNote}</div>}
                         </td>
                         <td className="p-3 text-right font-mono font-semibold">{formatINR(cn.grandTotal)}</td>
                         <td className="p-3 text-right font-mono text-slate-600">
@@ -1619,14 +1610,14 @@ export const QuotationsInvoicesPage: React.FC = () => {
               placeholder="Search challan no, customer, or items..."
               value={challanSearch}
               onChange={(e) => setChallanSearch(e.target.value)}
-              className="pl-9 text-xs bg-white"
+              className="pl-9 text-[13px] bg-white"
             />
           </div>
 
           <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="p-3">Challan No</th>
@@ -1663,11 +1654,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               <div className="font-semibold text-slate-900">
                                 {customer?.name || dc.customerNumber}
                               </div>
-                              <div className="text-[11px] text-slate-500 truncate max-w-xs">
+                              <div className="text-xs text-slate-500 truncate max-w-xs">
                                 {customer?.address}
                               </div>
                             </td>
-                            <td className="p-3 text-slate-500 font-mono text-[11px]">
+                            <td className="p-3 text-slate-500 font-mono text-xs">
                               {formatDate(dc.date)}
                             </td>
                             <td className="p-3 text-slate-700">
@@ -1677,7 +1668,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               <div className="font-medium text-slate-900">
                                 {dc.lineItems.length} Item(s)
                               </div>
-                              <div className="text-[10px] text-slate-500 truncate max-w-xs">
+                              <div className="text-[11px] text-slate-500 truncate max-w-xs">
                                 {dc.lineItems.map((li) => `${li.itemDescription} (${li.qty})`).join(', ')}
                               </div>
                             </td>
@@ -1685,7 +1676,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-[11px] px-2 text-blue-700 border-blue-200 hover:bg-blue-50"
+                                className="h-7 text-xs px-2 text-blue-700 border-blue-200 hover:bg-blue-50"
                                 onClick={() => {
                                   setPreviewChallan(dc);
                                   setChallanMode('PREVIEW');
@@ -1697,7 +1688,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-[11px] px-2 text-blue-700 border-blue-200 hover:bg-blue-50"
+                                className="h-7 text-xs px-2 text-blue-700 border-blue-200 hover:bg-blue-50"
                                 onClick={() => {
                                   setPreviewChallan(dc);
                                   setChallanMode('EDIT');
@@ -1709,7 +1700,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               <Button
                                 size="sm"
                                 variant="primary"
-                                className="h-7 text-[11px] px-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                className="h-7 text-xs px-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                                 onClick={() => handleConvertChallanToInvoice(dc)}
                                 disabled={converting}
                               >
@@ -1737,14 +1728,14 @@ export const QuotationsInvoicesPage: React.FC = () => {
               placeholder="Search invoice no or customer..."
               value={invoiceSearch}
               onChange={(e) => setInvoiceSearch(e.target.value)}
-              className="pl-9 text-xs bg-white"
+              className="pl-9 text-[13px] bg-white"
             />
           </div>
 
           <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="p-3">Invoice No</th>
@@ -1786,17 +1777,17 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               <div className="font-semibold text-slate-900">
                                 {customer?.name || inv.customerNumber}
                               </div>
-                              <div className="text-[11px] text-slate-500 truncate max-w-xs">
+                              <div className="text-xs text-slate-500 truncate max-w-xs">
                                 {customer?.address}
                               </div>
                             </td>
-                            <td className="p-3 text-slate-500 font-mono text-[11px]">
+                            <td className="p-3 text-slate-500 font-mono text-xs">
                               {formatDate(inv.date)}
                             </td>
                             <td className="p-3 text-right font-mono font-semibold text-slate-900">
                               {formatINR(inv.grandTotal)}
                               {!cancelled && inv.creditNoteTotal ? (
-                                <div className="text-[10px] font-normal text-slate-500">
+                                <div className="text-[11px] font-normal text-slate-500">
                                   net {formatINR(invoiceNetTotal(inv))}
                                 </div>
                               ) : null}
@@ -1810,7 +1801,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               </span>
                             </td>
                             <td className="p-3 text-center">
-                              <Badge variant={badge.variant} className="text-[10px]">
+                              <Badge variant={badge.variant} className="text-[11px]">
                                 {badge.label}
                               </Badge>
                             </td>
@@ -1818,7 +1809,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 text-[11px] px-2 text-slate-700"
+                                className="h-7 text-xs px-2 text-slate-700"
                                 onClick={() => {
                                   setPreviewInvoice(inv);
                                   setInvoiceMode('PREVIEW');
@@ -1830,7 +1821,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="h-7 text-[11px] px-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                                  className="h-7 text-xs px-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
                                   onClick={() => {
                                     setPreviewInvoice(inv);
                                     setInvoiceMode('EDIT');

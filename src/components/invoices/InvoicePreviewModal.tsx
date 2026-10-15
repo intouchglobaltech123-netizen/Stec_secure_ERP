@@ -24,6 +24,7 @@ import { Modal } from '@/components/ui/modal';
 import { formatINR, formatDate } from '@/lib/utils';
 import { exportElementToPdfWithToast } from '@/lib/pdf-generator';
 import { TaxInvoiceDocument } from '@/components/invoices/TaxInvoiceDocument';
+import { FitToWidth } from '@/components/ui/fit-to-width';
 import {
   CancelInvoiceModal,
   CreditNoteModal,
@@ -122,10 +123,10 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         {
           itemName: '',
           description: '',
-          hsnSac: '85258090',
+          hsnSac: '',
           gstRate: 18,
           qty: 1,
-          rate: 1000,
+          rate: 0,
           amount: 0,
           cgst: 0,
           sgst: 0,
@@ -197,29 +198,29 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       {/* Top Control Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 border-b border-slate-200 shrink-0 bg-white">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="orange" className="text-xs font-mono font-bold whitespace-nowrap">
+          <Badge variant="orange" className="text-[13px] font-mono font-bold whitespace-nowrap">
             {current.invoiceNo}
           </Badge>
           {cancelled ? (
-            <Badge variant="danger" className="text-xs font-bold">
+            <Badge variant="danger" className="text-[13px] font-bold">
               CANCELLED
             </Badge>
           ) : refundDue > 0 ? (
-            <Badge variant="warning" className="text-xs font-bold">
+            <Badge variant="warning" className="text-[13px] font-bold">
               REFUND DUE {formatINR(refundDue)}
             </Badge>
           ) : (
-            <Badge variant={isSettled ? 'success' : 'warning'} className="text-xs font-bold">
+            <Badge variant={isSettled ? 'success' : 'warning'} className="text-[13px] font-bold">
               {isSettled ? 'PAID FULL' : 'PAYMENT DUE'}
             </Badge>
           )}
           {activeInvoice.linkedJobId && (
-            <span className="text-[11px] font-mono text-slate-500">
+            <span className="text-xs font-mono text-slate-500">
               Ref: {activeInvoice.linkedJobId}
             </span>
           )}
           {mode === 'EDIT' && (
-            <Badge variant="secondary" className="text-xs text-orange-700 bg-orange-50 border-orange-200 font-bold">
+            <Badge variant="secondary" className="text-[13px] text-orange-700 bg-orange-50 border-orange-200 font-bold">
               Editing In-Place
             </Badge>
           )}
@@ -234,7 +235,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={() => setMode('EDIT')}
-                  className="h-8 text-xs rounded-lg text-orange-700 border-orange-300 hover:bg-orange-50 font-semibold cursor-pointer"
+                  className="h-8 text-[13px] rounded-lg text-orange-700 border-orange-300 hover:bg-orange-50 font-semibold cursor-pointer"
                 >
                   <Edit className="w-3.5 h-3.5 mr-1 text-orange-600" /> Edit Invoice
                 </Button>
@@ -244,7 +245,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={() => setShowCreditNote(true)}
-                  className="h-8 text-xs rounded-lg cursor-pointer"
+                  className="h-8 text-[13px] rounded-lg cursor-pointer"
                 >
                   <FileMinus className="w-3.5 h-3.5 mr-1 text-slate-600" /> Credit Note
                 </Button>
@@ -254,12 +255,12 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={() => setShowCancel(true)}
-                  className="h-8 text-xs rounded-lg text-rose-700 border-rose-300 hover:bg-rose-50 cursor-pointer"
+                  className="h-8 text-[13px] rounded-lg text-rose-700 border-rose-300 hover:bg-rose-50 cursor-pointer"
                 >
                   <Ban className="w-3.5 h-3.5 mr-1" /> Cancel
                 </Button>
               )}
-              <Button size="sm" variant="secondary" onClick={handleShareWhatsApp} className="h-8 text-xs rounded-lg">
+              <Button size="sm" variant="secondary" onClick={handleShareWhatsApp} className="h-8 text-[13px] rounded-lg">
                 <Share2 className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Share WhatsApp
               </Button>
               <Button
@@ -271,11 +272,11 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                     filename: `Invoice-${activeInvoice.invoiceNo}-${custName}`,
                   });
                 }}
-                className="h-8 text-xs rounded-lg text-slate-800 hover:bg-slate-50 font-semibold cursor-pointer shadow-2xs"
+                className="h-8 text-[13px] rounded-lg text-slate-800 hover:bg-slate-50 font-semibold cursor-pointer shadow-2xs"
               >
                 <Download className="w-3.5 h-3.5 mr-1 text-slate-600" /> Download PDF
               </Button>
-              <Button size="sm" variant="outline" onClick={handlePrint} className="h-8 text-xs rounded-lg">
+              <Button size="sm" variant="outline" onClick={handlePrint} className="h-8 text-[13px] rounded-lg">
                 <Printer className="w-3.5 h-3.5 mr-1" /> Print
               </Button>
             </>
@@ -284,7 +285,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
               size="sm"
               variant="outline"
               onClick={() => setMode('PREVIEW')}
-              className="h-8 text-xs rounded-lg cursor-pointer"
+              className="h-8 text-[13px] rounded-lg cursor-pointer"
             >
               Cancel Edit
             </Button>
@@ -305,7 +306,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           /* PREVIEW MODE: Authentic Paper Document */
           <div className="space-y-3">
             {invoiceCreditNotes.length > 0 && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs space-y-1.5">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[13px] space-y-1.5">
                 <div className="font-semibold text-slate-800">Credit notes against this invoice</div>
                 {invoiceCreditNotes.map((cn) => (
                   <button
@@ -323,21 +324,23 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                 ))}
               </div>
             )}
-            <TaxInvoiceDocument invoice={current} customer={customer} />
+            <FitToWidth>
+              <TaxInvoiceDocument invoice={current} customer={customer} />
+            </FitToWidth>
           </div>
         ) : (
           /* EDIT MODE: Interactive In-Place Invoice Editor */
-          <form onSubmit={handleSaveInvoiceChanges} className="space-y-4 text-xs">
+          <form onSubmit={handleSaveInvoiceChanges} className="space-y-4 text-[13px]">
             <div className="p-3.5 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-between">
               <div>
-                <div className="font-bold text-slate-900 text-xs">
+                <div className="font-bold text-slate-900 text-[13px]">
                   Direct In-Place Edit &bull; {activeInvoice.invoiceNo}
                 </div>
-                <div className="text-[11px] text-slate-600">
+                <div className="text-xs text-slate-600">
                   Corrects line items, date and terms. Tax is recalculated for the customer's state when you save.
                 </div>
               </div>
-              <Badge variant="orange" className="text-[10px] font-mono">
+              <Badge variant="orange" className="text-[11px] font-mono">
                 {activeInvoice.invoiceNo}
               </Badge>
             </div>
@@ -345,17 +348,17 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
             {/* Metadata (Date, Validity, Payment Mode) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
               <div>
-                <label className="block text-[10px] text-slate-700 uppercase font-bold mb-1">
+                <label className="block text-[11px] text-slate-700 uppercase font-bold mb-1">
                   Invoice Date
                 </label>
                 <Input
                   type="date"
                   value={invoiceDate}
                   onChange={(e) => setInvoiceDate(e.target.value)}
-                  className="h-8 text-xs bg-white"
+                  className="h-8 text-[13px] bg-white"
                 />
               </div>
-              <div className="sm:col-span-2 text-[11px] text-slate-600 self-end">
+              <div className="sm:col-span-2 text-xs text-slate-600 self-end">
                 Amount received so far: <strong className="font-mono text-emerald-700">{formatINR(amountPaid)}</strong>{' '}
                 ({paymentMode}). Payments are recorded on the Payments page, not edited here.
                 <div className="mt-0.5">
@@ -371,14 +374,14 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                 <button
                   type="button"
                   onClick={handleAddItem}
-                  className="text-xs text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer font-semibold"
+                  className="text-[13px] text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer font-semibold"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Item
                 </button>
               </div>
 
               <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
-                <table className="w-full text-left text-xs">
+                <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="p-2.5 w-10 text-center">#</th>
@@ -394,21 +397,21 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   <tbody className="divide-y divide-slate-100">
                     {lineItems.map((item, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50 align-top">
-                        <td className="p-2 text-center text-slate-400 font-mono text-[11px] pt-3">
+                        <td className="p-2 text-center text-slate-400 font-mono text-xs pt-3">
                           {idx + 1}
                         </td>
                         <td className="p-2 space-y-1">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
                             <Input
                               placeholder="Item name"
                               value={item.itemName}
                               onChange={(e) => handleUpdateItem(idx, { itemName: e.target.value })}
-                              className="h-8 text-xs bg-white font-semibold text-slate-900"
+                              className="h-8 text-[13px] bg-white font-semibold text-slate-900"
                             />
                             <select
                               onChange={(e) => handlePickProduct(idx, e.target.value)}
                               value=""
-                              className="h-8 rounded-lg bg-slate-100 border border-slate-200 text-[10px] text-orange-700 px-1 focus:outline-none cursor-pointer"
+                              className="w-full sm:w-auto h-8 rounded-lg bg-slate-100 border border-slate-200 text-[11px] text-orange-700 px-1 focus:outline-none cursor-pointer"
                             >
                               <option value="" disabled>
                                 Catalog...
@@ -424,14 +427,14 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                             placeholder="Description"
                             value={item.description}
                             onChange={(e) => handleUpdateItem(idx, { description: e.target.value })}
-                            className="h-7 text-[11px] bg-slate-50 text-slate-600"
+                            className="h-7 text-xs bg-slate-50 text-slate-600"
                           />
                         </td>
                         <td className="p-2">
                           <Input
                             value={item.hsnSac}
                             onChange={(e) => handleUpdateItem(idx, { hsnSac: e.target.value })}
-                            className="h-8 text-xs font-mono bg-white"
+                            className="h-8 text-[13px] font-mono bg-white"
                           />
                         </td>
                         <td className="p-2">
@@ -440,7 +443,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                             min="1"
                             value={item.qty}
                             onChange={(e) => handleUpdateItem(idx, { qty: Number(e.target.value) || 1 })}
-                            className="h-8 text-xs text-center bg-white"
+                            className="h-8 text-[13px] text-center bg-white"
                           />
                         </td>
                         <td className="p-2">
@@ -449,7 +452,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                             min="0"
                             value={item.rate}
                             onChange={(e) => handleUpdateItem(idx, { rate: Number(e.target.value) || 0 })}
-                            className="h-8 text-xs text-right bg-white font-mono font-medium"
+                            className="h-8 text-[13px] text-right bg-white font-mono font-medium"
                           />
                         </td>
                         <td className="p-2">
@@ -458,7 +461,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                             min="0"
                             value={item.gstRate}
                             onChange={(e) => handleUpdateItem(idx, { gstRate: Number(e.target.value) || 0 })}
-                            className="h-8 text-xs text-right bg-white font-mono"
+                            className="h-8 text-[13px] text-right bg-white font-mono"
                           />
                         </td>
                         <td className="p-2 text-right font-bold text-slate-900 pt-3 font-mono">
@@ -489,27 +492,27 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   rows={4}
                   value={terms}
                   onChange={(e) => setTerms(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white p-2 text-xs text-slate-700 focus:outline-none focus:border-orange-500"
+                  className="w-full rounded-xl border border-slate-300 bg-white p-2 text-[13px] text-slate-700 focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-                <div className="flex justify-between text-slate-700 text-xs">
+                <div className="flex justify-between text-slate-700 text-[13px]">
                   <span>Subtotal:</span>
                   <span className="font-mono font-semibold">{formatINR(totalAmount)}</span>
                 </div>
                 {interState ? (
-                  <div className="flex justify-between text-slate-600 text-xs">
+                  <div className="flex justify-between text-slate-600 text-[13px]">
                     <span>IGST:</span>
                     <span className="font-mono">{formatINR(totalIgst)}</span>
                   </div>
                 ) : (
                   <>
-                    <div className="flex justify-between text-slate-600 text-xs">
+                    <div className="flex justify-between text-slate-600 text-[13px]">
                       <span>CGST:</span>
                       <span className="font-mono">{formatINR(totalCgst)}</span>
                     </div>
-                    <div className="flex justify-between text-slate-600 text-xs">
+                    <div className="flex justify-between text-slate-600 text-[13px]">
                       <span>SGST:</span>
                       <span className="font-mono">{formatINR(totalSgst)}</span>
                     </div>
@@ -519,11 +522,11 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   <span>Grand Total:</span>
                   <span className="text-emerald-700">{formatINR(grandTotal)}</span>
                 </div>
-                <div className="flex justify-between text-xs text-emerald-700 font-semibold font-mono">
+                <div className="flex justify-between text-[13px] text-emerald-700 font-semibold font-mono">
                   <span>Amount Paid:</span>
                   <span>{formatINR(amountPaid)}</span>
                 </div>
-                <div className="flex justify-between text-xs text-rose-600 font-bold font-mono">
+                <div className="flex justify-between text-[13px] text-rose-600 font-bold font-mono">
                   <span>Balance Due:</span>
                   <span>{formatINR(balanceDue)}</span>
                 </div>

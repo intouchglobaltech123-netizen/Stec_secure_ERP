@@ -51,7 +51,7 @@ export const BackupCard: React.FC = () => {
           and keep it somewhere safe outside this server (your laptop or Google Drive). Staff PINs are not included.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3 text-xs">
+      <CardContent className="space-y-3 text-[13px]">
         {error && <p className="text-rose-600">{error}</p>}
         {info && (
           <div
@@ -84,7 +84,7 @@ export const BackupCard: React.FC = () => {
             Include job photos
           </label>
           {info && (
-            <Badge variant="secondary" className="text-[10px]">
+            <Badge variant="secondary" className="text-[11px]">
               {plural(info.records, 'record')} · {plural(info.photos, 'photo')} ({megabytes(info.photoBytes)})
             </Badge>
           )}

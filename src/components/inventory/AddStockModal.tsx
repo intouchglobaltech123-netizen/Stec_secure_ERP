@@ -371,10 +371,10 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
           </div>
           <div>
             <h2 className="text-lg font-bold text-slate-900 font-display">
-              Add Inward Stock
+              Add Stock
             </h2>
-            <p className="text-xs text-slate-500">
-              Log newly arrived hardware units into warehouse inventory in one guided flow
+            <p className="text-[13px] text-slate-500">
+              New units with their serial numbers, supplier and cost
             </p>
           </div>
         </div>
@@ -387,7 +387,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-xs">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-[13px]">
         {/* Scrollable Form Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5 overscroll-contain">
           {/* ═══════════════════════════════════════════
@@ -396,16 +396,16 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 shadow-2xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-200/80 pb-2.5">
               <div>
-                <label className="text-xs font-bold text-slate-900 flex items-center gap-2 font-display">
-                  <span className="w-5 h-5 rounded-md bg-orange-600 text-white flex items-center justify-center text-[11px] font-extrabold shadow-2xs">1</span>
+                <label className="text-[13px] font-bold text-slate-900 flex items-center gap-2 font-display">
+                  <span className="w-5 h-5 rounded-md bg-orange-600 text-white flex items-center justify-center text-xs font-extrabold shadow-2xs">1</span>
                   Step 1: Scan Barcode to Identify Product *
                 </label>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   The barcode identifies the <strong>PRODUCT MODEL</strong> — every unit of the same product shares one barcode.
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-orange-800 bg-orange-100/90 border border-orange-200 px-2 py-0.5 rounded-md">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-orange-800 bg-orange-100/90 border border-orange-200 px-2 py-0.5 rounded-md">
                   Product-Level (Shared)
                 </span>
                 {selectedProduct && (
@@ -419,7 +419,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       setNewProductBarcode('');
                       setProductCreatedReason(null);
                     }}
-                    className="text-[11px] text-orange-600 hover:text-orange-800 underline font-bold cursor-pointer"
+                    className="text-xs text-orange-600 hover:text-orange-800 underline font-bold cursor-pointer"
                   >
                     Change Product
                   </button>
@@ -436,17 +436,17 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-bold text-emerald-950 uppercase tracking-wide">
+                      <span className="text-[13px] font-bold text-emerald-950 uppercase tracking-wide">
                         ✓ Identified Product Model:
                       </span>
                       <span className="font-extrabold text-slate-900 text-sm sm:text-base font-display">
                         {selectedProduct.name}
                       </span>
-                      <Badge variant="outline" className="text-[10px] bg-white border-emerald-300 text-emerald-900 font-semibold">
+                      <Badge variant="outline" className="text-[11px] bg-white border-emerald-300 text-emerald-900 font-semibold">
                         {selectedProduct.category}
                       </Badge>
                     </div>
-                    <div className="text-[11px] text-slate-700 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-medium">
+                    <div className="text-xs text-slate-700 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-medium">
                       <span>Rate: <strong className="font-mono text-slate-900">{formatINR(selectedProduct.defaultRate)}</strong> / {selectedProduct.unit}</span>
                       <span>&bull;</span>
                       <span>GST: <strong className="font-mono text-slate-900">{selectedProduct.gstRate}%</strong></span>
@@ -485,7 +485,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                     setNewProductBarcode('');
                     setProductCreatedReason(null);
                   }}
-                  className="text-xs text-orange-700 hover:text-orange-900 font-bold underline px-2.5 py-1 rounded-lg hover:bg-orange-100/60 transition-colors shrink-0 cursor-pointer"
+                  className="text-[13px] text-orange-700 hover:text-orange-900 font-bold underline px-2.5 py-1 rounded-lg hover:bg-orange-100/60 transition-colors shrink-0 cursor-pointer"
                 >
                   Change Product
                 </button>
@@ -494,7 +494,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
               /* Inline Subform: Create New Product */
               <div className="p-4 rounded-xl bg-white border-2 border-orange-300 space-y-3 shadow-xs animate-in fade-in duration-150">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <div className="flex items-center gap-1.5 font-bold text-orange-950 text-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-orange-950 text-[13px]">
                     <Plus className="w-3.5 h-3.5 text-orange-600" />
                     <span>Create New Product in Catalog</span>
                   </div>
@@ -505,7 +505,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       setNewProductBarcode('');
                       setProductCreatedReason(null);
                     }}
-                    className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                    className="text-xs text-slate-500 hover:text-slate-800 underline cursor-pointer"
                   >
                     Cancel / Choose Again
                   </button>
@@ -513,14 +513,14 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
 
                 {/* Scanned Barcode Banner if unknown scan */}
                 {newProductBarcode && (
-                  <div className="flex items-center gap-2.5 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-950">
+                  <div className="flex items-center gap-2.5 p-3 rounded-lg bg-amber-50 border border-amber-200 text-[13px] text-amber-950">
                     <ScanBarcode className="w-4 h-4 text-amber-600 shrink-0" />
                     <div>
                       <span className="font-semibold">Unrecognized Scanned Barcode: </span>
                       <strong className="font-mono bg-white px-2 py-0.5 rounded border border-amber-300 text-amber-950">
                         {newProductBarcode}
                       </strong>
-                      <p className="text-[11px] text-amber-800 mt-0.5">
+                      <p className="text-xs text-amber-800 mt-0.5">
                         This barcode represents the product model and will be saved to your catalog upon confirmation.
                       </p>
                     </div>
@@ -537,7 +537,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       value={newProductName}
                       onChange={(e) => setNewProductName(e.target.value)}
                       placeholder="e.g. Hikvision 4MP ColorVu Bullet Camera"
-                      className="bg-slate-50 text-xs h-8"
+                      className="bg-slate-50 text-[13px] h-8"
                       required
                     />
                   </div>
@@ -547,7 +547,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                     <select
                       value={newProductCategory}
                       onChange={(e) => setNewProductCategory(e.target.value as ServiceCategory)}
-                      className="w-full h-8 rounded-md border border-slate-300 bg-slate-50 px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                      className="w-full h-8 rounded-md border border-slate-300 bg-slate-50 px-2.5 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
                     >
                       {SERVICE_CATEGORIES.map((cat) => (
                         <option key={cat} value={cat}>
@@ -565,7 +565,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       value={newProductUnit}
                       onChange={(e) => setNewProductUnit(e.target.value)}
                       placeholder="Nos"
-                      className="bg-slate-50 text-xs h-8"
+                      className="bg-slate-50 text-[13px] h-8"
                     />
                   </div>
 
@@ -577,7 +577,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       type="number"
                       value={newProductRate}
                       onChange={(e) => setNewProductRate(Number(e.target.value))}
-                      className="bg-slate-50 text-xs h-8 font-mono"
+                      className="bg-slate-50 text-[13px] h-8 font-mono"
                       required
                     />
                   </div>
@@ -590,7 +590,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       value={newProductHsn}
                       onChange={(e) => setNewProductHsn(e.target.value)}
                       placeholder="e.g. 85258090"
-                      className="bg-slate-50 text-xs h-8 font-mono"
+                      className="bg-slate-50 text-[13px] h-8 font-mono"
                     />
                   </div>
 
@@ -603,7 +603,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       <Input
                         value={newProductBarcode}
                         onChange={(e) => setNewProductBarcode(e.target.value)}
-                        className="bg-slate-50 text-xs h-8 font-mono font-bold text-slate-900"
+                        className="bg-slate-50 text-[13px] h-8 font-mono font-bold text-slate-900"
                       />
                     </div>
                   ) : (
@@ -616,11 +616,11 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                           onChange={(e) => setGenerateInternalBarcodeChecked(e.target.checked)}
                           className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500 accent-orange-600 cursor-pointer"
                         />
-                        <div className="text-xs">
+                        <div className="text-[13px]">
                           <span className="font-bold text-slate-900">
                             This product has no barcode — generate an internal barcode for faster stock-ins next time?
                           </span>
-                          <p className="text-[11px] text-slate-600 mt-0.5">
+                          <p className="text-xs text-slate-600 mt-0.5">
                             {generateInternalBarcodeChecked ? (
                               <span className="text-emerald-700 font-semibold flex items-center gap-1.5 mt-1">
                                 <Tag className="w-3.5 h-3.5 text-emerald-600" />
@@ -641,7 +641,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                   )}
                 </div>
 
-                <div className="text-[10px] text-orange-700 bg-orange-50 px-2.5 py-1.5 rounded-lg border border-orange-200">
+                <div className="text-[11px] text-orange-700 bg-orange-50 px-2.5 py-1.5 rounded-lg border border-orange-200">
                   This product will be saved to your Product Catalog automatically upon confirmation.
                 </div>
               </div>
@@ -653,7 +653,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setProductEntryMode('SCAN')}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                    className={`px-3 py-1 text-[13px] font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
                       productEntryMode === 'SCAN'
                         ? 'bg-white text-orange-700 shadow-2xs font-bold'
                         : 'text-slate-600 hover:text-slate-900'
@@ -665,7 +665,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setProductEntryMode('SEARCH')}
-                    className={`px-3 py-1 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                    className={`px-3 py-1 text-[13px] font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
                       productEntryMode === 'SEARCH'
                         ? 'bg-white text-orange-700 shadow-2xs font-bold'
                         : 'text-slate-600 hover:text-slate-900'
@@ -680,11 +680,11 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                   /* Barcode Scanner Input Panel (Task 1) */
                   <div className="p-3.5 rounded-xl bg-white border border-slate-200 space-y-3 shadow-2xs">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                      <div className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-800">
                         <Barcode className="w-4 h-4 text-orange-600" />
                         <span>Barcode / EAN Scanner Input</span>
                       </div>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-xs text-slate-500">
                         Point handheld scanner or type barcode and press Enter
                       </span>
                     </div>
@@ -703,13 +703,13 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                             }
                           }}
                           placeholder="Scan or type barcode (e.g. 8901234567890) and press Enter..."
-                          className="pl-9 bg-white text-xs h-9 border-slate-300 font-mono focus:border-orange-500 font-medium"
+                          className="pl-9 bg-white text-[13px] h-9 border-slate-300 font-mono focus:border-orange-500 font-medium"
                         />
                       </div>
                       <Button
                         type="button"
                         onClick={() => handleBarcodeScan()}
-                        className="bg-orange-600 hover:bg-orange-700 text-white text-xs h-9 px-4 shrink-0 font-bold cursor-pointer"
+                        className="bg-orange-600 hover:bg-orange-700 text-white text-[13px] h-9 px-4 shrink-0 font-bold cursor-pointer"
                       >
                         Lookup / Scan
                       </Button>
@@ -718,7 +718,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                     {/* Quick Demo Test Chips — demo data only (they name demo products) */}
                     {DEMO_MODE && (
                     <div className="pt-2 border-t border-slate-100 space-y-1.5">
-                      <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                         <span>Click demo barcodes to test:</span>
                         <span className="text-slate-400 font-normal">Physical barcode scanner inputs directly here</span>
                       </div>
@@ -726,34 +726,34 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleBarcodeScan('8901234567890')}
-                          className="px-2.5 py-1 rounded bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-[11px] font-mono text-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          className="px-2.5 py-1 rounded bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-xs font-mono text-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                           title="Existing Product: ONEVU 4G Camera"
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                           <span>8901234567890</span>
-                          <span className="text-[10px] text-slate-500 font-sans">(ONEVU Camera)</span>
+                          <span className="text-[11px] text-slate-500 font-sans">(ONEVU Camera)</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => handleBarcodeScan('8909876543210')}
-                          className="px-2.5 py-1 rounded bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-[11px] font-mono text-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          className="px-2.5 py-1 rounded bg-slate-50 hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-xs font-mono text-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                           title="Existing Product: 64GB Micro SD Card"
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                           <span>8909876543210</span>
-                          <span className="text-[10px] text-slate-500 font-sans">(64GB SD Card)</span>
+                          <span className="text-[11px] text-slate-500 font-sans">(64GB SD Card)</span>
                         </button>
 
                         <button
                           type="button"
                           onClick={() => handleBarcodeScan('8907777888899')}
-                          className="px-2.5 py-1 rounded bg-amber-50/80 hover:bg-amber-100 border border-amber-300 text-[11px] font-mono text-amber-900 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                          className="px-2.5 py-1 rounded bg-amber-50/80 hover:bg-amber-100 border border-amber-300 text-xs font-mono text-amber-900 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
                           title="Unknown Barcode (Starts new product creation)"
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                           <span>8907777888899</span>
-                          <span className="text-[10px] text-amber-800 font-sans font-bold">(New Unknown Barcode)</span>
+                          <span className="text-[11px] text-amber-800 font-sans font-bold">(New Unknown Barcode)</span>
                         </button>
                       </div>
                     </div>
@@ -768,7 +768,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                         value={productSearch}
                         onChange={(e) => setProductSearch(e.target.value)}
                         placeholder="Type to search existing products by name, category, or barcode..."
-                        className="pl-9 bg-white text-xs h-9 border-slate-300"
+                        className="pl-9 bg-white text-[13px] h-9 border-slate-300"
                       />
                     </div>
 
@@ -786,29 +786,29 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                             className="w-full text-left p-2.5 hover:bg-orange-50/60 transition-colors flex items-center justify-between group cursor-pointer"
                           >
                             <div>
-                              <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs group-hover:text-orange-700">
+                              <div className="flex items-center gap-1.5 font-bold text-slate-900 text-[13px] group-hover:text-orange-700">
                                 <span>{p.name}</span>
                                 {p.barcode && (
-                                  <span className="font-mono text-[9px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 flex items-center gap-1">
+                                  <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 flex items-center gap-1">
                                     <ScanBarcode className="w-2.5 h-2.5" />
                                     {p.barcode}
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">
+                              <div className="text-[11px] text-slate-500 mt-0.5">
                                 {p.category} &bull; Unit: {p.unit}
                                 {p.hsnSac && <span> &bull; HSN: {p.hsnSac}</span>}
                               </div>
                             </div>
                             <div className="text-right shrink-0 ml-2">
-                              <span className="font-mono font-bold text-slate-900 text-xs">
+                              <span className="font-mono font-bold text-slate-900 text-[13px]">
                                 {formatINR(p.defaultRate)}
                               </span>
                             </div>
                           </button>
                         ))
                       ) : (
-                        <div className="p-3 text-center text-slate-500 text-xs">
+                        <div className="p-3 text-center text-slate-500 text-[13px]">
                           No matching products in catalog for "{productSearch}"
                         </div>
                       )}
@@ -842,11 +842,11 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 shadow-2xs">
               <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
                 <div>
-                  <label className="text-xs font-bold text-slate-900 flex items-center gap-2 font-display">
-                    <span className="w-5 h-5 rounded-md bg-slate-800 text-white flex items-center justify-center text-[11px] font-extrabold shadow-2xs">2</span>
+                  <label className="text-[13px] font-bold text-slate-900 flex items-center gap-2 font-display">
+                    <span className="w-5 h-5 rounded-md bg-slate-800 text-white flex items-center justify-center text-xs font-extrabold shadow-2xs">2</span>
                     Step 2: Purchased From (Vendor) *
                   </label>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Select or register the supplier providing this stock.
                   </p>
                 </div>
@@ -858,7 +858,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       setIsCreatingVendor(false);
                       setVendorSearch('');
                     }}
-                    className="text-[11px] text-orange-600 hover:text-orange-800 underline font-bold cursor-pointer"
+                    className="text-xs text-orange-600 hover:text-orange-800 underline font-bold cursor-pointer"
                   >
                     Change Vendor
                   </button>
@@ -878,17 +878,17 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                           {selectedVendor.name}
                         </span>
                         {selectedVendor.gstin && (
-                          <span className="font-mono text-[10px] text-slate-500">
+                          <span className="font-mono text-[11px] text-slate-500">
                             GST: {selectedVendor.gstin}
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-600 mt-0.5">
+                      <div className="text-xs text-slate-600 mt-0.5">
                         Phone: <strong className="text-slate-800">{selectedVendor.phone}</strong> &bull; {selectedVendor.address}
                       </div>
                     </div>
                   </div>
-                  <Badge variant="success" className="text-[10px]">
+                  <Badge variant="success" className="text-[11px]">
                     Registered Supplier
                   </Badge>
                 </div>
@@ -896,14 +896,14 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                 /* Inline Subform: Create New Vendor */
                 <div className="p-3.5 rounded-xl bg-white border-2 border-orange-300 space-y-3 shadow-xs animate-in fade-in duration-150">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <div className="flex items-center gap-1.5 font-bold text-orange-950 text-xs">
+                    <div className="flex items-center gap-1.5 font-bold text-orange-950 text-[13px]">
                       <Plus className="w-3.5 h-3.5 text-orange-600" />
                       <span>Create New Supplier / Vendor</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsCreatingVendor(false)}
-                      className="text-[11px] text-slate-500 hover:text-slate-800 underline cursor-pointer"
+                      className="text-xs text-slate-500 hover:text-slate-800 underline cursor-pointer"
                     >
                       Cancel / Search Again
                     </button>
@@ -918,7 +918,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                         value={newVendorName}
                         onChange={(e) => setNewVendorName(e.target.value)}
                         placeholder="e.g. SecureTech Systems Distributors"
-                        className="bg-slate-50 text-xs h-8"
+                        className="bg-slate-50 text-[13px] h-8"
                         required
                       />
                     </div>
@@ -931,7 +931,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                         value={newVendorPhone}
                         onChange={(e) => setNewVendorPhone(e.target.value)}
                         placeholder="e.g. 9840112233"
-                        className="bg-slate-50 text-xs h-8"
+                        className="bg-slate-50 text-[13px] h-8"
                         required
                       />
                     </div>
@@ -944,7 +944,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                         value={newVendorAddress}
                         onChange={(e) => setNewVendorAddress(e.target.value)}
                         placeholder="e.g. No. 12, Anna Salai, Thousand Lights, Chennai"
-                        className="bg-slate-50 text-xs h-8"
+                        className="bg-slate-50 text-[13px] h-8"
                         required
                       />
                     </div>
@@ -957,12 +957,12 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                         value={newVendorGstin}
                         onChange={(e) => setNewVendorGstin(e.target.value)}
                         placeholder="e.g. 33AAAAA0000A1Z5"
-                        className="bg-slate-50 text-xs h-8 font-mono"
+                        className="bg-slate-50 text-[13px] h-8 font-mono"
                       />
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-orange-700 bg-orange-50 px-2.5 py-1.5 rounded-lg border border-orange-200">
+                  <div className="text-[11px] text-orange-700 bg-orange-50 px-2.5 py-1.5 rounded-lg border border-orange-200">
                     This vendor will be permanently added to your Supplier directory upon confirmation.
                   </div>
                 </div>
@@ -975,7 +975,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       value={vendorSearch}
                       onChange={(e) => setVendorSearch(e.target.value)}
                       placeholder="Type to search suppliers (e.g. CP Plus, Prama, eSSL)..."
-                      className="pl-9 bg-white text-xs h-9 border-slate-300"
+                      className="pl-9 bg-white text-[13px] h-9 border-slate-300"
                     />
                   </div>
 
@@ -993,16 +993,16 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                           className="w-full text-left p-2.5 hover:bg-orange-50/60 transition-colors flex items-center justify-between group cursor-pointer"
                         >
                           <div>
-                            <div className="font-bold text-slate-900 text-xs group-hover:text-orange-700">
+                            <div className="font-bold text-slate-900 text-[13px] group-hover:text-orange-700">
                               {v.name}
                             </div>
-                            <div className="text-[10px] text-slate-500 mt-0.5">
+                            <div className="text-[11px] text-slate-500 mt-0.5">
                               {v.phone} &bull; {v.address}
                             </div>
                           </div>
                           {v.gstin && (
                             <div className="text-right shrink-0 ml-2">
-                              <span className="font-mono text-[10px] text-slate-400">
+                              <span className="font-mono text-[11px] text-slate-400">
                                 {v.gstin}
                               </span>
                             </div>
@@ -1010,7 +1010,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                         </button>
                       ))
                     ) : (
-                      <div className="p-3 text-center text-slate-500 text-xs">
+                      <div className="p-3 text-center text-slate-500 text-[13px]">
                         No matching vendors for "{vendorSearch}"
                       </div>
                     )}
@@ -1038,11 +1038,11 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 shadow-2xs flex flex-col justify-between">
               <div>
                 <div className="border-b border-slate-200/80 pb-2 mb-3">
-                  <label className="text-xs font-bold text-slate-900 flex items-center gap-2 font-display">
-                    <span className="w-5 h-5 rounded-md bg-slate-800 text-white flex items-center justify-center text-[11px] font-extrabold shadow-2xs">3</span>
+                  <label className="text-[13px] font-bold text-slate-900 flex items-center gap-2 font-display">
+                    <span className="w-5 h-5 rounded-md bg-slate-800 text-white flex items-center justify-center text-xs font-extrabold shadow-2xs">3</span>
                     Step 3: Purchase Details &amp; Unit Cost *
                   </label>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Log inward date &amp; unit purchase cost (saved per serial unit for audit &amp; cost reporting).
                   </p>
                 </div>
@@ -1056,7 +1056,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       type="date"
                       value={purchaseDate}
                       onChange={(e) => setPurchaseDate(e.target.value)}
-                      className="bg-white text-xs h-9 border-slate-300"
+                      className="bg-white text-[13px] h-9 border-slate-300"
                       required
                     />
                   </div>
@@ -1070,16 +1070,16 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       value={purchaseCost}
                       onChange={(e) => setPurchaseCost(e.target.value)}
                       placeholder="e.g. 2100"
-                      className="bg-white text-xs h-9 border-slate-300 font-mono font-medium"
+                      className="bg-white text-[13px] h-9 border-slate-300 font-mono font-medium"
                     />
-                    <p className="text-[10px] text-slate-500 mt-1">
+                    <p className="text-[11px] text-slate-500 mt-1">
                       Persisted per individual serial unit record for margin &amp; valuation accuracy.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-slate-200/50 border border-slate-300/60 text-[11px] text-slate-600 mt-2">
+              <div className="p-2.5 rounded-lg bg-slate-200/50 border border-slate-300/60 text-xs text-slate-600 mt-2">
                 <span className="font-semibold text-slate-800">Batch Note: </span>
                 All units in this inward entry will be stamped with this purchase date and unit cost.
               </div>
@@ -1094,7 +1094,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
               <div className="w-full border-t-2 border-dashed border-slate-200" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-slate-100 px-4 py-1 text-[11px] font-extrabold text-slate-600 rounded-full border border-slate-300/70 uppercase tracking-wider flex items-center gap-1.5 shadow-2xs">
+              <span className="bg-slate-100 px-4 py-1 text-xs font-extrabold text-slate-600 rounded-full border border-slate-300/70 uppercase tracking-wider flex items-center gap-1.5 shadow-2xs">
                 <Tag className="w-3.5 h-3.5 text-orange-600" />
                 Unit-Level Unique Serials
               </span>
@@ -1107,11 +1107,11 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
           <div className="p-4 rounded-xl bg-slate-50 border-2 border-orange-200/90 space-y-3 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-2">
               <div>
-                <label className="text-xs font-bold text-slate-900 flex items-center gap-2 font-display">
-                  <span className="w-5 h-5 rounded-md bg-orange-600 text-white flex items-center justify-center text-[11px] font-extrabold shadow-2xs">4</span>
+                <label className="text-[13px] font-bold text-slate-900 flex items-center gap-2 font-display">
+                  <span className="w-5 h-5 rounded-md bg-orange-600 text-white flex items-center justify-center text-xs font-extrabold shadow-2xs">4</span>
                   Step 4: Enter Serial Number for EACH Physical Unit *
                 </label>
-                <p className="text-[11px] text-slate-600 mt-0.5">
+                <p className="text-xs text-slate-600 mt-0.5">
                   Every individual unit has its own <strong>unique serial number</strong>, even though they share the same barcode above.
                 </p>
               </div>
@@ -1121,7 +1121,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
               <button
                 type="button"
                 onClick={handleAutoGenerateSerials}
-                className="text-[11px] text-orange-700 hover:text-orange-900 font-bold flex items-center gap-1.5 cursor-pointer shrink-0 bg-white hover:bg-orange-50 border border-orange-300 px-3 py-1.5 rounded-lg transition-colors shadow-2xs"
+                className="text-xs text-orange-700 hover:text-orange-900 font-bold flex items-center gap-1.5 cursor-pointer shrink-0 bg-white hover:bg-orange-50 border border-orange-300 px-3 py-1.5 rounded-lg transition-colors shadow-2xs"
               >
                 <Sparkles className="w-3.5 h-3.5 text-orange-600" />
                 + Auto-generate sample serials
@@ -1130,9 +1130,9 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
             </div>
 
             {/* Clarity Box: 5 units = 5 different serial numbers */}
-            <div className="p-3 rounded-xl bg-orange-50/90 border border-orange-200 text-xs text-orange-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="p-3 rounded-xl bg-orange-50/90 border border-orange-200 text-[13px] text-orange-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div className="flex items-start sm:items-center gap-2.5">
-                <div className="w-6 h-6 rounded-md bg-orange-600 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 sm:mt-0 shadow-2xs">
+                <div className="w-6 h-6 rounded-md bg-orange-600 text-white flex items-center justify-center font-bold text-[13px] shrink-0 mt-0.5 sm:mt-0 shadow-2xs">
                   !
                 </div>
                 <div>
@@ -1143,8 +1143,8 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                 </div>
               </div>
               <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
-                <span className="text-[11px] text-slate-600 font-medium">Batch Count:</span>
-                <span className={`font-mono font-bold px-3 py-1 rounded-lg border text-xs shadow-2xs ${
+                <span className="text-xs text-slate-600 font-medium">Batch Count:</span>
+                <span className={`font-mono font-bold px-3 py-1 rounded-lg border text-[13px] shadow-2xs ${
                   parsedSerials.length > 0
                     ? 'bg-emerald-100 border-emerald-300 text-emerald-950'
                     : 'bg-white border-slate-300 text-slate-700'
@@ -1161,11 +1161,11 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                 value={bulkSerialsText}
                 onChange={(e) => setBulkSerialsText(e.target.value)}
                 placeholder="Enter unique unit serial numbers separated by new lines, commas, or spaces:&#10;1VU-2408-9901&#10;1VU-2408-9902&#10;1VU-2408-9903"
-                className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs text-slate-900 font-mono placeholder:text-slate-400 focus:outline-none focus:border-orange-500 leading-relaxed shadow-2xs"
+                className="w-full rounded-xl border border-slate-300 bg-white p-3 text-[13px] text-slate-900 font-mono placeholder:text-slate-400 focus:outline-none focus:border-orange-500 leading-relaxed shadow-2xs"
               />
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-600">
+            <div className="flex items-center justify-between text-xs text-slate-600">
               <span>
                 Separate each individual unit serial by newline, comma, or space
               </span>
@@ -1183,7 +1183,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
             variant="secondary"
             size="md"
             onClick={onClose}
-            className="rounded-xl text-xs"
+            className="rounded-xl text-[13px]"
           >
             Cancel
           </Button>
@@ -1198,7 +1198,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
               (!selectedVendor && isCreatingVendor && (!newVendorName.trim() || !newVendorPhone.trim() || !newVendorAddress.trim())) ||
               parsedSerials.length === 0
             }
-            className="rounded-xl text-xs font-bold bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-2 shadow-sm cursor-pointer"
+            className="rounded-xl text-[13px] font-bold bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-2 shadow-sm cursor-pointer"
           >
             <ArrowDownToLine className="w-4 h-4" />
             Confirm & Add Stock ({parsedSerials.length})

@@ -176,36 +176,27 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
   return (
     <div className="w-full space-y-6">
       {/* Page Header Banner */}
-      <div className="w-full relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 via-white to-amber-50/50 border border-orange-200/80 p-6 shadow-xs">
+      <div className="w-full">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <Badge variant="orange" className="text-xs">
-                <RotateCcw className="w-3 h-3 text-orange-600" />
-                Physical Unit Lifecycle
-              </Badge>
-              <span className="text-xs text-slate-500 font-medium">
-                Distinct from Job Labor Tasks &bull; Hardware RMA &amp; Bench Tracking
-              </span>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight font-display">
-              Repair
+            <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
+              Repairs
             </h1>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl font-normal">
-              Track physical equipment from site fault pickup, service lab check-in, in-house bench repairs, vendor warranty RMAs, and customer reinstallation back into active inventory.
+            <p className="text-sm text-slate-500 mt-0.5">
+              Faulty units: pickup, bench repair or vendor warranty, and reinstallation
             </p>
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
             {currentUser?.role === 'TECHNICIAN' && (
-              <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 px-3 py-2 rounded-xl text-xs font-semibold text-orange-950">
+              <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 px-3 py-2 rounded-xl text-[13px] font-semibold text-orange-950">
                 <HardHat className="w-4 h-4 text-orange-600" />
                 <span>Assigned Tasks ({visibleRepairTickets.length})</span>
               </div>
             )}
             <Button
               onClick={() => setCreateModalOpen(true)}
-              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs h-10 px-4 shadow-sm flex items-center gap-2"
+              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold text-[13px] h-10 px-4 shadow-sm flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               New Repair Ticket
@@ -217,36 +208,36 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
       {/* Top Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
         <div className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
             <span>Total RMA Tickets</span>
             <RotateCcw className="w-4 h-4 text-orange-600" />
           </div>
           <div className="text-2xl font-extrabold text-slate-900 font-mono">
             {visibleRepairTickets.length}
           </div>
-          <p className="text-[11px] text-slate-500">Across all repair stages</p>
+          <p className="text-xs text-slate-500">Across all repair stages</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-orange-200/80 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-orange-800 text-[11px] font-bold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-orange-800 text-xs font-bold uppercase tracking-wider">
             <span>In-House Bench</span>
             <Wrench className="w-4 h-4 text-orange-600" />
           </div>
           <div className="text-2xl font-extrabold text-orange-900 font-mono">
             {inHouseCount}
           </div>
-          <p className="text-[11px] text-orange-700">Under technician triage</p>
+          <p className="text-xs text-orange-700">Under technician triage</p>
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-blue-200/80 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-blue-800 text-[11px] font-bold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-blue-800 text-xs font-bold uppercase tracking-wider">
             <span>Sent to Vendor</span>
             <Send className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-2xl font-extrabold text-blue-900 font-mono">
             {vendorCount}
           </div>
-          <p className="text-[11px] text-blue-700">External warranty dispatch</p>
+          <p className="text-xs text-blue-700">External warranty dispatch</p>
         </div>
 
         {/* Overdue Vendor Repairs Metric Tile (Task 4) */}
@@ -261,7 +252,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
               : 'bg-white border-slate-200/80'
           }`}
         >
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
             <span className={overdueTickets.length > 0 ? 'text-rose-900' : 'text-slate-500'}>
               Overdue Vendor Repairs
             </span>
@@ -279,7 +270,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
             {overdueTickets.length}
           </div>
           <p
-            className={`text-[11px] ${
+            className={`text-xs ${
               overdueTickets.length > 0 ? 'text-rose-800 font-medium' : 'text-slate-500'
             }`}
           >
@@ -290,14 +281,14 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-emerald-200/80 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-emerald-800 text-[11px] font-bold uppercase tracking-wider">
+          <div className="flex items-center justify-between text-emerald-800 text-xs font-bold uppercase tracking-wider">
             <span>Ready / Reinstalled</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-extrabold text-emerald-900 font-mono">
             {readyOrReinstalledCount}
           </div>
-          <p className="text-[11px] text-emerald-700">Restored to service</p>
+          <p className="text-xs text-emerald-700">Restored to service</p>
         </div>
       </div>
 
@@ -311,14 +302,14 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
               placeholder="Search by RMA #, customer, serial number, model..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 text-xs bg-slate-50 border-slate-200 focus:bg-white"
+              className="pl-9 text-[13px] bg-slate-50 border-slate-200 focus:bg-white"
             />
           </div>
 
           {/* Filter Dropdowns */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Status Filter */}
-            <div className="flex items-center gap-1.5 text-xs text-slate-600">
+            <div className="flex items-center gap-1.5 text-[13px] text-slate-600">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
               <select
                 value={statusFilter}
@@ -326,7 +317,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                   setStatusFilter(e.target.value as any);
                   if (e.target.value !== 'ALL') setShowOverdueOnly(false);
                 }}
-                className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
               >
                 <option value="ALL">All Statuses ({visibleRepairTickets.length})</option>
                 <option value="FAULT_REPORTED">FAULT_REPORTED</option>
@@ -344,7 +335,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
             <select
               value={pathFilter}
               onChange={(e) => setPathFilter(e.target.value as any)}
-              className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+              className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
             >
               <option value="ALL">All Repair Paths</option>
               <option value="IN_HOUSE">In-House Only</option>
@@ -355,7 +346,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
             <button
               type="button"
               onClick={() => setShowOverdueOnly(!showOverdueOnly)}
-              className={`h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`h-9 px-3 rounded-lg text-[13px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 showOverdueOnly
                   ? 'bg-rose-600 text-white shadow-2xs'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -375,7 +366,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                   setPathFilter('ALL');
                   setShowOverdueOnly(false);
                 }}
-                className="text-xs text-slate-500 hover:text-slate-800 h-9"
+                className="text-[13px] text-slate-500 hover:text-slate-800 h-9"
               >
                 Reset Filters
               </Button>
@@ -387,8 +378,8 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
       {/* Main Tickets Table (Task 5 View) */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-700">
-            <thead className="bg-slate-50/90 text-[11px] font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
+          <table className="stack-on-phone w-full text-left text-[13px] text-slate-700">
+            <thead className="bg-slate-50/90 text-xs font-bold text-slate-600 uppercase tracking-wider border-b border-slate-200">
               <tr>
                 <th className="p-3.5">Ticket No.</th>
                 <th className="p-3.5">Customer</th>
@@ -442,7 +433,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                       <td className="p-3.5 font-mono font-bold text-orange-600">
                         {ticket.ticketNumber}
                         {ticket.sourceJobId && (
-                          <div className="text-[10px] font-normal text-slate-400">
+                          <div className="text-[11px] font-normal text-slate-400">
                             From Job: {ticket.sourceJobId}
                           </div>
                         )}
@@ -453,7 +444,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                         <div className="font-semibold text-slate-900">
                           {cust?.name || 'Walk-In Customer'}
                         </div>
-                        <div className="text-[11px] text-slate-500">
+                        <div className="text-xs text-slate-500">
                           {cust?.phone || 'No phone'}
                         </div>
                       </td>
@@ -462,19 +453,19 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                       <td className="p-3.5 max-w-[200px]">
                         {serial ? (
                           <div>
-                            <div className="font-mono font-bold text-slate-800 text-xs truncate">
+                            <div className="font-mono font-bold text-slate-800 text-[13px] truncate">
                               {serial.serialNumber}
                             </div>
-                            <div className="text-[11px] text-slate-500 truncate">
+                            <div className="text-xs text-slate-500 truncate">
                               {prod?.name || 'Hardware Unit'}
                             </div>
                           </div>
                         ) : (
                           <div>
-                            <div className="font-mono font-medium text-slate-800 text-xs truncate">
+                            <div className="font-mono font-medium text-slate-800 text-[13px] truncate">
                               {ticket.customUnitDescription || 'Walk-in equipment'}
                             </div>
-                            <span className="text-[10px] text-slate-400">Uncatalogued</span>
+                            <span className="text-[11px] text-slate-400">Uncatalogued</span>
                           </div>
                         )}
                       </td>
@@ -485,7 +476,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                           <HardHat className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                           <span>{assignedTech?.name || 'Unassigned'}</span>
                         </div>
-                        <div className="text-[10px] text-slate-500">
+                        <div className="text-[11px] text-slate-500">
                           {ticket.assignedTechnicianId === currentUser?.id ? (
                             <span className="text-orange-600 font-semibold">Assigned to you</span>
                           ) : (
@@ -500,20 +491,20 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                       {/* Repair Path */}
                       <td className="p-3.5">
                         {ticket.repairPath === 'IN_HOUSE' ? (
-                          <span className="inline-flex items-center gap-1 font-semibold text-orange-800 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded text-[11px]">
+                          <span className="inline-flex items-center gap-1 font-semibold text-orange-800 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded text-xs">
                             <Wrench className="w-3 h-3 text-orange-600" /> In-House
                           </span>
                         ) : ticket.repairPath === 'VENDOR' ? (
-                          <span className="inline-flex items-center gap-1 font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded text-[11px]">
+                          <span className="inline-flex items-center gap-1 font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded text-xs">
                             <Send className="w-3 h-3 text-blue-600" /> Vendor
                           </span>
                         ) : (
-                          <span className="text-slate-400 font-mono text-xs">—</span>
+                          <span className="text-slate-400 font-mono text-[13px]">—</span>
                         )}
                       </td>
 
                       {/* Days in current stage */}
-                      <td className="p-3.5 font-mono text-xs text-slate-700">
+                      <td className="p-3.5 font-mono text-[13px] text-slate-700">
                         <span className="inline-flex items-center gap-1">
                           <Clock className="w-3 h-3 text-slate-400" />
                           {daysInStage} {daysInStage === 1 ? 'day' : 'days'}
@@ -523,18 +514,18 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                       {/* Overdue SLA Flag (Task 4) */}
                       <td className="p-3.5">
                         {isTicketOverdue ? (
-                          <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[10px] animate-pulse">
+                          <span className="inline-flex items-center gap-1 font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[11px] animate-pulse">
                             <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
                             Overdue by {overdueDaysCount}d
                           </span>
                         ) : ticket.status === 'SENT_TO_VENDOR' && ticket.vendorExpectedReturnDate ? (
-                          <span className="text-[10px] text-slate-500 font-mono">
+                          <span className="text-[11px] text-slate-500 font-mono">
                             Due {ticket.vendorExpectedReturnDate}
                           </span>
                         ) : ticket.status === 'REINSTALLED' ? (
-                          <span className="text-[10px] text-emerald-600 font-medium">Closed</span>
+                          <span className="text-[11px] text-emerald-600 font-medium">Closed</span>
                         ) : (
-                          <span className="text-[10px] text-slate-400 font-mono">On Schedule</span>
+                          <span className="text-[11px] text-slate-400 font-mono">On Schedule</span>
                         )}
                       </td>
 
@@ -547,7 +538,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                             e.stopPropagation();
                             setSelectedTicketId(ticket.id);
                           }}
-                          className="text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 font-semibold h-8"
+                          className="text-[13px] text-orange-600 hover:text-orange-700 hover:bg-orange-50 font-semibold h-8"
                         >
                           View Details <ArrowRight className="w-3 h-3 ml-1" />
                         </Button>

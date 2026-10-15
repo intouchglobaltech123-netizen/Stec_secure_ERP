@@ -48,7 +48,7 @@ export const ChangePinModal: React.FC<{ isOpen: boolean; onClose: () => void }> 
 
   const pinInput = (label: string, value: string, onChange: (v: string) => void, autoFocus = false) => (
     <div>
-      <label className="block text-xs font-semibold text-slate-700 mb-1">{label}</label>
+      <label className="block text-[13px] font-semibold text-slate-700 mb-1">{label}</label>
       <Input
         type="password"
         inputMode="numeric"

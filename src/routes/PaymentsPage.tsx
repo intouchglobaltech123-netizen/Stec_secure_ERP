@@ -40,7 +40,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
-import { formatINR, formatDate, formatDateTime } from '@/lib/utils';
+import { formatINR, formatDate, formatDateTime, humanize } from '@/lib/utils';
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/api';
 
@@ -310,20 +310,11 @@ export const PaymentsPage: React.FC = () => {
       {/* Header & Main Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="orange" className="text-xs">
-              <CreditCard className="w-3.5 h-3.5 text-orange-600" />
-              Accounts Receivable & Credit Desk
-            </Badge>
-            <span className="text-xs text-slate-500 font-medium">
-              Payment Ledgers & Settle Operations
-            </span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight font-display">
-            Payments & Collections Desk
+          <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
+            Payments
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Real-time accounts receivable cockpit, outstanding customer balances, and payment receipt logs
+          <p className="text-sm text-slate-500 mt-0.5">
+            Money received, balances due and receipts
           </p>
         </div>
 
@@ -332,7 +323,7 @@ export const PaymentsPage: React.FC = () => {
             variant="primary"
             size="md"
             onClick={() => handleOpenRecordPayment()}
-            className="text-xs font-semibold shrink-0"
+            className="text-[13px] font-semibold shrink-0"
           >
             <Plus className="w-4 h-4 mr-1.5" />
             Record Payment Receipt
@@ -344,85 +335,85 @@ export const PaymentsPage: React.FC = () => {
       <div className="w-full grid grid-cols-2 lg:grid-cols-5 gap-3.5">
         <Card className="border-slate-200 bg-white shadow-sm">
           <CardContent className="p-4 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-slate-500 flex justify-between items-center">
+            <div className="text-[11px] uppercase font-bold text-slate-500 flex justify-between items-center">
               <span>Total Invoiced</span>
               <Receipt className="w-3.5 h-3.5 text-slate-400" />
             </div>
             <div className="text-2xl font-bold text-slate-900 font-mono">
               {formatINR(totalInvoiced)}
             </div>
-            <p className="text-[10px] text-slate-500">{invoices.length} total tax invoices</p>
+            <p className="text-[11px] text-slate-500">{invoices.length} total tax invoices</p>
           </CardContent>
         </Card>
 
         <Card className="border-orange-200 bg-orange-50/60 shadow-sm">
           <CardContent className="p-4 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-orange-900 flex justify-between items-center">
+            <div className="text-[11px] uppercase font-bold text-orange-900 flex justify-between items-center">
               <span>Total Collected</span>
               <CheckCircle2 className="w-3.5 h-3.5 text-orange-600" />
             </div>
             <div className="text-2xl font-bold text-orange-900 font-mono">
               {formatINR(totalCollected)}
             </div>
-            <p className="text-[10px] text-orange-700">{payments.length} verified receipts</p>
+            <p className="text-[11px] text-orange-700">{payments.length} verified receipts</p>
           </CardContent>
         </Card>
 
         <Card className="border-amber-200 bg-amber-50/70 shadow-sm">
           <CardContent className="p-4 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-amber-900 flex justify-between items-center">
+            <div className="text-[11px] uppercase font-bold text-amber-900 flex justify-between items-center">
               <span>Total Outstanding</span>
               <Clock className="w-3.5 h-3.5 text-amber-600" />
             </div>
             <div className="text-2xl font-bold text-amber-900 font-mono">
               {formatINR(totalOutstanding)}
             </div>
-            <p className="text-[10px] text-amber-700">Pending customer clearance</p>
+            <p className="text-[11px] text-amber-700">Pending customer clearance</p>
           </CardContent>
         </Card>
 
         <Card className="border-rose-200 bg-rose-50/60 shadow-sm">
           <CardContent className="p-4 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-rose-800 flex justify-between items-center">
+            <div className="text-[11px] uppercase font-bold text-rose-800 flex justify-between items-center">
               <span>Overdue (&gt;15 Days)</span>
               <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
             </div>
             <div className="text-2xl font-bold text-rose-800 font-mono">
               {formatINR(overdueAmount)}
             </div>
-            <p className="text-[10px] text-rose-700">{overdueInvoices.length} past grace period</p>
+            <p className="text-[11px] text-rose-700">{overdueInvoices.length} past grace period</p>
           </CardContent>
         </Card>
 
         <Card className="border-slate-200 bg-white shadow-sm col-span-2 lg:col-span-1">
           <CardContent className="p-4 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-slate-500 flex justify-between items-center">
+            <div className="text-[11px] uppercase font-bold text-slate-500 flex justify-between items-center">
               <span>Debtor Accounts</span>
               <Users className="w-3.5 h-3.5 text-slate-400" />
             </div>
             <div className="text-2xl font-bold text-slate-900 font-mono">
               {customersWithOutstandingCount}
             </div>
-            <p className="text-[10px] text-slate-500">Clients with balance due</p>
+            <p className="text-[11px] text-slate-500">Clients with balance due</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Desk View Switcher Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab('OUTSTANDING_AR')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
             activeTab === 'OUTSTANDING_AR'
               ? 'bg-orange-500 text-white shadow-xs'
               : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
           }`}
         >
           <Building2 className="w-3.5 h-3.5" />
-          <span>Customer Outstanding Cockpit</span>
+          <span>Balances by customer</span>
           <span
-            className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+            className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
               activeTab === 'OUTSTANDING_AR' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
             }`}
           >
@@ -433,16 +424,16 @@ export const PaymentsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('LEDGER')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0 ${
             activeTab === 'LEDGER'
               ? 'bg-orange-500 text-white shadow-xs'
               : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
           }`}
         >
           <Receipt className="w-3.5 h-3.5" />
-          <span>Payment Transactions Ledger</span>
+          <span>All payments</span>
           <span
-            className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+            className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
               activeTab === 'LEDGER' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
             }`}
           >
@@ -461,7 +452,7 @@ export const PaymentsPage: React.FC = () => {
                   <Building2 className="w-4 h-4 text-orange-600" />
                   Customer Receivables Ledger
                 </CardTitle>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-[13px] text-slate-500 mt-0.5">
                   Aggregated balance dues across all jobs & invoices. Click column headers to sort.
                 </p>
               </div>
@@ -474,14 +465,14 @@ export const PaymentsPage: React.FC = () => {
                     placeholder="Search by name, ID, or phone..."
                     value={cockpitSearch}
                     onChange={(e) => setCockpitSearch(e.target.value)}
-                    className="pl-8 text-xs h-8 bg-slate-50"
+                    className="pl-8 text-[13px] h-8 bg-slate-50"
                   />
                 </div>
 
                 <select
                   value={cockpitStatusFilter}
                   onChange={(e) => setCockpitStatusFilter(e.target.value as any)}
-                  className="text-xs h-8 px-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 focus:outline-none cursor-pointer"
+                  className="text-[13px] h-8 px-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 focus:outline-none cursor-pointer"
                 >
                   <option value="ALL">All Accounts</option>
                   <option value="DUE">With Balance Due</option>
@@ -493,7 +484,7 @@ export const PaymentsPage: React.FC = () => {
 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-3 font-semibold text-slate-700">Customer ID</th>
@@ -597,7 +588,7 @@ export const PaymentsPage: React.FC = () => {
                           <td className="p-3">
                             <div className="font-bold text-slate-900">{cust.name}</div>
                             {cust.contactPerson && (
-                              <div className="text-[10px] text-slate-500">{cust.contactPerson}</div>
+                              <div className="text-[11px] text-slate-500">{cust.contactPerson}</div>
                             )}
                           </td>
                           <td className="p-3 font-mono text-slate-600">
@@ -627,19 +618,19 @@ export const PaymentsPage: React.FC = () => {
                           </td>
                           <td className="p-3 text-center">
                             {entry.hasOverdue ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                                 Overdue &gt;15D
                               </span>
                             ) : !hasBalance ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 Fully Settled
                               </span>
                             ) : isPartial ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                                 Partial
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-orange-50 text-orange-800 border border-orange-200">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-orange-50 text-orange-800 border border-orange-200">
                                 Pending
                               </span>
                             )}
@@ -650,7 +641,7 @@ export const PaymentsPage: React.FC = () => {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => setDrilldownCustomer(cust)}
-                                className="h-7 px-2.5 text-xs cursor-pointer"
+                                className="h-7 px-2.5 text-[13px] cursor-pointer"
                               >
                                 <ExternalLink className="w-3 h-3 mr-1" /> View Ledger
                               </Button>
@@ -659,7 +650,7 @@ export const PaymentsPage: React.FC = () => {
                                   variant="primary"
                                   size="sm"
                                   onClick={() => handleOpenRecordPayment(cust.id)}
-                                  className="h-7 px-2.5 text-xs font-semibold cursor-pointer"
+                                  className="h-7 px-2.5 text-[13px] font-semibold cursor-pointer"
                                 >
                                   <Plus className="w-3 h-3 mr-0.5" /> Pay
                                 </Button>
@@ -695,14 +686,14 @@ export const PaymentsPage: React.FC = () => {
                     placeholder="Search receipt, invoice, or client..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 text-xs h-8 bg-slate-50"
+                    className="pl-8 text-[13px] h-8 bg-slate-50"
                   />
                 </div>
 
                 <select
                   value={modeFilter}
                   onChange={(e) => setModeFilter(e.target.value)}
-                  className="text-xs h-8 px-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 focus:outline-none cursor-pointer"
+                  className="text-[13px] h-8 px-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 focus:outline-none cursor-pointer"
                 >
                   <option value="ALL">All Modes</option>
                   <option value="UPI">UPI</option>
@@ -714,7 +705,7 @@ export const PaymentsPage: React.FC = () => {
                 <select
                   value={typeFilter}
                   onChange={(e) => setTypeFilter(e.target.value)}
-                  className="text-xs h-8 px-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 focus:outline-none cursor-pointer"
+                  className="text-[13px] h-8 px-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 focus:outline-none cursor-pointer"
                 >
                   <option value="ALL">All Types</option>
                   <option value="FULL">FULL</option>
@@ -728,7 +719,7 @@ export const PaymentsPage: React.FC = () => {
 
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-3 font-semibold text-slate-700">Receipt Ref</th>
@@ -764,12 +755,12 @@ export const PaymentsPage: React.FC = () => {
                           <td className="p-3 font-mono font-bold text-orange-600">
                             {p.receiptNo || p.referenceNo || p.id}
                             {p.receiptNo && p.referenceNo && (
-                              <div className="text-[10px] font-normal text-slate-500">Ref {p.referenceNo}</div>
+                              <div className="text-[11px] font-normal text-slate-500">Ref {p.referenceNo}</div>
                             )}
                           </td>
                           <td className="p-3">
                             <div className="font-semibold text-slate-900">{cust?.name}</div>
-                            <div className="text-[10px] text-slate-500">{cust?.phone}</div>
+                            <div className="text-[11px] text-slate-500">{cust?.phone}</div>
                           </td>
                           <td className="p-3 font-mono text-slate-700 font-medium">
                             {inv?.invoiceNo || <AdvanceLabel payment={p} quotations={quotations} jobs={jobs} />}
@@ -778,13 +769,13 @@ export const PaymentsPage: React.FC = () => {
                             {job?.jobNumber || '-'}
                           </td>
                           <td className="p-3">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                               {p.mode}
                             </span>
                           </td>
                           <td className="p-3">
                             <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${
+                              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${
                                 p.type === 'FULL'
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                   : p.type === 'REFUND'
@@ -792,10 +783,10 @@ export const PaymentsPage: React.FC = () => {
                                   : 'bg-amber-50 text-amber-800 border border-amber-200'
                               }`}
                             >
-                              {p.type}
+                              {humanize(p.type)}
                             </span>
                           </td>
-                          <td className="p-3 text-slate-500 font-mono text-[11px]">
+                          <td className="p-3 text-slate-500 font-mono text-xs">
                             {formatDate(p.date)}
                           </td>
                           <td
@@ -835,7 +826,7 @@ export const PaymentsPage: React.FC = () => {
                 <h2 className="text-base font-bold text-slate-900 font-display">
                   {drilldownCustomer.name}
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-[13px] text-slate-500">
                   {drilldownCustomer.address} &bull; {drilldownCustomer.phone}
                 </p>
               </div>
@@ -849,14 +840,14 @@ export const PaymentsPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs overscroll-contain">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 text-[13px] overscroll-contain">
               {/* Invoices List */}
               <div className="space-y-2">
-                <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">
+                <h3 className="font-bold text-slate-900 text-[13px] uppercase tracking-wide">
                   Invoices for this Customer
                 </h3>
                 <div className="rounded-xl border border-slate-200 overflow-hidden">
-                  <table className="w-full text-left text-xs">
+                  <table className="stack-on-phone w-full text-left text-[13px]">
                     <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                       <tr>
                         <th className="p-2.5">Invoice No</th>
@@ -891,12 +882,12 @@ export const PaymentsPage: React.FC = () => {
                                     setDrilldownCustomer(null);
                                     handleOpenRecordPayment(drilldownCustomer.id, inv.id);
                                   }}
-                                  className="text-[10px] font-semibold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer"
+                                  className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer"
                                 >
                                   Collect
                                 </button>
                               ) : (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                   Settled
                                 </span>
                               )}
@@ -910,11 +901,11 @@ export const PaymentsPage: React.FC = () => {
 
               {/* Payments History List */}
               <div className="space-y-2 pt-2">
-                <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">
+                <h3 className="font-bold text-slate-900 text-[13px] uppercase tracking-wide">
                   Receipts Logged for this Customer
                 </h3>
                 <div className="rounded-xl border border-slate-200 overflow-hidden">
-                  <table className="w-full text-left text-xs">
+                  <table className="stack-on-phone w-full text-left text-[13px]">
                     <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                       <tr>
                         <th className="p-2.5">Receipt Ref</th>
@@ -939,13 +930,13 @@ export const PaymentsPage: React.FC = () => {
                               )}
                             </td>
                             <td className="p-2.5">
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                                 {p.mode}
                               </span>
                             </td>
                             <td className="p-2.5">
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                                {p.type}
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                {humanize(p.type)}
                               </span>
                             </td>
                             <td className="p-2.5 font-mono text-slate-500">{formatDate(p.date)}</td>
@@ -989,10 +980,10 @@ export const PaymentsPage: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-900 font-display">
-                  Record Manual Payment Receipt
+                  Record payment
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Direct collection outside standard OTP sign-off
+                <p className="text-[13px] text-slate-500">
+                  Money received against an invoice
                 </p>
               </div>
             </div>
@@ -1005,7 +996,7 @@ export const PaymentsPage: React.FC = () => {
             </button>
           </div>
 
-          <form onSubmit={handleSubmitManualPayment} className="flex-1 flex flex-col overflow-hidden text-xs">
+          <form onSubmit={handleSubmitManualPayment} className="flex-1 flex flex-col overflow-hidden text-[13px]">
             <div className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain">
               {/* Customer Selector */}
               <div>
@@ -1013,7 +1004,7 @@ export const PaymentsPage: React.FC = () => {
                 <select
                   value={manualCustomerId}
                   onChange={(e) => handleCustomerSelectChange(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
                 >
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -1031,7 +1022,7 @@ export const PaymentsPage: React.FC = () => {
                 <select
                   value={manualInvoiceId}
                   onChange={(e) => handleInvoiceSelectChange(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500 font-mono"
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 font-mono"
                 >
                   <option value="">-- Choose an invoice --</option>
                   {invoices
@@ -1056,7 +1047,7 @@ export const PaymentsPage: React.FC = () => {
                     placeholder="Enter amount"
                     value={manualAmount}
                     onChange={(e) => setManualAmount(Number(e.target.value) || '')}
-                    className="h-9 text-xs font-mono font-bold text-slate-900"
+                    className="h-9 text-[13px] font-mono font-bold text-slate-900"
                   />
                 </div>
 
@@ -1065,7 +1056,7 @@ export const PaymentsPage: React.FC = () => {
                   <select
                     value={manualMode}
                     onChange={(e) => setManualMode(e.target.value as PaymentMode)}
-                    className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                    className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
                   >
                     <option value="UPI">UPI / GPay / PhonePe</option>
                     <option value="NEFT">NEFT / RTGS / IMPS</option>
@@ -1085,7 +1076,7 @@ export const PaymentsPage: React.FC = () => {
                     placeholder="e.g. UTR-4029104881"
                     value={manualReference}
                     onChange={(e) => setManualReference(e.target.value)}
-                    className="h-9 text-xs font-mono"
+                    className="h-9 text-[13px] font-mono"
                   />
                 </div>
 
@@ -1096,7 +1087,7 @@ export const PaymentsPage: React.FC = () => {
                     required
                     value={manualDate}
                     onChange={(e) => setManualDate(e.target.value)}
-                    className="h-9 text-xs font-mono"
+                    className="h-9 text-[13px] font-mono"
                   />
                 </div>
               </div>

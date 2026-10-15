@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatINR, formatDate } from '@/lib/utils';
+import { formatINR, formatDate, humanize } from '@/lib/utils';
 import { ServiceCategory, SERVICE_CATEGORIES, Product, Vendor, SerialUnit, SerialStatus } from '@/lib/stecsecure-types';
 import { generateInternalBarcode, copyBarcodeToClipboard } from '@/lib/barcode-utils';
 import { errorMessage } from '@/lib/api';
@@ -142,20 +142,11 @@ export const InventoryPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="orange" className="text-xs">
-              <Boxes className="w-3.5 h-3.5 text-orange-600" />
-              Inventory & Hardware Hub
-            </Badge>
-            <span className="text-xs text-slate-500 font-medium">
-              Serial-level tracking &bull; Stock in/out &bull; Vendor provenance
-            </span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight font-display">
+          <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
             Inventory
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Track cameras, controllers, components, serial numbers, and vendor provenance
+          <p className="text-sm text-slate-500 mt-0.5">
+            Products, stock and serial numbers — where every unit is
           </p>
         </div>
 
@@ -166,7 +157,7 @@ export const InventoryPage: React.FC = () => {
               variant="primary"
               size="sm"
               onClick={() => setIsAddStockOpen(true)}
-              className="text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow-2xs flex items-center gap-1.5 cursor-pointer"
+              className="text-[13px] font-semibold bg-orange-600 hover:bg-orange-700 text-white shadow-2xs flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               Add Stock
@@ -180,60 +171,60 @@ export const InventoryPage: React.FC = () => {
         {/* Total Products */}
         <Card className="border-slate-200 bg-white shadow-sm">
           <CardContent className="p-3.5 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center justify-between">
+            <div className="text-[11px] uppercase font-bold text-slate-500 flex items-center justify-between">
               <span>Products</span>
               <Package className="w-3.5 h-3.5 text-orange-600" />
             </div>
             <div className="text-2xl font-bold text-slate-900 font-mono">{products.length}</div>
-            <p className="text-[10px] text-slate-500">Across 6 categories</p>
+            <p className="text-[11px] text-slate-500">Across 6 categories</p>
           </CardContent>
         </Card>
 
         {/* In Stock */}
         <Card className="border-slate-200 bg-white shadow-sm hover:border-emerald-300 transition-colors">
           <CardContent className="p-3.5 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-emerald-700 flex items-center justify-between">
+            <div className="text-[11px] uppercase font-bold text-emerald-700 flex items-center justify-between">
               <span>In Stock</span>
               <Boxes className="w-3.5 h-3.5 text-emerald-600" />
             </div>
             <div className="text-2xl font-bold text-emerald-700 font-mono">{inStockUnits.length}</div>
-            <p className="text-[10px] text-slate-500">Ready to deploy</p>
+            <p className="text-[11px] text-slate-500">Ready to deploy</p>
           </CardContent>
         </Card>
 
         {/* Allocated */}
         <Card className="border-slate-200 bg-white shadow-sm hover:border-blue-300 transition-colors">
           <CardContent className="p-3.5 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-blue-700 flex items-center justify-between">
+            <div className="text-[11px] uppercase font-bold text-blue-700 flex items-center justify-between">
               <span>Allocated</span>
               <Clock className="w-3.5 h-3.5 text-blue-600" />
             </div>
             <div className="text-2xl font-bold text-blue-700 font-mono">{allocatedUnits.length}</div>
-            <p className="text-[10px] text-slate-500">Assigned to field jobs</p>
+            <p className="text-[11px] text-slate-500">Assigned to field jobs</p>
           </CardContent>
         </Card>
 
         {/* Installed */}
         <Card className="border-slate-200 bg-white shadow-sm hover:border-emerald-300 transition-colors">
           <CardContent className="p-3.5 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-emerald-700 flex items-center justify-between">
+            <div className="text-[11px] uppercase font-bold text-emerald-700 flex items-center justify-between">
               <span>Installed</span>
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             </div>
             <div className="text-2xl font-bold text-emerald-700 font-mono">{installedUnits.length}</div>
-            <p className="text-[10px] text-slate-500">Live at client sites</p>
+            <p className="text-[11px] text-slate-500">Live at client sites</p>
           </CardContent>
         </Card>
 
         {/* Returned */}
         <Card className="border-slate-200 bg-white shadow-sm hover:border-rose-300 transition-colors">
           <CardContent className="p-3.5 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-rose-700 flex items-center justify-between">
+            <div className="text-[11px] uppercase font-bold text-rose-700 flex items-center justify-between">
               <span>Returned</span>
               <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
             </div>
             <div className="text-2xl font-bold text-rose-700 font-mono">{returnedUnits.length}</div>
-            <p className="text-[10px] text-slate-500">RMA / Faulty items</p>
+            <p className="text-[11px] text-slate-500">RMA / Faulty items</p>
           </CardContent>
         </Card>
 
@@ -244,31 +235,31 @@ export const InventoryPage: React.FC = () => {
           }`}
         >
           <CardContent className="p-3.5 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-amber-800 flex items-center justify-between">
+            <div className="text-[11px] uppercase font-bold text-amber-800 flex items-center justify-between">
               <span>Low Stock</span>
               <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
             </div>
             <div className="text-2xl font-bold text-amber-800 font-mono">{lowStockProducts.length}</div>
-            <p className="text-[10px] text-slate-500">&lt; 3 units available</p>
+            <p className="text-[11px] text-slate-500">&lt; 3 units available</p>
           </CardContent>
         </Card>
 
         {/* Total Vendors */}
         <Card className="border-slate-200 bg-white shadow-sm">
           <CardContent className="p-3.5 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center justify-between">
+            <div className="text-[11px] uppercase font-bold text-slate-500 flex items-center justify-between">
               <span>Vendors</span>
               <Building2 className="w-3.5 h-3.5 text-orange-600" />
             </div>
             <div className="text-2xl font-bold text-slate-900 font-mono">{vendors.length}</div>
-            <p className="text-[10px] text-slate-500">Registered OEMs</p>
+            <p className="text-[11px] text-slate-500">Registered OEMs</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Low Stock Warning Banner if any */}
       {lowStockProducts.length > 0 && (
-        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[13px] shadow-2xs">
           <div className="flex items-center gap-2 text-amber-900">
             <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
             <span>
@@ -282,7 +273,7 @@ export const InventoryPage: React.FC = () => {
               size="sm"
               variant="warning"
               onClick={() => setIsAddStockOpen(true)}
-              className="text-xs shrink-0"
+              className="text-[13px] shrink-0"
             >
               <ArrowDownToLine className="w-3 h-3 mr-1" /> Re-stock Now
             </Button>
@@ -291,44 +282,44 @@ export const InventoryPage: React.FC = () => {
       )}
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab('SERIALS')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === 'SERIALS'
               ? 'bg-orange-500 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200'
           }`}
         >
           <Tag className="w-3.5 h-3.5" />
-          <span>Serial Unit Lifecycle Tracker ({serialUnits.length})</span>
+          <span>Serial numbers ({serialUnits.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('PRODUCTS')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === 'PRODUCTS'
               ? 'bg-orange-500 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200'
           }`}
         >
           <Package className="w-3.5 h-3.5" />
-          <span>Product Catalog ({products.length})</span>
+          <span>Products ({products.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('VENDORS')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
             activeTab === 'VENDORS'
               ? 'bg-orange-500 text-white shadow-sm'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200'
           }`}
         >
           <Building2 className="w-3.5 h-3.5" />
-          <span>Suppliers & Vendors ({vendors.length})</span>
+          <span>Suppliers ({vendors.length})</span>
         </button>
       </div>
 
@@ -343,7 +334,7 @@ export const InventoryPage: React.FC = () => {
                 placeholder="Search serial no, product, customer..."
                 value={serialSearch}
                 onChange={(e) => setSerialSearch(e.target.value)}
-                className="pl-9 text-xs bg-white"
+                className="pl-9 text-[13px] bg-white"
               />
             </div>
 
@@ -351,7 +342,7 @@ export const InventoryPage: React.FC = () => {
             <select
               value={serialStatusFilter}
               onChange={(e) => setSerialStatusFilter(e.target.value as any)}
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
             >
               <option value="ALL">All Statuses</option>
               <option value="IN_STOCK">IN_STOCK (Warehouse)</option>
@@ -365,7 +356,7 @@ export const InventoryPage: React.FC = () => {
             <select
               value={serialProductFilter}
               onChange={(e) => setSerialProductFilter(e.target.value)}
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
             >
               <option value="ALL">All Products ({products.length})</option>
               {products.map((p) => (
@@ -379,7 +370,7 @@ export const InventoryPage: React.FC = () => {
             <select
               value={serialVendorFilter}
               onChange={(e) => setSerialVendorFilter(e.target.value)}
-              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+              className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
             >
               <option value="ALL">All Vendors ({vendors.length})</option>
               {vendors.map((v) => (
@@ -394,7 +385,7 @@ export const InventoryPage: React.FC = () => {
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="p-3">Serial Number</th>
@@ -437,25 +428,25 @@ export const InventoryPage: React.FC = () => {
                             className="hover:bg-slate-50 cursor-pointer transition-colors"
                             onClick={() => setInspectingSerial(s)}
                           >
-                            <td className="p-3 font-mono font-bold text-orange-600">
+                            <td className="p-3 font-mono font-bold text-orange-600 whitespace-nowrap">
                               {s.serialNumber}
                             </td>
                             <td className="p-3 font-medium text-slate-900 max-w-[180px] truncate">
                               {prod?.name || 'Unknown Model'}
                             </td>
                             <td className="p-3">
-                              <Badge variant="outline" className="text-[10px]">
+                              <Badge variant="outline" className="text-[11px]">
                                 {prod?.category}
                               </Badge>
                             </td>
                             <td className="p-3">
-                              <Badge variant={statusVariant} className="text-[10px]">
-                                {s.status}
+                              <Badge variant={statusVariant} className="text-[11px]">
+                                {humanize(s.status)}
                               </Badge>
                             </td>
                             <td className="p-3 text-slate-700">
                               <div>{vend?.name || 'Direct / Warehouse'}</div>
-                              <div className="text-[10px] text-slate-500 font-mono">
+                              <div className="text-[11px] text-slate-500 font-mono">
                                 {formatDate(s.purchaseDate || '')}
                               </div>
                             </td>
@@ -463,7 +454,7 @@ export const InventoryPage: React.FC = () => {
                               {s.status === 'INSTALLED' && (
                                 <div>
                                   <div className="text-slate-900 font-semibold">{cust?.name}</div>
-                                  <div className="text-[10px] text-emerald-700 flex items-center gap-1 font-medium">
+                                  <div className="text-[11px] text-emerald-700 flex items-center gap-1 font-medium">
                                     <MapPin className="w-2.5 h-2.5" />
                                     {s.installedLocation || 'Customer site'}
                                   </div>
@@ -474,14 +465,14 @@ export const InventoryPage: React.FC = () => {
                                   <div className="text-blue-700 font-semibold">
                                     Job: {job?.jobNumber || s.installedAtJobId}
                                   </div>
-                                  <div className="text-[10px] text-slate-500">{cust?.name}</div>
+                                  <div className="text-[11px] text-slate-500">{cust?.name}</div>
                                 </div>
                               )}
                               {s.status === 'IN_STOCK' && (
                                 <span className="text-slate-500 italic">Central Stock</span>
                               )}
                               {s.status === 'RETURNED' && (
-                                <span className="text-rose-600 text-[11px] font-semibold">
+                                <span className="text-rose-600 text-xs font-semibold">
                                   {s.installedLocation || 'RMA Return'}
                                 </span>
                               )}
@@ -490,7 +481,7 @@ export const InventoryPage: React.FC = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="text-[11px] h-7 px-2"
+                                className="text-xs h-7 px-2"
                                 onClick={() => setInspectingSerial(s)}
                               >
                                 Provenance
@@ -519,14 +510,14 @@ export const InventoryPage: React.FC = () => {
                   placeholder="Search product catalog or HSN..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
-                  className="pl-9 text-xs bg-white"
+                  className="pl-9 text-[13px] bg-white"
                 />
               </div>
 
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
               >
                 <option value="ALL">All Categories</option>
                 {SERVICE_CATEGORIES.map((cat) => (
@@ -555,33 +546,33 @@ export const InventoryPage: React.FC = () => {
                 <Card key={prod.id} className="border-slate-200 bg-white shadow-sm flex flex-col justify-between hover:border-orange-200 transition-colors">
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-[11px]">
                         {prod.category}
                       </Badge>
                       {prod.hsnSac && (
-                        <span className="font-mono text-[10px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                        <span className="font-mono text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                           HSN: {prod.hsnSac}
                         </span>
                       )}
                     </div>
                     <CardTitle className="text-base text-slate-900 mt-2 leading-snug">{prod.name}</CardTitle>
                     {prod.description && (
-                      <p className="text-xs text-slate-500 line-clamp-2 mt-1">{prod.description}</p>
+                      <p className="text-[13px] text-slate-500 line-clamp-2 mt-1">{prod.description}</p>
                     )}
                   </CardHeader>
 
                   <CardContent className="pt-2 border-t border-slate-100 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center justify-between text-[13px]">
                       <span className="text-slate-500">Default Rate:</span>
                       <span className="font-bold text-slate-900 font-mono">
                         {formatINR(prod.defaultRate)} / {prod.unit} ({prod.gstRate}% GST)
                       </span>
                     </div>
 
-                    <div className="p-2 rounded bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px]">
+                    <div className="p-2 rounded bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
                       <span className="text-slate-600 font-medium">Stock Units:</span>
                       <div className="flex items-center gap-1.5">
-                        <Badge variant={inStock < 3 ? 'warning' : 'success'} className="text-[9px]">
+                        <Badge variant={inStock < 3 ? 'warning' : 'success'} className="text-[11px]">
                           {inStock} In Stock
                         </Badge>
                         <span className="text-slate-400">&bull;</span>
@@ -590,14 +581,14 @@ export const InventoryPage: React.FC = () => {
                     </div>
 
                     {/* Barcode display / Generate Barcode Now action (Task 2 & 3) */}
-                    <div className="p-2 rounded bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px]">
+                    <div className="p-2 rounded bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
                       <span className="text-slate-500 font-medium flex items-center gap-1">
                         <ScanBarcode className="w-3.5 h-3.5 text-slate-500" />
                         Barcode:
                       </span>
                       {prod.barcode ? (
                         <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px]">
+                          <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 text-xs">
                             {prod.barcode}
                           </span>
                           <button
@@ -615,7 +606,7 @@ export const InventoryPage: React.FC = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-slate-400 italic text-[10px]">
+                          <span className="text-slate-400 italic text-[11px]">
                             No barcode — manual entry
                           </span>
                           {isManagement && (
@@ -647,7 +638,7 @@ export const InventoryPage: React.FC = () => {
                                   setGeneratingBarcodeFor(null);
                                 }
                               }}
-                              className="text-[10px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2 py-0.5 rounded transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                              className="text-[11px] font-bold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2 py-0.5 rounded transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                             >
                               <Sparkles className="w-2.5 h-2.5" />
                               Generate Barcode Now
@@ -666,7 +657,7 @@ export const InventoryPage: React.FC = () => {
                             setSelectedProductForEdit(prod);
                             setIsProductModalOpen(true);
                           }}
-                          className="h-7 text-[11px]"
+                          className="h-7 text-xs"
                         >
                           <Edit className="w-3 h-3 mr-1" /> Edit Product
                         </Button>
@@ -690,7 +681,7 @@ export const InventoryPage: React.FC = () => {
                 placeholder="Search vendors by name, phone, GSTIN..."
                 value={vendorSearch}
                 onChange={(e) => setVendorSearch(e.target.value)}
-                className="pl-9 text-xs bg-white"
+                className="pl-9 text-[13px] bg-white"
               />
             </div>
 
@@ -702,7 +693,7 @@ export const InventoryPage: React.FC = () => {
                   setSelectedVendorForEdit(null);
                   setIsVendorModalOpen(true);
                 }}
-                className="text-xs shrink-0 bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-1 cursor-pointer"
+                className="text-[13px] shrink-0 bg-orange-600 hover:bg-orange-700 text-white flex items-center gap-1 cursor-pointer"
               >
                 <Plus className="w-4 h-4 mr-1" /> Add Vendor
               </Button>
@@ -712,7 +703,7 @@ export const InventoryPage: React.FC = () => {
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="p-3">Vendor / OEM Name</th>
@@ -747,11 +738,11 @@ export const InventoryPage: React.FC = () => {
                           <td className="p-3 text-slate-600 max-w-xs truncate">
                             {vend.address}
                           </td>
-                          <td className="p-3 font-mono text-orange-600 text-[11px] font-semibold">
+                          <td className="p-3 font-mono text-orange-600 text-xs font-semibold">
                             {vend.gstin || '-'}
                           </td>
                           <td className="p-3">
-                            <Badge variant="outline" className="text-[10px]">
+                            <Badge variant="outline" className="text-[11px]">
                               {vendorSerials.length} Units Inwarded
                             </Badge>
                           </td>
@@ -764,7 +755,7 @@ export const InventoryPage: React.FC = () => {
                                   setSelectedVendorForEdit(vend);
                                   setIsVendorModalOpen(true);
                                 }}
-                                className="h-7 text-[11px]"
+                                className="h-7 text-xs"
                               >
                                 <Edit className="w-3 h-3 mr-1" /> Edit
                               </Button>

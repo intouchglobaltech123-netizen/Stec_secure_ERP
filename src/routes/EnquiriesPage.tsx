@@ -360,12 +360,12 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">
               Enquiries ({filteredEnquiries.length})
             </h1>
-            <span className="text-xs px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold border border-slate-200">
+            <span className="text-[13px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold border border-slate-200">
               Total {enquiries.length}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Operations pipeline intake: triage customer calls, log surveys, and convert to field jobs
+          <p className="text-[13px] text-slate-500 mt-0.5">
+            Customer calls and requests — follow up, quote, then assign a job
           </p>
         </div>
 
@@ -374,7 +374,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
             variant="primary"
             size="sm"
             onClick={handleOpenCreate}
-            className="text-xs font-semibold shadow-2xs rounded-md"
+            className="text-[13px] font-semibold shadow-2xs rounded-md"
           >
             <Plus className="w-3.5 h-3.5 mr-1" /> New Enquiry
           </Button>
@@ -396,7 +396,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as 'ALL' | 'TODAYS' | EnquiryStatus)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-[13px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 isActive
                   ? 'bg-orange-500 text-white shadow-2xs'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -404,7 +404,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
             >
               <span>{tab.label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono font-bold ${
+                className={`text-[11px] px-1.5 py-0.2 rounded-md font-mono font-bold ${
                   isActive ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
                 }`}
               >
@@ -423,7 +423,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
             placeholder="Search by ID, customer, phone, or scope..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 text-xs h-8 bg-slate-50 border-slate-200 rounded-md"
+            className="pl-9 text-[13px] h-8 bg-slate-50 border-slate-200 rounded-md"
           />
         </div>
 
@@ -431,7 +431,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="text-xs h-8 px-2.5 rounded-md border border-slate-300 bg-slate-50 text-slate-700 focus:outline-none focus:border-orange-500 font-medium"
+            className="text-[13px] h-8 px-2.5 rounded-md border border-slate-300 bg-slate-50 text-slate-700 focus:outline-none focus:border-orange-500 font-medium"
           >
             <option value="ALL">All Categories</option>
             {SERVICE_CATEGORIES.map((cat) => (
@@ -444,7 +444,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as 'ALL' | EnquiryType)}
-            className="text-xs h-8 px-2.5 rounded-md border border-slate-300 bg-slate-50 text-slate-700 focus:outline-none focus:border-orange-500 font-medium"
+            className="text-[13px] h-8 px-2.5 rounded-md border border-slate-300 bg-slate-50 text-slate-700 focus:outline-none focus:border-orange-500 font-medium"
           >
             <option value="ALL">All Types</option>
             <option value="SERVICE">Service</option>
@@ -456,18 +456,18 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
       {/* Robotics ERP Data Table View */}
       <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="erp-table">
+          <table className="stack-on-phone erp-table">
             <thead>
               <tr>
                 <th className="w-32 whitespace-nowrap">ID</th>
                 <th className="min-w-[190px]">Customer</th>
                 <th className="min-w-[190px]">Work Type</th>
-                <th className="w-28 whitespace-nowrap">Referred By</th>
+                <th className="w-28 whitespace-nowrap hidden 2xl:table-cell">Referred By</th>
                 <th className="w-36 whitespace-nowrap">Assigned Technician</th>
-                <th className="w-24 text-right whitespace-nowrap">Amount</th>
+                <th className="w-24 text-right whitespace-nowrap hidden 2xl:table-cell">Amount</th>
                 <th className="w-28 text-center whitespace-nowrap">Start Date</th>
                 <th className="w-28 text-center whitespace-nowrap">Status</th>
-                <th className="w-56 text-right pr-4 whitespace-nowrap">Action</th>
+                <th className="text-right pr-4 whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -476,7 +476,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   <td colSpan={9} className="p-10 text-center text-slate-500">
                     <Inbox className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     <div className="font-semibold text-slate-700 text-sm">No enquiries found</div>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-[13px] text-slate-500 mt-1">
                       No records match the active filter or search criteria.
                     </p>
                   </td>
@@ -513,7 +513,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                           >
                             #{enq.enquiryNumber}
                           </button>
-                          <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
                             <UserCheck className="w-3 h-3 text-slate-400" />
                             {formatCreatedBy(enq.createdByUserId, users)}
                           </span>
@@ -525,7 +525,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                         <div className="font-bold text-slate-900 leading-tight truncate max-w-[200px]">
                           {enq.customerName}
                         </div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 truncate max-w-[200px]">
+                        <div className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">
                           {enq.customerPhone} &bull; {enq.customerAddress}
                         </div>
                       </td>
@@ -533,22 +533,22 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                       {/* 3. Work Type */}
                       <td>
                         <div className="flex items-center gap-1.5 flex-wrap whitespace-nowrap">
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                          <span className="text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                             {enq.category}
                           </span>
-                          <span className="text-[11px] text-slate-500 font-medium">
+                          <span className="text-xs text-slate-500 font-medium">
                             ({enq.enquiryType === 'SERVICE' ? 'Service' : 'Installation'})
                           </span>
                         </div>
-                        <div className="text-xs text-slate-700 mt-1 line-clamp-1 max-w-[220px]">
+                        <div className="text-[13px] text-slate-700 mt-1 line-clamp-1 max-w-[220px]">
                           {enq.description}
                         </div>
                       </td>
 
                       {/* 4. Referred By */}
-                      <td className="text-slate-700 whitespace-nowrap">
+                      <td className="text-slate-700 whitespace-nowrap hidden 2xl:table-cell">
                         {enq.source ? (
-                          <span className="text-xs font-medium">{enq.source}</span>
+                          <span className="text-[13px] font-medium">{enq.source}</span>
                         ) : (
                           <span className="text-slate-400">&mdash;</span>
                         )}
@@ -557,19 +557,19 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                       {/* 5. Assigned Technician */}
                       <td className="whitespace-nowrap">
                         {assignedTechName ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-800">
+                          <span className="inline-flex items-center gap-1 text-[13px] font-medium text-slate-800">
                             <UserCheck className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                             <span className="truncate max-w-[120px]">{assignedTechName}</span>
                           </span>
                         ) : (
-                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                          <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                             Unassigned
                           </span>
                         )}
                       </td>
 
                       {/* 6. Amount */}
-                      <td className="text-right font-mono whitespace-nowrap">
+                      <td className="text-right font-mono whitespace-nowrap hidden 2xl:table-cell">
                         {amountValue && amountValue > 0 ? (
                           <span className="font-bold text-slate-900">{formatINR(amountValue)}</span>
                         ) : (
@@ -578,26 +578,26 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                       </td>
 
                       {/* 7. Start Date */}
-                      <td className="text-center font-mono text-xs text-slate-600 whitespace-nowrap">
+                      <td className="text-center font-mono text-[13px] text-slate-600 whitespace-nowrap">
                         {formatDate(enq.createdAt)}
                       </td>
 
                       {/* 8. Status */}
                       <td className="text-center whitespace-nowrap">
                         {enq.status === 'FOLLOW_UP' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[13px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                             Follow-up
                           </span>
                         )}
                         {enq.status === 'APPROVED' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[13px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                             Approved
                           </span>
                         )}
                         {enq.status === 'CANCELLED' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[13px] font-bold bg-rose-50 text-rose-800 border border-rose-300">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                             Cancelled
                           </span>
@@ -612,7 +612,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                             <button
                               type="button"
                               onClick={() => handleViewLinkedJob(enq.convertedJobId!, enq.enquiryType)}
-                              className="w-[108px] h-7 px-2 rounded-md text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap transition-colors"
+                              className="w-[108px] h-7 px-2 rounded-md text-[13px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap transition-colors"
                               title="View dispatched job details"
                             >
                               <span>View Job</span>
@@ -622,7 +622,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                             <button
                               type="button"
                               onClick={() => setJobCreateEnquiry(enq)}
-                              className="w-[108px] h-7 px-2 rounded-md text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap transition-colors"
+                              className="w-[108px] h-7 px-2 rounded-md text-[13px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap transition-colors"
                               title="Assign crew and launch job"
                             >
                               <UserCheck className="w-3.5 h-3.5 mr-0.5 shrink-0" />
@@ -633,7 +633,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                             <button
                               type="button"
                               onClick={() => setViewEnquiry(enq)}
-                              className="w-[108px] h-7 px-2 rounded-md text-xs font-bold bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 shadow-2xs cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap transition-colors"
+                              className="w-[108px] h-7 px-2 rounded-md text-[13px] font-bold bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 shadow-2xs cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap transition-colors"
                               title="View and edit enquiry"
                             >
                               <span>Edit/View</span>
@@ -708,11 +708,11 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-slate-900 font-mono truncate">
+                  <h2 className="text-base font-bold text-slate-900 font-mono sm:truncate">
                     #{viewEnquiry.enquiryNumber}
                   </h2>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded font-bold shrink-0 ${
+                    className={`text-[13px] px-2 py-0.5 rounded font-bold shrink-0 ${
                       viewEnquiry.status === 'APPROVED'
                         ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
                         : viewEnquiry.status === 'CANCELLED'
@@ -723,12 +723,12 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                     {viewEnquiry.status.replace('_', ' ')}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-slate-500">
+                <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[13px] text-slate-500">
                   <span>Received {formatDate(viewEnquiry.createdAt)}</span>
                   <span>&bull;</span>
                   <span>Source: {viewEnquiry.source || 'Direct'}</span>
                   <span>&bull;</span>
-                  <span className="inline-flex items-center gap-1 font-medium text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-[11px]">
+                  <span className="inline-flex items-center gap-1 font-medium text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-xs">
                     <User className="w-3 h-3 text-slate-400" />
                     {formatCreatedBy(viewEnquiry.createdByUserId, users)}
                   </span>
@@ -744,11 +744,11 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs overscroll-contain">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4 text-[13px] overscroll-contain">
               {/* Customer & Category Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-md bg-slate-50 border border-slate-200">
                 <div>
-                  <div className="text-[10px] text-slate-500 uppercase font-bold">Customer</div>
+                  <div className="text-[11px] text-slate-500 uppercase font-bold">Customer</div>
                   <div className="font-bold text-slate-900 text-sm mt-0.5">
                     {viewEnquiry.customerName}
                   </div>
@@ -756,7 +756,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   <div className="text-slate-500 mt-0.5">{viewEnquiry.customerAddress}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-slate-500 uppercase font-bold">Work Scope</div>
+                  <div className="text-[11px] text-slate-500 uppercase font-bold">Work Scope</div>
                   <div className="font-bold text-slate-900 mt-0.5">
                     {viewEnquiry.category} ({viewEnquiry.enquiryType})
                   </div>
@@ -767,7 +767,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
               {/* Follow-up History */}
               <div className="p-3 rounded-md bg-slate-50 border border-slate-200 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900 text-xs uppercase flex items-center gap-1.5">
+                  <span className="font-bold text-slate-900 text-[13px] uppercase flex items-center gap-1.5">
                     <MessageSquare className="w-3.5 h-3.5 text-orange-600" />
                     Follow-up Notes ({viewEnquiry.followUpNotes.length})
                   </span>
@@ -777,7 +777,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-7 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-300 rounded font-semibold flex items-center gap-1 cursor-pointer"
+                        className="h-7 text-[13px] text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-300 rounded font-semibold flex items-center gap-1 cursor-pointer"
                         onClick={() => handleOpenReminder(viewEnquiry)}
                       >
                         <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
@@ -790,7 +790,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                         setNoteEnquiry(viewEnquiry);
                         setNoteText('');
                       }}
-                      className="text-orange-600 hover:text-orange-700 font-bold text-xs cursor-pointer"
+                      className="text-orange-600 hover:text-orange-700 font-bold text-[13px] cursor-pointer"
                     >
                       + Add Note
                     </button>
@@ -802,9 +802,9 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                     {viewEnquiry.followUpNotes.map((note) => (
                       <div
                         key={note.id}
-                        className="p-2.5 rounded bg-white border border-slate-200 text-xs space-y-1"
+                        className="p-2.5 rounded bg-white border border-slate-200 text-[13px] space-y-1"
                       >
-                        <div className="flex items-center justify-between text-[11px] text-slate-500">
+                        <div className="flex items-center justify-between text-xs text-slate-500">
                           <span className="font-semibold text-slate-700">{note.createdByUserName || 'Staff'}</span>
                           <span>{formatDateTime(note.createdAt)}</span>
                         </div>
@@ -813,7 +813,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                     ))}
                   </div>
                 ) : (
-                  <p className="text-slate-500 italic text-[11px]">
+                  <p className="text-slate-500 italic text-xs">
                     No follow-up notes yet. Click "+ Add Note" or "Send Reminder" to log interaction history.
                   </p>
                 )}
@@ -828,7 +828,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 return (
                   <div className="p-3 rounded-md bg-slate-50 border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <span className="font-bold text-slate-900 text-xs uppercase flex items-center gap-1.5">
+                      <span className="font-bold text-slate-900 text-[13px] uppercase flex items-center gap-1.5">
                         <FileSpreadsheet className="w-3.5 h-3.5 text-orange-600" />
                         Linked Quotations ({linkedQuotes.length})
                       </span>
@@ -840,7 +840,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                                 type="button"
                                 variant="primary"
                                 size="sm"
-                                className="h-7 text-xs bg-orange-600 hover:bg-orange-700 text-white rounded font-semibold flex items-center gap-1 shadow-2xs cursor-pointer"
+                                className="h-7 text-[13px] bg-orange-600 hover:bg-orange-700 text-white rounded font-semibold flex items-center gap-1 shadow-2xs cursor-pointer"
                                 onClick={() => {
                                   setEditingQuotation(primaryQuote);
                                   setQuotationEnquiry(viewEnquiry);
@@ -853,14 +853,14 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="h-7 text-[11px] text-slate-600 hover:text-orange-700 hover:bg-orange-50 border-slate-300 rounded cursor-pointer"
+                                className="h-7 text-xs text-slate-600 hover:text-orange-700 hover:bg-orange-50 border-slate-300 rounded cursor-pointer"
                                 onClick={() => {
                                   setEditingQuotation(null);
                                   setQuotationEnquiry(viewEnquiry);
                                 }}
                                 title="Deliberately create an alternate additional quotation"
                               >
-                                <Plus className="w-3 h-3 mr-0.5" /> + Create Additional Quotation
+                                <Plus className="w-3 h-3 mr-0.5" /> Another quotation
                               </Button>
                             </>
                           ) : (
@@ -868,7 +868,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="h-7 text-xs text-orange-600 border-orange-200 hover:bg-orange-50 rounded font-semibold cursor-pointer"
+                              className="h-7 text-[13px] text-orange-600 border-orange-200 hover:bg-orange-50 rounded font-semibold cursor-pointer"
                               onClick={() => {
                                 setEditingQuotation(null);
                                 setQuotationEnquiry(viewEnquiry);
@@ -886,22 +886,22 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                         {linkedQuotes.map((q) => (
                           <div
                             key={q.id}
-                            className="flex items-center justify-between p-2 rounded bg-white border border-slate-200 text-xs hover:border-orange-300 transition-colors"
+                            className="flex items-center justify-between p-2 rounded bg-white border border-slate-200 text-[13px] hover:border-orange-300 transition-colors"
                           >
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-mono font-bold text-orange-600">{q.quotationNo}</span>
                               <Badge
                                 variant={quotationStatusMeta(q.status).variant}
-                                className="text-[10px] rounded"
+                                className="text-[11px] rounded"
                               >
                                 {quotationStatusMeta(q.status).label}
                               </Badge>
                               {q.whatsappSharedAt && (
-                                <Badge variant="success" className="text-[10px] rounded bg-emerald-50 text-emerald-700 border-emerald-200">
+                                <Badge variant="success" className="text-[11px] rounded bg-emerald-50 text-emerald-700 border-emerald-200">
                                   WhatsApp Sent
                                 </Badge>
                               )}
-                              <span className="text-slate-500 font-mono text-[11px]">{formatDate(q.date)}</span>
+                              <span className="text-slate-500 font-mono text-xs">{formatDate(q.date)}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-mono font-bold text-slate-900 mr-1">{formatINR(q.grandTotal)}</span>
@@ -909,7 +909,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                className="h-6 px-2 text-[10px] text-orange-700 hover:text-orange-800 hover:bg-orange-50 border-orange-300 rounded cursor-pointer flex items-center gap-1 font-semibold"
+                                className="h-6 px-2 text-[11px] text-orange-700 hover:text-orange-800 hover:bg-orange-50 border-orange-300 rounded cursor-pointer flex items-center gap-1 font-semibold"
                                 onClick={() => {
                                   setEditingQuotation(q);
                                   setQuotationEnquiry(viewEnquiry);
@@ -922,7 +922,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                                 type="button"
                                 size="sm"
                                 variant="outline"
-                                className="h-6 px-2 text-[10px] text-slate-600 hover:text-slate-800 hover:bg-slate-50 border-slate-200 rounded cursor-pointer flex items-center gap-1"
+                                className="h-6 px-2 text-[11px] text-slate-600 hover:text-slate-800 hover:bg-slate-50 border-slate-200 rounded cursor-pointer flex items-center gap-1"
                                 onClick={() => setPreviewQuotation(q)}
                               >
                                 <Eye className="w-3 h-3" /> View
@@ -932,7 +932,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                         ))}
                       </div>
                     ) : (
-                      <p className="text-slate-500 italic text-[11px]">
+                      <p className="text-slate-500 italic text-xs">
                         No quotation generated yet. Click "Create Quotation" to create an estimate linked to this enquiry.
                       </p>
                     )}
@@ -948,7 +948,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-xs text-amber-700 hover:bg-amber-50 border-amber-300 rounded-md flex items-center gap-1"
+                      className="text-[13px] text-amber-700 hover:bg-amber-50 border-amber-300 rounded-md flex items-center gap-1"
                       onClick={() => {
                         setCancelModalEnquiry(viewEnquiry);
                         setCancelReason('');
@@ -962,7 +962,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-xs text-rose-600 hover:bg-rose-50 border-rose-300 rounded-md font-semibold flex items-center gap-1 cursor-pointer"
+                      className="text-[13px] text-rose-600 hover:bg-rose-50 border-rose-300 rounded-md font-semibold flex items-center gap-1 cursor-pointer"
                       onClick={() => setDeletingEnquiry(viewEnquiry)}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -976,7 +976,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                     variant="secondary"
                     size="sm"
                     onClick={() => setViewEnquiry(null)}
-                    className="text-xs rounded-md"
+                    className="text-[13px] rounded-md"
                   >
                     Close
                   </Button>
@@ -987,7 +987,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                       size="sm"
                       onClick={() => handleConfirmApprove(viewEnquiry)}
                       disabled={saving}
-                      className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center gap-1.5"
+                      className="text-[13px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center gap-1.5"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" /> Approve Enquiry
                     </Button>
@@ -1001,7 +1001,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                         setJobCreateEnquiry(viewEnquiry);
                         setViewEnquiry(null);
                       }}
-                      className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center gap-1.5"
+                      className="text-[13px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center gap-1.5"
                     >
                       <UserCheck className="w-3.5 h-3.5" /> Assign Job &rarr;
                     </Button>
@@ -1015,7 +1015,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                         handleViewLinkedJob(viewEnquiry.convertedJobId!, viewEnquiry.enquiryType);
                         setViewEnquiry(null);
                       }}
-                      className="text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center gap-1.5"
+                      className="text-[13px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md flex items-center gap-1.5"
                     >
                       View Job &rarr;
                     </Button>
@@ -1044,7 +1044,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 <h2 className="text-base font-bold text-slate-900 font-display">
                   New Customer Enquiry
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-[13px] text-slate-500">
                   First step of operations pipeline &mdash; status starts in Follow-up
                 </p>
               </div>
@@ -1058,16 +1058,16 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
             </button>
           </div>
 
-          <form onSubmit={handleCreateEnquiry} className="flex-1 flex flex-col overflow-hidden text-xs">
+          <form onSubmit={handleCreateEnquiry} className="flex-1 flex flex-col overflow-hidden text-[13px]">
             <div className="flex-1 overflow-y-auto p-5 space-y-3.5 overscroll-contain">
               {/* Customer Selector / Quick Add */}
               <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900 text-xs">Customer Information</span>
+                  <span className="font-bold text-slate-900 text-[13px]">Customer Information</span>
                   <button
                     type="button"
                     onClick={() => setIsQuickAddCustomer(!isQuickAddCustomer)}
-                    className="text-orange-600 hover:text-orange-700 font-bold cursor-pointer text-xs"
+                    className="text-orange-600 hover:text-orange-700 font-bold cursor-pointer text-[13px]"
                   >
                     {isQuickAddCustomer ? 'Select Existing Customer' : '+ Quick Add New Customer'}
                   </button>
@@ -1082,7 +1082,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                         placeholder="e.g. Apex Industrial Solutions"
                         value={newCustName}
                         onChange={(e) => setNewCustName(e.target.value)}
-                        className="text-xs h-9 bg-white rounded-md"
+                        className="text-[13px] h-9 bg-white rounded-md"
                       />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1093,7 +1093,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                           placeholder="e.g. 9840112233"
                           value={newCustPhone}
                           onChange={(e) => setNewCustPhone(e.target.value)}
-                          className="text-xs h-9 bg-white rounded-md"
+                          className="text-[13px] h-9 bg-white rounded-md"
                         />
                       </div>
                       <div>
@@ -1103,7 +1103,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                           placeholder="e.g. Survey 42, Erode"
                           value={newCustAddress}
                           onChange={(e) => setNewCustAddress(e.target.value)}
-                          className="text-xs h-9 bg-white rounded-md"
+                          className="text-[13px] h-9 bg-white rounded-md"
                         />
                       </div>
                     </div>
@@ -1114,7 +1114,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                     <select
                       value={selectedCustomerId}
                       onChange={(e) => setSelectedCustomerId(e.target.value)}
-                      className="w-full text-xs h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
+                      className="w-full text-[13px] h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
                     >
                       {customers.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -1134,7 +1134,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                     <button
                       type="button"
                       onClick={() => setFormType('SERVICE')}
-                      className={`h-9 rounded-md border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      className={`h-9 rounded-md border text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                         formType === 'SERVICE'
                           ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
@@ -1145,7 +1145,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                     <button
                       type="button"
                       onClick={() => setFormType('INSTALLATION')}
-                      className={`h-9 rounded-md border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      className={`h-9 rounded-md border text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                         formType === 'INSTALLATION'
                           ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
@@ -1161,7 +1161,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   <select
                     value={formSource}
                     onChange={(e) => setFormSource(e.target.value as EnquirySource)}
-                    className="w-full text-xs h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
+                    className="w-full text-[13px] h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
                   >
                     {ENQUIRY_SOURCES.map((src) => (
                       <option key={src} value={src}>
@@ -1177,7 +1177,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 <select
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value as ServiceCategory)}
-                  className="w-full text-xs h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
+                  className="w-full text-[13px] h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
                 >
                   {SERVICE_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
@@ -1197,7 +1197,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   placeholder="Describe what the customer is requesting (e.g. 8-channel CCTV setup, gate motor breakdown, biometric enrollment failure)..."
                   value={formDescription}
                   onChange={(e) => setFormDescription(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 bg-white p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 leading-relaxed shadow-2xs"
+                  className="w-full rounded-md border border-slate-300 bg-white p-3 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 leading-relaxed shadow-2xs"
                 />
               </div>
 
@@ -1210,11 +1210,11 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 variant="secondary"
                 size="md"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="rounded-xl text-xs"
+                className="rounded-xl text-[13px]"
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" size="md" disabled={saving} className="rounded-xl text-xs font-semibold">
+              <Button type="submit" variant="primary" size="md" disabled={saving} className="rounded-xl text-[13px] font-semibold">
                 Save Enquiry
               </Button>
             </div>
@@ -1228,11 +1228,11 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
           isOpen={Boolean(noteEnquiry)}
           onClose={() => setNoteEnquiry(null)}
           maxWidth="md"
-          title="Log Follow-up Note"
+          title="Add follow-up note"
           subtitle={`${noteEnquiry.enquiryNumber} • ${noteEnquiry.customerName}`}
           icon={<MessageSquare className="w-5 h-5" />}
         >
-          <form onSubmit={handleSaveNote} className="space-y-4 text-xs">
+          <form onSubmit={handleSaveNote} className="space-y-4 text-[13px]">
             <div>
               <label className="block text-slate-700 font-medium mb-1">
                 Follow-up Note (Call-back log, site visit update, pricing discussion) *
@@ -1244,7 +1244,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 placeholder="e.g. Spoke with client representative. Site survey scheduled for Thursday 2 PM..."
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 leading-relaxed shadow-2xs"
+                className="w-full rounded-xl border border-slate-300 bg-white p-3 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 leading-relaxed shadow-2xs"
               />
             </div>
 
@@ -1254,11 +1254,11 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 variant="secondary"
                 size="md"
                 onClick={() => setNoteEnquiry(null)}
-                className="rounded-xl text-xs"
+                className="rounded-xl text-[13px]"
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" size="md" disabled={saving} className="rounded-xl text-xs font-semibold">
+              <Button type="submit" variant="primary" size="md" disabled={saving} className="rounded-xl text-[13px] font-semibold">
                 Record Note
               </Button>
             </div>
@@ -1276,7 +1276,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
           subtitle={cancelModalEnquiry.enquiryNumber}
           icon={<AlertTriangle className="w-5 h-5 text-rose-600" />}
         >
-          <form onSubmit={handleConfirmCancel} className="space-y-4 text-xs">
+          <form onSubmit={handleConfirmCancel} className="space-y-4 text-[13px]">
             <div>
               <label className="block text-slate-700 font-medium mb-1">
                 Cancellation Reason (Free text) *
@@ -1288,11 +1288,11 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 placeholder="e.g. Client budget deferred to next quarter, opted for third-party solution, etc."
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-rose-500 leading-relaxed shadow-2xs"
+                className="w-full rounded-xl border border-slate-300 bg-white p-3 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-rose-500 leading-relaxed shadow-2xs"
               />
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px]">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs">
               Once cancelled, this enquiry cannot be converted to a Job.
             </div>
 
@@ -1302,11 +1302,11 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 variant="secondary"
                 size="md"
                 onClick={() => setCancelModalEnquiry(null)}
-                className="rounded-xl text-xs"
+                className="rounded-xl text-[13px]"
               >
                 Back
               </Button>
-              <Button type="submit" variant="danger" size="md" disabled={saving} className="rounded-xl text-xs font-semibold">
+              <Button type="submit" variant="danger" size="md" disabled={saving} className="rounded-xl text-[13px] font-semibold">
                 Confirm Cancellation
               </Button>
             </div>
@@ -1320,11 +1320,11 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
           isOpen={Boolean(reminderEnquiry)}
           onClose={() => setReminderEnquiry(null)}
           maxWidth="md"
-          title="Dispatch Follow-up Reminder"
+          title="Set a follow-up reminder"
           subtitle={`#${reminderEnquiry.enquiryNumber}`}
           icon={<MessageCircle className="w-5 h-5 text-emerald-600" />}
         >
-          <div className="space-y-3.5 text-xs">
+          <div className="space-y-3.5 text-[13px]">
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
               <div className="flex justify-between items-center text-slate-600">
                 <span>Customer:</span>
@@ -1345,7 +1345,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
             {/* Date & Time Picker */}
             <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-orange-600" />
                   Remind On
                 </label>
@@ -1353,12 +1353,12 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   type="date"
                   value={remindDate}
                   onChange={(e) => setRemindDate(e.target.value)}
-                  className="h-8 text-xs bg-white"
+                  className="h-8 text-[13px] bg-white"
                   required
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-orange-600" />
                   Remind At
                 </label>
@@ -1366,14 +1366,14 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   type="time"
                   value={remindTime}
                   onChange={(e) => setRemindTime(e.target.value)}
-                  className="h-8 text-xs bg-white"
+                  className="h-8 text-[13px] bg-white"
                   required
                 />
               </div>
             </div>
 
             {/* What a reminder does (and does not do) */}
-            <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 text-[11px] leading-relaxed space-y-1">
+            <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 text-xs leading-relaxed space-y-1">
               <div className="font-bold flex items-center gap-1.5 text-amber-900">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                 Reminder note
@@ -1389,7 +1389,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 variant="secondary"
                 size="md"
                 onClick={() => setReminderEnquiry(null)}
-                className="rounded-xl text-xs"
+                className="rounded-xl text-[13px]"
               >
                 Cancel
               </Button>
@@ -1397,7 +1397,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                 type="button"
                 variant="success"
                 size="md"
-                className="rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5"
+                className="rounded-xl text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5"
                 disabled={saving}
                 onClick={async () => {
                   if (!remindDate || !remindTime) {
@@ -1474,12 +1474,12 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
           subtitle={`#${deletingEnquiry.enquiryNumber}`}
           icon={<Trash2 className="w-5 h-5 text-rose-600" />}
         >
-          <div className="space-y-3.5 text-xs">
+          <div className="space-y-3.5 text-[13px]">
             <p className="text-slate-700 leading-relaxed">
               This will permanently delete enquiry <strong className="font-mono text-slate-900">#{deletingEnquiry.enquiryNumber}</strong> ({deletingEnquiry.customerName}) from the system. This action cannot be undone.
             </p>
 
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-[11px] leading-relaxed">
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs leading-relaxed">
                 <strong>CEO Delete Action:</strong> All follow-up logs and record links for this enquiry will be permanently removed.
               </div>
 
@@ -1489,7 +1489,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   variant="secondary"
                   size="md"
                   onClick={() => setDeletingEnquiry(null)}
-                  className="rounded-xl text-xs"
+                  className="rounded-xl text-[13px]"
                 >
                   Cancel
                 </Button>
@@ -1497,7 +1497,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   type="button"
                   variant="danger"
                   size="md"
-                  className="rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5"
+                  className="rounded-xl text-[13px] font-semibold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5"
                   disabled={saving}
                   onClick={async () => {
                     setSaving(true);

@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { formatDate, formatDateTime, formatINR } from '@/lib/utils';
+import { formatDate, formatDateTime, formatINR, humanize } from '@/lib/utils';
 import { JobDetailModal } from '@/components/jobs/JobDetailModal';
 
 export const TechniciansPage: React.FC = () => {
@@ -98,20 +98,11 @@ export const TechniciansPage: React.FC = () => {
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="orange" className="text-xs">
-                  <HardHat className="w-3.5 h-3.5 text-orange-600" />
-                  Field Operations Crew
-                </Badge>
-                <span className="text-xs text-slate-500 font-medium">
-                  {users.filter((u) => u.role === 'TECHNICIAN').length} Active Technicians &bull; 2 Managers
-                </span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight font-display">
-                Technician Roster & Directory
+              <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
+                Technicians
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500">
-                Click any technician to review their full deployment history, logged hours, and job performance
+              <p className="text-sm text-slate-500 mt-0.5">
+                Tap a person to see their jobs, hours and performance
               </p>
             </div>
           </div>
@@ -138,21 +129,21 @@ export const TechniciansPage: React.FC = () => {
                   }`}
                 >
                   {isCurrentUser && (
-                    <div className="absolute top-0 right-0 bg-orange-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg">
+                    <div className="absolute top-0 right-0 bg-orange-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-bl-lg">
                       YOU
                     </div>
                   )}
 
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <Badge variant={roleVariant} className="text-xs font-semibold">
-                        {user.role}
+                      <Badge variant={roleVariant} className="text-[13px] font-semibold">
+                        {humanize(user.role)}
                       </Badge>
 
                       {/* Login number (PINs are kept hashed on the server; the CEO resets them in Settings) */}
                       <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200">
                         <KeyRound className="w-3 h-3 text-slate-400" />
-                        <span className="font-mono text-xs text-slate-700">{user.phone}</span>
+                        <span className="font-mono text-[13px] text-slate-700">{user.phone}</span>
                       </div>
                     </div>
 
@@ -164,7 +155,7 @@ export const TechniciansPage: React.FC = () => {
                         <CardTitle className="text-base text-slate-900 truncate font-display">
                           {user.name}
                         </CardTitle>
-                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5 font-medium">
+                        <div className="text-[13px] text-slate-500 flex items-center gap-1 mt-0.5 font-medium">
                           <Phone className="w-3 h-3 text-slate-400" /> {user.phone}
                         </div>
                       </div>
@@ -172,29 +163,29 @@ export const TechniciansPage: React.FC = () => {
                     </div>
                   </CardHeader>
 
-                  <CardContent className="pt-2 border-t border-slate-100 space-y-2 text-xs">
+                  <CardContent className="pt-2 border-t border-slate-100 space-y-2 text-[13px]">
                     <div className="grid grid-cols-3 gap-2 text-center p-2 rounded-xl bg-slate-50 border border-slate-200">
                       <div>
-                        <div className="text-[10px] text-slate-500 uppercase font-bold">Active</div>
+                        <div className="text-[11px] text-slate-500 uppercase font-bold">Active</div>
                         <div className="text-base font-bold text-amber-800 mt-0.5 font-mono">
                           {stats.activeJobs}
                         </div>
                       </div>
                       <div className="border-x border-slate-200">
-                        <div className="text-[10px] text-slate-500 uppercase font-bold">Done</div>
+                        <div className="text-[11px] text-slate-500 uppercase font-bold">Done</div>
                         <div className="text-base font-bold text-emerald-700 mt-0.5 font-mono">
                           {stats.completedJobs}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-slate-500 uppercase font-bold">Hours</div>
+                        <div className="text-[11px] text-slate-500 uppercase font-bold">Hours</div>
                         <div className="text-base font-bold text-blue-700 mt-0.5 font-mono">
                           {stats.totalHoursLogged}h
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-slate-600 pt-1">
+                    <div className="flex items-center justify-between text-xs text-slate-600 pt-1">
                       <span>Total Jobs Assigned:</span>
                       <strong className="text-slate-900 font-mono">{stats.totalJobs}</strong>
                     </div>
@@ -212,11 +203,11 @@ export const TechniciansPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedUserId(null)}
-              className="flex items-center gap-2 text-xs font-semibold text-orange-600 hover:text-orange-700 transition-colors cursor-pointer"
+              className="flex items-center gap-2 text-[13px] font-semibold text-orange-600 hover:text-orange-700 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Technicians Directory
             </button>
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-[13px]">
               Technician Profile ID: {selectedUser.id}
             </Badge>
           </div>
@@ -243,10 +234,10 @@ export const TechniciansPage: React.FC = () => {
                             : 'success'
                         }
                       >
-                        {selectedUser.role}
+                        {humanize(selectedUser.role)}
                       </Badge>
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 mt-1">
+                    <div className="flex flex-wrap items-center gap-4 text-[13px] text-slate-600 mt-1">
                       <span className="flex items-center gap-1">
                         <Phone className="w-3.5 h-3.5 text-orange-600" /> {selectedUser.phone}
                       </span>
@@ -257,10 +248,10 @@ export const TechniciansPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="text-right sm:border-l sm:border-slate-200 sm:pl-6 text-xs text-slate-500">
-                  <div className="text-[10px] uppercase font-bold text-slate-500">Security Clearance</div>
+                <div className="text-right sm:border-l sm:border-slate-200 sm:pl-6 text-[13px] text-slate-500">
+                  <div className="text-[11px] uppercase font-bold text-slate-500">Security Clearance</div>
                   <div className="text-slate-900 font-semibold mt-0.5">Level 2 Field Certified</div>
-                  <div className="text-[11px] text-emerald-700 flex items-center gap-1 justify-end mt-1 font-semibold">
+                  <div className="text-xs text-emerald-700 flex items-center gap-1 justify-end mt-1 font-semibold">
                     <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Active Duty Roster
                   </div>
                 </div>
@@ -274,62 +265,62 @@ export const TechniciansPage: React.FC = () => {
               {/* Total Jobs */}
               <Card className="border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-3.5 space-y-1">
-                  <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center justify-between">
+                  <div className="text-[11px] uppercase font-bold text-slate-500 flex items-center justify-between">
                     <span>Total Jobs</span>
                     <Wrench className="w-3.5 h-3.5 text-orange-600" />
                   </div>
                   <div className="text-2xl font-bold text-slate-900 font-mono">{userStats.totalJobs}</div>
-                  <p className="text-[10px] text-slate-500">Across lifetime</p>
+                  <p className="text-[11px] text-slate-500">Across lifetime</p>
                 </CardContent>
               </Card>
 
               {/* Total Hours Worked */}
               <Card className="border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-3.5 space-y-1">
-                  <div className="text-[10px] uppercase font-bold text-blue-700 flex items-center justify-between">
+                  <div className="text-[11px] uppercase font-bold text-blue-700 flex items-center justify-between">
                     <span>Hours Logged</span>
                     <Clock className="w-3.5 h-3.5 text-blue-600" />
                   </div>
                   <div className="text-2xl font-bold text-blue-700 font-mono">{userStats.totalHoursLogged}h</div>
-                  <p className="text-[10px] text-slate-500">WorkLog duration</p>
+                  <p className="text-[11px] text-slate-500">WorkLog duration</p>
                 </CardContent>
               </Card>
 
               {/* Currently Active */}
               <Card className="border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-3.5 space-y-1">
-                  <div className="text-[10px] uppercase font-bold text-amber-800 flex items-center justify-between">
+                  <div className="text-[11px] uppercase font-bold text-amber-800 flex items-center justify-between">
                     <span>Active Now</span>
                     <Layers className="w-3.5 h-3.5 text-amber-600" />
                   </div>
                   <div className="text-2xl font-bold text-amber-800 font-mono">{userStats.activeJobs}</div>
-                  <p className="text-[10px] text-slate-500">Field deployments</p>
+                  <p className="text-[11px] text-slate-500">Field deployments</p>
                 </CardContent>
               </Card>
 
               {/* Holds Raised */}
               <Card className="border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-3.5 space-y-1">
-                  <div className="text-[10px] uppercase font-bold text-rose-700 flex items-center justify-between">
+                  <div className="text-[11px] uppercase font-bold text-rose-700 flex items-center justify-between">
                     <span>Holds Raised</span>
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
                   </div>
                   <div className="text-2xl font-bold text-rose-700 font-mono">{userStats.holdsRaised}</div>
-                  <p className="text-[10px] text-slate-500">Site impediment events</p>
+                  <p className="text-[11px] text-slate-500">Site impediment events</p>
                 </CardContent>
               </Card>
 
               {/* Avg Job Completion Time */}
               <Card className="border-slate-200 bg-white shadow-sm">
                 <CardContent className="p-3.5 space-y-1">
-                  <div className="text-[10px] uppercase font-bold text-emerald-700 flex items-center justify-between">
+                  <div className="text-[11px] uppercase font-bold text-emerald-700 flex items-center justify-between">
                     <span>Avg Duration</span>
                     <Clock className="w-3.5 h-3.5 text-emerald-600" />
                   </div>
                   <div className="text-2xl font-bold text-emerald-700 font-mono">
                     {userStats.avgDurationHours}h
                   </div>
-                  <p className="text-[10px] text-slate-500">Per closed job</p>
+                  <p className="text-[11px] text-slate-500">Per closed job</p>
                 </CardContent>
               </Card>
             </div>
@@ -349,10 +340,10 @@ export const TechniciansPage: React.FC = () => {
                   {Object.values(userMaterialsMap).map((m) => (
                     <div
                       key={m.name}
-                      className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1"
+                      className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-[13px] space-y-1"
                     >
                       <div className="font-semibold text-slate-800 truncate">{m.name}</div>
-                      <div className="text-[11px] text-slate-500 flex justify-between">
+                      <div className="text-xs text-slate-500 flex justify-between">
                         <span>Delivered: {m.delivered}</span>
                         <span className="text-orange-600 font-bold">Net: {m.delivered - m.returned}</span>
                       </div>
@@ -368,7 +359,7 @@ export const TechniciansPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Assigned Job History ({userJobs.length})</h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-[13px] text-slate-500">
                   Every past and active job assigned to {selectedUser.name}. Click any row to view full job details.
                 </p>
               </div>
@@ -380,14 +371,14 @@ export const TechniciansPage: React.FC = () => {
                     placeholder="Search jobs..."
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
-                    className="pl-8 h-8 text-xs bg-white"
+                    className="pl-8 h-8 text-[13px] bg-white"
                   />
                 </div>
 
                 <select
                   value={historyStatusFilter}
                   onChange={(e) => setHistoryStatusFilter(e.target.value as any)}
-                  className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-900 focus:outline-none"
+                  className="h-8 rounded-lg border border-slate-300 bg-white px-2 text-[13px] text-slate-900 focus:outline-none"
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="IN_PROGRESS">IN_PROGRESS</option>
@@ -402,7 +393,7 @@ export const TechniciansPage: React.FC = () => {
             <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="stack-on-phone w-full text-left text-[13px]">
                     <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                       <tr>
                         <th className="p-3">Job Number</th>
@@ -446,10 +437,10 @@ export const TechniciansPage: React.FC = () => {
                               </td>
                               <td className="p-3">
                                 <div className="font-semibold text-slate-900">{customer?.name}</div>
-                                <div className="text-[11px] text-slate-500">{customer?.address}</div>
+                                <div className="text-xs text-slate-500">{customer?.address}</div>
                               </td>
                               <td className="p-3">
-                                <Badge variant="outline" className="text-[10px]">
+                                <Badge variant="outline" className="text-[11px]">
                                   {j.category}
                                 </Badge>
                               </td>
@@ -457,18 +448,18 @@ export const TechniciansPage: React.FC = () => {
                                 {j.productModel}
                               </td>
                               <td className="p-3">
-                                <Badge variant={statusVariant} className="text-[10px]">
-                                  {j.status}
+                                <Badge variant={statusVariant} className="text-[11px]">
+                                  {humanize(j.status)}
                                 </Badge>
                               </td>
-                              <td className="p-3 text-slate-500 font-mono text-[11px]">
+                              <td className="p-3 text-slate-500 font-mono text-xs">
                                 {formatDate(j.createdAt)}
                               </td>
                               <td className="p-3 text-right">
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  className="h-7 text-[11px]"
+                                  className="h-7 text-xs"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setInspectedJob(j);

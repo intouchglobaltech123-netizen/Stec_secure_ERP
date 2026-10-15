@@ -44,3 +44,18 @@ export function formatCreatedBy(
   if (!u) return 'Created by: Management';
   return `Created by: ${u.name} (${u.role})`;
 }
+
+// Plain words for status / type codes shown to people: IN_STOCK → "In stock", FAULT_REPORTED → "Fault reported"
+const HUMAN_LABELS: Record<string, string> = {
+  CEO: 'CEO',
+  AMC: 'AMC',
+  OTHERS: 'Other',
+  AWAITING_OTP: 'Awaiting sign-off',
+  OTP: 'OTP',
+};
+export function humanize(code?: string | null): string {
+  if (!code) return '';
+  if (HUMAN_LABELS[code]) return HUMAN_LABELS[code];
+  const words = code.replace(/_/g, ' ').toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}

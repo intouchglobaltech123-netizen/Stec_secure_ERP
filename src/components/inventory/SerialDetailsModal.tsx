@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
-import { formatDate, formatINR } from '@/lib/utils';
+import { formatDate, formatINR, humanize } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface SerialDetailsModalProps {
@@ -101,11 +101,11 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
               <h2 className="text-base font-bold text-slate-900 font-mono">
                 {serial.serialNumber}
               </h2>
-              <Badge variant={statusVariant} className="text-[10px]">
-                {serial.status}
+              <Badge variant={statusVariant} className="text-[11px]">
+                {humanize(serial.status)}
               </Badge>
             </div>
-            <p className="text-xs text-slate-500">{product?.name || 'Hardware Unit'}</p>
+            <p className="text-[13px] text-slate-500">{product?.name || 'Hardware Unit'}</p>
           </div>
         </div>
         <button
@@ -117,13 +117,13 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs overscroll-contain">
+      <div className="flex-1 overflow-y-auto p-5 space-y-4 text-[13px] overscroll-contain">
           {/* Hardware Spec Card */}
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-            <div className="text-[10px] uppercase font-bold text-slate-500">Product Specification</div>
+            <div className="text-[11px] uppercase font-bold text-slate-500">Product Specification</div>
             <div className="font-bold text-slate-900 text-sm">{product?.name}</div>
             <div className="flex items-center gap-2 text-slate-600">
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className="text-[11px]">
                 {product?.category}
               </Badge>
               <span>HSN: {product?.hsnSac || '85258090'}</span>
@@ -133,7 +133,7 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
 
           {/* Provenance: Where Bought From */}
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
+            <div className="text-[11px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-orange-600" />
               Inward Provenance (Where Bought From)
             </div>
@@ -143,7 +143,7 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
                 <div className="text-slate-600">{vendor.address}</div>
                 <div className="text-slate-500">Phone: {vendor.phone}</div>
                 {vendor.gstin && (
-                  <div className="font-mono text-orange-600 text-[11px] font-semibold">
+                  <div className="font-mono text-orange-600 text-xs font-semibold">
                     GSTIN: {vendor.gstin}
                   </div>
                 )}
@@ -152,12 +152,12 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
               <p className="text-slate-500 italic">Direct import or local stock (no vendor recorded)</p>
             )}
             {serial.purchaseDate && (
-              <div className="text-[11px] text-slate-500 pt-1 border-t border-slate-200">
+              <div className="text-xs text-slate-500 pt-1 border-t border-slate-200">
                 Inward Purchase Date: <strong>{formatDate(serial.purchaseDate)}</strong>
               </div>
             )}
             {serial.purchaseCost !== undefined && (
-              <div className="text-[11px] text-slate-700 pt-1 border-t border-slate-200 flex items-center justify-between">
+              <div className="text-xs text-slate-700 pt-1 border-t border-slate-200 flex items-center justify-between">
                 <span className="text-slate-500">Unit Purchase Cost:</span>
                 <strong className="font-mono text-slate-900">{formatINR(serial.purchaseCost)}</strong>
               </div>
@@ -166,7 +166,7 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
 
           {/* Deployment: Whom Sold To & Installed Location */}
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
+            <div className="text-[11px] uppercase font-bold text-slate-500 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-emerald-600" />
               Outward Lifecycle (Whom Sold To & Location Installed)
             </div>
@@ -189,8 +189,8 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
                   <Wrench className="w-3.5 h-3.5 text-orange-600" />
                   <span className="font-semibold text-slate-800">Job: {job.jobNumber}</span>
                 </div>
-                <Badge variant="outline" className="text-[10px]">
-                  {job.status}
+                <Badge variant="outline" className="text-[11px]">
+                  {humanize(job.status)}
                 </Badge>
               </div>
             )}
@@ -202,7 +202,7 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
             )}
 
             {job && (
-              <div className="text-[11px] text-slate-500">
+              <div className="text-xs text-slate-500">
                 Job Linked: <strong>{job.jobNumber}</strong> ({formatDate(job.createdAt)})
               </div>
             )}
@@ -211,10 +211,10 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
           {/* Return status */}
           {serial.status === 'RETURNED' && (
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 space-y-1">
-              <div className="font-bold flex items-center gap-1.5 text-xs text-rose-800">
+              <div className="font-bold flex items-center gap-1.5 text-[13px] text-rose-800">
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Unit Returned for RMA / Defect
               </div>
-              <p className="text-[11px] text-slate-700 font-medium">
+              <p className="text-xs text-slate-700 font-medium">
                 Status: Returned to warehouse / supplier for RMA replacement
               </p>
             </div>
@@ -229,20 +229,20 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => setIsReturning(true)}
-                  className="w-full text-xs text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
+                  className="w-full text-[13px] text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300"
                 >
                   <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
                   Mark Unit as Returned / RMA Defect
                 </Button>
               ) : (
                 <form onSubmit={handleReturn} className="p-3 rounded-xl bg-rose-50 border border-rose-200 space-y-2">
-                  <div className="font-bold text-rose-900 text-xs">Record Return Reason</div>
+                  <div className="font-bold text-rose-900 text-[13px]">Record Return Reason</div>
                   <Input
                     required
                     placeholder="Describe defective symptoms, RMA ticket, or warranty issue..."
                     value={returnReason}
                     onChange={(e) => setReturnReason(e.target.value)}
-                    className="text-xs h-8 bg-white"
+                    className="text-[13px] h-8 bg-white"
                   />
                   <div className="flex justify-end gap-2 pt-1">
                     <Button
@@ -250,11 +250,11 @@ export const SerialDetailsModal: React.FC<SerialDetailsModalProps> = ({
                       variant="secondary"
                       size="sm"
                       onClick={() => setIsReturning(false)}
-                      className="h-7 text-xs"
+                      className="h-7 text-[13px]"
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" variant="danger" size="sm" disabled={saving} className="h-7 text-xs">
+                    <Button type="submit" variant="danger" size="sm" disabled={saving} className="h-7 text-[13px]">
                       Confirm Return
                     </Button>
                   </div>

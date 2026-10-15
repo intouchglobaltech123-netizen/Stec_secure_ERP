@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { humanize } from '@/lib/utils';
 import { Users, Plus, KeyRound, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStecSecure, StaffAccount } from '@/lib/stecsecure-context';
@@ -96,7 +97,7 @@ export const StaffAccountsCard: React.FC = () => {
 
   const field = (label: string, input: React.ReactNode) => (
     <div>
-      <label className="block text-xs font-semibold text-slate-700 mb-1">{label}</label>
+      <label className="block text-[13px] font-semibold text-slate-700 mb-1">{label}</label>
       {input}
     </div>
   );
@@ -122,10 +123,10 @@ export const StaffAccountsCard: React.FC = () => {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <p className="text-xs text-slate-500">Loading staff…</p>
+          <p className="text-[13px] text-slate-500">Loading staff…</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="stack-on-phone w-full text-[13px]">
               <thead>
                 <tr className="text-left text-slate-500 border-b border-slate-200">
                   <th className="py-2 pr-3 font-semibold">Name</th>
@@ -142,15 +143,15 @@ export const StaffAccountsCard: React.FC = () => {
                       {s.name}
                       {s.id === currentUser?.id && <span className="text-slate-400 font-normal"> (you)</span>}
                     </td>
-                    <td className="py-2 pr-3 text-slate-700">{s.role}</td>
+                    <td className="py-2 pr-3 text-slate-700">{humanize(s.role)}</td>
                     <td className="py-2 pr-3 font-mono text-slate-700">{s.phone}</td>
                     <td className="py-2 pr-3">
                       {!s.active ? (
-                        <Badge variant="outline" className="text-[10px]">Disabled</Badge>
+                        <Badge variant="outline" className="text-[11px]">Disabled</Badge>
                       ) : s.locked ? (
-                        <Badge variant="warning" className="text-[10px]">Locked</Badge>
+                        <Badge variant="warning" className="text-[11px]">Locked</Badge>
                       ) : (
-                        <Badge variant="success" className="text-[10px]">Active</Badge>
+                        <Badge variant="success" className="text-[11px]">Active</Badge>
                       )}
                     </td>
                     <td className="py-2 text-right whitespace-nowrap">
@@ -174,7 +175,7 @@ export const StaffAccountsCard: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => void toggleActive(s)}
-                          className={`ml-1 text-[11px] font-semibold cursor-pointer ${
+                          className={`ml-1 text-xs font-semibold cursor-pointer ${
                             s.active ? 'text-rose-600 hover:text-rose-700' : 'text-emerald-600 hover:text-emerald-700'
                           }`}
                         >
@@ -213,7 +214,7 @@ export const StaffAccountsCard: React.FC = () => {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="w-full h-9 px-3 rounded-md border border-slate-300 bg-white text-xs"
+                  className="w-full h-9 px-3 rounded-md border border-slate-300 bg-white text-[13px]"
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>

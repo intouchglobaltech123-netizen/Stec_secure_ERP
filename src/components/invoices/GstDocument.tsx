@@ -157,8 +157,8 @@ export const GstDocument: React.FC<GstDocumentProps> = ({
       </div>
 
       {/* HSN/SAC summary + totals */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pt-2 border-t border-slate-200">
-        <div className="md:col-span-3 overflow-x-auto">
+      <div className="grid grid-cols-5 gap-4 pt-2 border-t border-slate-200">
+        <div className="col-span-3 overflow-x-auto">
           <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">HSN / SAC summary</div>
           <table className="w-full text-[10px] border border-slate-200">
             <thead className="bg-slate-50">
@@ -198,7 +198,7 @@ export const GstDocument: React.FC<GstDocumentProps> = ({
           </table>
         </div>
 
-        <div className="md:col-span-2 text-xs space-y-1">
+        <div className="col-span-2 text-xs space-y-1">
           <div className="flex justify-between">
             <span>Taxable value</span>
             <span className="font-semibold">{formatINR(totals.totalAmount)}</span>

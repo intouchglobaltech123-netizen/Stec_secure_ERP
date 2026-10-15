@@ -80,30 +80,19 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
     if (quotationToEdit && quotationToEdit.lineItems?.length > 0) {
       return quotationToEdit.lineItems;
     }
+    // A new quotation starts with one empty line
     return [
       {
-        itemName: 'ONEVU 4G Smart Solar / Standalone Camera',
-        description: '4G LTE SIM camera with solar panel option & 1080p color night vision',
-        hsnSac: '85258090',
+        itemName: '',
+        description: '',
+        hsnSac: '',
         gstRate: 18,
         qty: 1,
-        rate: 6195,
-        amount: 6195,
-        cgst: 557.55,
-        sgst: 557.55,
-        total: 7310.1,
-      },
-      {
-        itemName: 'Installation & Technical Wiring Setup',
-        description: 'Mounting brackets, power cable routing, conduit & cloud pairing',
-        hsnSac: '998719',
-        gstRate: 18,
-        qty: 1,
-        rate: 1500,
-        amount: 1500,
-        cgst: 135,
-        sgst: 135,
-        total: 1770,
+        rate: 0,
+        amount: 0,
+        cgst: 0,
+        sgst: 0,
+        total: 0,
       },
     ];
   });
@@ -125,17 +114,17 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
             ? quotationToEdit.lineItems
             : [
                 {
-                  itemName: '',
-                  description: '',
-                  hsnSac: '85258090',
-                  gstRate: 18,
-                  qty: 1,
-                  rate: 1000,
-                  amount: 1000,
-                  cgst: 90,
-                  sgst: 90,
-                  total: 1180,
-                },
+        itemName: '',
+        description: '',
+        hsnSac: '',
+        gstRate: 18,
+        qty: 1,
+        rate: 0,
+        amount: 0,
+        cgst: 0,
+        sgst: 0,
+        total: 0,
+      },
               ]
         );
         setTerms(
@@ -184,14 +173,14 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
       {
         itemName: '',
         description: '',
-        hsnSac: '85258090',
+        hsnSac: '',
         gstRate: 18,
         qty: 1,
-        rate: 1000,
-        amount: 1000,
-        cgst: 90,
-        sgst: 90,
-        total: 1180,
+        rate: 0,
+        amount: 0,
+        cgst: 0,
+        sgst: 0,
+        total: 0,
       },
     ]);
   };
@@ -317,12 +306,12 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
             <h2 className="text-lg font-bold text-slate-900 font-display">
               {quotationToEdit
                 ? `Edit Quotation (${quotationToEdit.quotationNo})`
-                : 'Create S Tec Secure Quotation'}
+                : 'New Quotation'}
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-[13px] text-slate-500">
               {quotationToEdit
-                ? 'Update quotation line items, commercials, or terms in-place with zero duplicate creation'
-                : 'Official quotation builder matching authentic customer estimate format (A-Series)'}
+                ? 'Change items, rates or terms — the quotation keeps its number'
+                : 'Pick products, quantities and rates — GST is added for the customer\'s state'}
             </p>
           </div>
         </div>
@@ -336,23 +325,23 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
       </div>
 
       {/* Scrollable Document Area */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-5 text-xs overscroll-contain">
+      <div className="flex-1 overflow-y-auto p-5 space-y-5 text-[13px] overscroll-contain">
           {/* Company & Customer Header Blocks */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* S Tec Secure Official Block */}
             <div className="space-y-1 text-slate-700">
-              <div className="text-[10px] text-orange-600 font-bold uppercase tracking-wider">
+              <div className="text-[11px] text-orange-600 font-bold uppercase tracking-wider">
                 ISSUED BY:
               </div>
               <div className="text-base font-black text-slate-900 uppercase font-display">
                 S Tec Secure <span className="text-orange-600">(Surveillance & Automation's)</span>
               </div>
-              <div className="text-[11px] text-slate-500 font-bold">
+              <div className="text-xs text-slate-500 font-bold">
                 CCTV | HOME AUTOMATIONS | GATE AUTOMATION | BIOMETRIC & ACCESS CONTROL | INTERCOM | BURGLAR ALARM SYSTEM
               </div>
               <div className="text-slate-600">14/2 Thundu Kadu Street, Veerappan Chathiram, Erode, Tamil Nadu, India - 638004</div>
               <div className="text-slate-500">Phone: 81485 62605 / 96002 52605 &bull; Email: stecsecure@gmail.com</div>
-              <div className="font-mono text-orange-600 text-[11px] font-semibold">
+              <div className="font-mono text-orange-600 text-xs font-semibold">
                 GSTIN: 33KDUPS8091G1ZL &bull; PAN: KDUPS8091G
               </div>
             </div>
@@ -360,7 +349,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
             {/* Quotation For / Customer Picker */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-orange-600 font-bold uppercase tracking-wider">
+                <span className="text-[11px] text-orange-600 font-bold uppercase tracking-wider">
                   QUOTATION FOR:
                 </span>
                 <button
@@ -377,7 +366,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                   <select
                     value={customerId}
                     onChange={(e) => setCustomerId(e.target.value)}
-                    className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                    className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
                   >
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -386,7 +375,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                     ))}
                   </select>
                   {selectedCustomer && (
-                    <div className="text-[11px] text-slate-600 space-y-0.5">
+                    <div className="text-xs text-slate-600 space-y-0.5">
                       <div>{selectedCustomer.address}</div>
                       {selectedCustomer.gstin && (
                         <div className="font-mono text-orange-600 font-semibold">GST: {selectedCustomer.gstin}</div>
@@ -404,33 +393,33 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                     placeholder="Customer / Org Name *"
                     value={newCustName}
                     onChange={(e) => setNewCustName(e.target.value)}
-                    className="h-8 text-xs bg-white"
+                    className="h-8 text-[13px] bg-white"
                   />
                   <div className="grid grid-cols-2 gap-1.5">
                     <Input
                       placeholder="Phone *"
                       value={newCustPhone}
                       onChange={(e) => setNewCustPhone(e.target.value)}
-                      className="h-8 text-xs bg-white"
+                      className="h-8 text-[13px] bg-white"
                     />
                     <Input
                       placeholder="GSTIN (optional)"
                       value={newCustGstin}
                       onChange={(e) => setNewCustGstin(e.target.value)}
-                      className="h-8 text-xs bg-white font-mono"
+                      className="h-8 text-[13px] bg-white font-mono"
                     />
                   </div>
                   <Input
                     placeholder="Address *"
                     value={newCustAddress}
                     onChange={(e) => setNewCustAddress(e.target.value)}
-                    className="h-8 text-xs bg-white"
+                    className="h-8 text-[13px] bg-white"
                   />
                   <select
                     value={isValidGstin(newCustGstin) ? newCustGstin.trim().slice(0, 2) : newCustState}
                     disabled={isValidGstin(newCustGstin)}
                     onChange={(e) => setNewCustState(e.target.value)}
-                    className="w-full h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-900 focus:outline-none focus:border-orange-500 disabled:bg-slate-100"
+                    className="w-full h-8 rounded-lg border border-slate-300 bg-white px-2 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 disabled:bg-slate-100"
                   >
                     {INDIAN_STATES.map((st) => (
                       <option key={st.code} value={st.code}>
@@ -439,9 +428,9 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                     ))}
                   </select>
                   {newCustGstin.trim() && !isValidGstin(newCustGstin) && (
-                    <div className="text-[11px] text-rose-600">GSTIN is not valid</div>
+                    <div className="text-xs text-rose-600">GSTIN is not valid</div>
                   )}
-                  <div className="text-[11px] text-slate-600">
+                  <div className="text-xs text-slate-600">
                     Place of supply: <strong>{placeOfSupplyLabel(placeOfSupply)}</strong> ·{' '}
                     {interState ? 'IGST' : 'CGST + SGST'}
                   </div>
@@ -453,7 +442,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
           {/* Quotation Metadata (Date, Validity) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 items-center">
             <div>
-              <span className="text-[10px] text-slate-500 uppercase font-bold">
+              <span className="text-[11px] text-slate-500 uppercase font-bold">
                 {quotationToEdit ? 'Quotation No' : 'Series'}
               </span>
               <div className="font-mono font-bold text-orange-600 text-sm">
@@ -461,18 +450,18 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
               </div>
             </div>
             <div>
-              <label className="block text-[10px] text-slate-700 uppercase font-bold mb-1">
+              <label className="block text-[11px] text-slate-700 uppercase font-bold mb-1">
                 Quotation Date
               </label>
               <Input
                 type="date"
                 value={quotationDate}
                 onChange={(e) => setQuotationDate(e.target.value)}
-                className="h-8 text-xs bg-white"
+                className="h-8 text-[13px] bg-white"
               />
             </div>
             <div>
-              <label className="block text-[10px] text-slate-700 uppercase font-bold mb-1">
+              <label className="block text-[11px] text-slate-700 uppercase font-bold mb-1">
                 Validity (Days)
               </label>
               <Input
@@ -481,7 +470,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                 max="90"
                 value={validityDays}
                 onChange={(e) => setValidityDays(Number(e.target.value))}
-                className="h-8 text-xs bg-white"
+                className="h-8 text-[13px] bg-white"
               />
             </div>
           </div>
@@ -493,14 +482,14 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
               <button
                 type="button"
                 onClick={handleAddItem}
-                className="text-xs text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer font-semibold"
+                className="text-[13px] text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer font-semibold"
               >
                 <Plus className="w-3.5 h-3.5" /> Add Line Item
               </button>
             </div>
 
             <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
-              <table className="w-full text-left text-xs">
+              <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-2.5 w-10 text-center">#</th>
@@ -516,22 +505,22 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                 <tbody className="divide-y divide-slate-100">
                   {lineItems.map((item, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50 align-top">
-                      <td className="p-2 text-center text-slate-400 font-mono text-[11px] pt-3">
+                      <td className="p-2 text-center text-slate-400 font-mono text-xs pt-3">
                         {idx + 1}
                       </td>
                       <td className="p-2 space-y-1">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
                           <Input
                             placeholder="Item name"
                             value={item.itemName}
                             onChange={(e) => handleUpdateItem(idx, { itemName: e.target.value })}
-                            className="h-8 text-xs bg-white font-semibold text-slate-900"
+                            className="h-8 text-[13px] bg-white font-semibold text-slate-900"
                           />
                           <select
                             onChange={(e) => handlePickProduct(idx, e.target.value)}
                             value=""
                             aria-label="Pick Product from Catalog"
-                            className="h-8 rounded-lg bg-slate-100 border border-slate-200 text-[10px] text-orange-700 px-1.5 focus:outline-none cursor-pointer font-medium"
+                            className="w-full sm:w-auto h-8 rounded-lg bg-slate-100 border border-slate-200 text-[11px] text-orange-700 px-1.5 focus:outline-none cursor-pointer font-medium"
                           >
                             <option value="" disabled>
                               Pick Catalog...
@@ -547,14 +536,14 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                           placeholder="Scope & description"
                           value={item.description}
                           onChange={(e) => handleUpdateItem(idx, { description: e.target.value })}
-                          className="h-7 text-[11px] bg-slate-50 text-slate-600"
+                          className="h-7 text-xs bg-slate-50 text-slate-600"
                         />
                       </td>
                       <td className="p-2">
                         <Input
                           value={item.hsnSac}
                           onChange={(e) => handleUpdateItem(idx, { hsnSac: e.target.value })}
-                          className="h-8 text-xs font-mono bg-white"
+                          className="h-8 text-[13px] font-mono bg-white"
                         />
                       </td>
                       <td className="p-2">
@@ -563,7 +552,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                           min="1"
                           value={item.qty}
                           onChange={(e) => handleUpdateItem(idx, { qty: Number(e.target.value) || 1 })}
-                          className="h-8 text-xs text-center bg-white"
+                          className="h-8 text-[13px] text-center bg-white"
                         />
                       </td>
                       <td className="p-2">
@@ -572,10 +561,10 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                           min="0"
                           value={item.rate}
                           onChange={(e) => handleUpdateItem(idx, { rate: Number(e.target.value) || 0 })}
-                          className="h-8 text-xs text-right bg-white font-mono font-medium"
+                          className="h-8 text-[13px] text-right bg-white font-mono font-medium"
                         />
                       </td>
-                      <td className="p-2 text-right pt-3 text-[11px] text-slate-500 font-medium">
+                      <td className="p-2 text-right pt-3 text-xs text-slate-500 font-medium">
                         {item.gstRate}% (₹{(taxedItems[idx].total - taxedItems[idx].amount).toFixed(2)})
                       </td>
                       <td className="p-2 text-right font-bold text-slate-900 pt-3 font-mono">
@@ -607,35 +596,35 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                 rows={5}
                 value={terms}
                 onChange={(e) => setTerms(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs text-slate-700 focus:outline-none focus:border-orange-500"
+                className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-[13px] text-slate-700 focus:outline-none focus:border-orange-500"
               />
             </div>
 
             {/* Totals Box */}
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <div className="flex justify-between text-slate-700 text-xs">
+              <div className="flex justify-between text-slate-700 text-[13px]">
                 <span>Subtotal (Taxable Amount):</span>
                 <span className="font-semibold text-slate-900 font-mono">{formatINR(totalAmount)}</span>
               </div>
               {interState ? (
-                <div className="flex justify-between text-slate-600 text-xs">
+                <div className="flex justify-between text-slate-600 text-[13px]">
                   <span>Total IGST:</span>
                   <span className="font-mono">{formatINR(totalIgst)}</span>
                 </div>
               ) : (
                 <>
-                  <div className="flex justify-between text-slate-600 text-xs">
+                  <div className="flex justify-between text-slate-600 text-[13px]">
                     <span>Total CGST:</span>
                     <span className="font-mono">{formatINR(totalCgst)}</span>
                   </div>
-                  <div className="flex justify-between text-slate-600 text-xs">
+                  <div className="flex justify-between text-slate-600 text-[13px]">
                     <span>Total SGST:</span>
                     <span className="font-mono">{formatINR(totalSgst)}</span>
                   </div>
                 </>
               )}
               {roundOff !== 0 && (
-                <div className="flex justify-between text-slate-600 text-[11px]">
+                <div className="flex justify-between text-slate-600 text-xs">
                   <span>Round Off:</span>
                   <span className="font-mono">{formatINR(roundOff)}</span>
                 </div>
@@ -649,11 +638,11 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
 
           {/* HSN-wise tax summary table at bottom */}
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <div className="text-xs font-bold text-slate-800">
+            <div className="text-[13px] font-bold text-slate-800">
               HSN / SAC Tax Summary Breakdown
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-[11px]">
+              <table className="stack-on-phone w-full text-left text-xs">
                 <thead className="bg-white text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-2">HSN / SAC</th>
@@ -695,9 +684,9 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
           </div>
 
           {/* Bank Details Block */}
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
             <div>
-              <div className="font-bold text-slate-900 text-xs">Bank Details for Remittance:</div>
+              <div className="font-bold text-slate-900 text-[13px]">Bank Details for Remittance:</div>
               <div className="text-slate-600">
                 A/C Name: <strong>S TEC SECURE</strong> &bull; Bank: <strong>CANARA</strong> &bull; A/C Type: <strong>Current</strong>
               </div>
@@ -712,12 +701,12 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
         </div>
 
         {/* Pinned Action Buttons Footer */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-200 bg-slate-50/80 shrink-0">
-          <Button type="button" variant="secondary" size="md" onClick={onClose}>
+        <div className="flex items-center justify-between gap-2 px-4 sm:px-5 py-3 border-t border-slate-200 bg-slate-50/80 shrink-0">
+          <Button type="button" variant="secondary" size="md" onClick={onClose} className="hidden sm:inline-flex">
             Cancel
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
             <Button
               type="button"
               variant="outline"
@@ -725,7 +714,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
               onClick={() => handleSaveQuotation('DRAFT')}
               disabled={saving}
             >
-              {quotationToEdit ? 'Save Changes as Draft' : 'Save Draft'}
+              {quotationToEdit ? 'Save as Draft' : 'Save Draft'}
             </Button>
             <Button
               type="button"
@@ -735,7 +724,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
               disabled={saving}
             >
               <FileSpreadsheet className="w-4 h-4 mr-1.5" />
-              {quotationToEdit ? 'Update Quotation' : 'Save & Finalize Quotation'}
+              {quotationToEdit ? 'Update Quotation' : 'Save Quotation'}
             </Button>
           </div>
         </div>

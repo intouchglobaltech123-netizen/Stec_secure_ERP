@@ -32,7 +32,7 @@ import { RecordAdvanceModal } from '@/components/payments/RecordAdvanceModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
-import { formatDateTime, formatDate, formatINR, formatCreatedBy } from '@/lib/utils';
+import { formatDateTime, formatDate, formatINR, formatCreatedBy, humanize } from '@/lib/utils';
 import { SiteLocationModal } from '@/components/customers/SiteLocationModal';
 import { DeliveryChallanModal } from '@/components/jobs/DeliveryChallanModal';
 import { QuotationBuilderModal } from '@/components/quotations/QuotationBuilderModal';
@@ -176,20 +176,20 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-base font-bold text-slate-900 font-mono">{job.jobNumber}</h2>
-                <Badge variant={statusVariant} className="text-[10px]">
-                  {job.status}
+                <Badge variant={statusVariant} className="text-[11px]">
+                  {humanize(job.status)}
                 </Badge>
-                <span className="text-[10px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-flex items-center gap-1">
+                <span className="text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-flex items-center gap-1">
                   <UserCheck className="w-3 h-3 text-slate-500" />
                   {formatCreatedBy(job.createdByUserId, users)}
                 </span>
                 {job.enquiryId && (
-                  <Badge variant="outline" className="text-[10px] text-blue-700 border-blue-300 bg-blue-50 font-mono">
+                  <Badge variant="outline" className="text-[11px] text-blue-700 border-blue-300 bg-blue-50 font-mono">
                     Enquiry: {job.enquiryId}
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-[13px] text-slate-500 mt-0.5">
                 {job.type} &bull; {job.category} &bull; Created {formatDate(job.createdAt)}
               </p>
             </div>
@@ -220,12 +220,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
 
             return (
               <div className="p-3.5 rounded-xl bg-gradient-to-r from-orange-50/70 via-slate-50 to-emerald-50/70 border border-slate-200 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
-                  <span className="flex items-center gap-1.5 uppercase tracking-wider text-[10px] text-slate-600">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                  <span className="flex items-center gap-1.5 uppercase tracking-wider text-[11px] text-slate-600">
                     <FileSpreadsheet className="w-3.5 h-3.5 text-orange-600" />
                     Commercial Document Chain (Quotation &rarr; DC &rarr; Invoice)
                   </span>
-                  <span className="text-[10px] font-normal text-slate-500">
+                  <span className="text-[11px] font-normal text-slate-500">
                     Click any stage to view or edit
                   </span>
                 </div>
@@ -240,15 +240,15 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     }`}
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="text-[10px] font-bold uppercase text-slate-500 flex items-center gap-1">
+                      <div className="text-[11px] font-bold uppercase text-slate-500 flex items-center gap-1">
                         <span>1. Quotation</span>
                         {linkedQuotation && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
                       </div>
-                      <div className="font-mono font-bold text-slate-900 text-xs truncate">
+                      <div className="font-mono font-bold text-slate-900 text-[13px] truncate">
                         {linkedQuotation ? linkedQuotation.quotationNo : 'None linked'}
                       </div>
                       {linkedQuotation && (
-                        <div className="text-[10px] text-orange-600 font-semibold font-mono">
+                        <div className="text-[11px] text-orange-600 font-semibold font-mono">
                           {formatINR(linkedQuotation.grandTotal)}
                         </div>
                       )}
@@ -288,7 +288,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                           setEditingQuotation(null);
                           setIsQuotationBuilderOpen(true);
                         }}
-                        className="text-[10px] text-orange-600 hover:underline font-semibold cursor-pointer"
+                        className="text-[11px] text-orange-600 hover:underline font-semibold cursor-pointer"
                       >
                         + Create
                       </button>
@@ -317,11 +317,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     }`}
                   >
                     <div className="min-w-0">
-                      <div className="text-[10px] font-bold uppercase text-slate-500 flex items-center gap-1">
+                      <div className="text-[11px] font-bold uppercase text-slate-500 flex items-center gap-1">
                         <span>2. Delivery Challan</span>
                         {jobChallans.length > 0 && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
                       </div>
-                      <div className="font-mono font-bold text-slate-900 text-xs truncate">
+                      <div className="font-mono font-bold text-slate-900 text-[13px] truncate">
                         {jobChallans.length > 0
                           ? jobChallans[0].challanNo + (jobChallans.length > 1 ? ` (+${jobChallans.length - 1})` : '')
                           : linkedQuotation
@@ -329,7 +329,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                           : '+ Create DC'}
                       </div>
                       {jobChallans.length > 0 && (
-                        <div className="text-[10px] text-blue-600 font-medium">
+                        <div className="text-[11px] text-blue-600 font-medium">
                           {jobChallans[0].lineItems.length} goods items
                         </div>
                       )}
@@ -347,15 +347,15 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     }`}
                   >
                     <div className="min-w-0">
-                      <div className="text-[10px] font-bold uppercase text-slate-500 flex items-center gap-1">
+                      <div className="text-[11px] font-bold uppercase text-slate-500 flex items-center gap-1">
                         <span>3. Tax Invoice</span>
                         {invoice && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
                       </div>
-                      <div className="font-mono font-bold text-slate-900 text-xs truncate">
+                      <div className="font-mono font-bold text-slate-900 text-[13px] truncate">
                         {invoice ? invoice.invoiceNo : 'Pending generation'}
                       </div>
                       {invoice && (
-                        <div className="text-[10px] text-emerald-700 font-semibold font-mono">
+                        <div className="text-[11px] text-emerald-700 font-semibold font-mono">
                           {formatINR(invoice.grandTotal)} ({invoice.balanceDue === 0 ? 'Paid' : 'Due'})
                         </div>
                       )}
@@ -373,7 +373,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                   const advanceTotal = advances.reduce((sum, p) => sum + p.amount, 0);
                   if (!advanceTotal && (!isManagement || invoice)) return null;
                   return (
-                    <div className="flex items-center justify-between gap-2 text-[11px] pt-1">
+                    <div className="flex items-center justify-between gap-2 text-xs pt-1">
                       <span className="text-slate-600">
                         Advance received:{' '}
                         <strong className="font-mono text-slate-900">{formatINR(advanceTotal)}</strong>
@@ -383,7 +383,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                         <button
                           type="button"
                           onClick={() => setIsAdvanceOpen(true)}
-                          className="text-[11px] font-semibold text-orange-600 hover:underline cursor-pointer shrink-0"
+                          className="text-xs font-semibold text-orange-600 hover:underline cursor-pointer shrink-0"
                         >
                           + Record Advance
                         </button>
@@ -397,7 +397,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
           {/* Phase 22: schedule, site contact, cancellation */}
           {(job.scheduledFor || job.siteContactName || job.siteContactPhone || job.status === 'CANCELLED') && (
             <div
-              className={`p-3 rounded-xl border text-xs flex flex-wrap gap-x-5 gap-y-1 ${
+              className={`p-3 rounded-xl border text-[13px] flex flex-wrap gap-x-5 gap-y-1 ${
                 job.status === 'CANCELLED' ? 'bg-slate-100 border-slate-300' : 'bg-blue-50/60 border-blue-200'
               }`}
             >
@@ -430,14 +430,14 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
           {/* Customer & Product Information */}
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <div className="text-[10px] text-slate-500 uppercase font-bold flex items-center justify-between">
+              <div className="text-[11px] text-slate-500 uppercase font-bold flex items-center justify-between">
                 <span>Customer / Site</span>
                 {customer?.siteLocationMapLink ? (
                   <a
                     href={customer.siteLocationMapLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline"
                   >
                     <MapPin className="w-3 h-3 text-blue-500" />
                     <span>Open in Google Maps</span>
@@ -447,7 +447,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                   <button
                     type="button"
                     onClick={() => setIsSiteLocationModalOpen(true)}
-                    className="inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-orange-600 cursor-pointer font-medium"
+                    className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-orange-600 cursor-pointer font-medium"
                   >
                     <Plus className="w-3 h-3" />
                     <span>Add site location</span>
@@ -455,8 +455,8 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                 )}
               </div>
               <div className="font-bold text-slate-900 text-sm mt-0.5">{customer?.name}</div>
-              <div className="text-slate-600 text-[11px] mt-0.5">{customer?.address}</div>
-              <div className="text-slate-500 text-[11px] mt-0.5 flex items-center justify-between">
+              <div className="text-slate-600 text-xs mt-0.5">{customer?.address}</div>
+              <div className="text-slate-500 text-xs mt-0.5 flex items-center justify-between">
                 <span>Phone: {customer?.phone}</span>
                 {customer?.siteLocationMapLink && (
                   <a
@@ -475,13 +475,13 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
 
             <div>
               <div className="flex items-center justify-between">
-                <div className="text-[10px] text-slate-500 uppercase font-bold">Hardware / Model</div>
+                <div className="text-[11px] text-slate-500 uppercase font-bold">Hardware / Model</div>
                 {/* Task 2: Action to send unit for repair */}
                 {job.status !== 'CLOSED' && (
                   <button
                     type="button"
                     onClick={() => setIsCreateRepairModalOpen(true)}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer"
                   >
                     <Wrench className="w-3 h-3" />
                     <span>Send Unit for Repair</span>
@@ -490,10 +490,10 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
               </div>
               <div className="font-bold text-slate-900 text-sm mt-0.5">{job.productModel}</div>
               {job.serialNo && (
-                <div className="font-mono text-orange-600 font-bold text-[11px] mt-0.5">S/N: {job.serialNo}</div>
+                <div className="font-mono text-orange-600 font-bold text-xs mt-0.5">S/N: {job.serialNo}</div>
               )}
-              <div className="text-slate-500 text-[11px] mt-0.5 font-medium">
-                Contract Status: <strong className="text-slate-800">{job.customerStatus}</strong>
+              <div className="text-slate-500 text-xs mt-0.5 font-medium">
+                Contract Status: <strong className="text-slate-800">{humanize(job.customerStatus)}</strong>
               </div>
             </div>
           </div>
@@ -501,15 +501,15 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
           {/* Phase 17: Linked Repair & RMA Tickets */}
           {linkedRepairTickets.length > 0 && (
             <div className="p-3.5 rounded-xl bg-orange-50/60 border border-orange-200 shadow-2xs space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                <span className="flex items-center gap-1.5 uppercase tracking-wider text-[10px] text-orange-950">
+              <div className="flex items-center justify-between text-[13px] font-bold text-slate-800">
+                <span className="flex items-center gap-1.5 uppercase tracking-wider text-[11px] text-orange-950">
                   <RotateCcw className="w-3.5 h-3.5 text-orange-600" />
                   Linked Repair &amp; RMA Tickets ({linkedRepairTickets.length})
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsCreateRepairModalOpen(true)}
-                  className="text-[11px] font-semibold text-orange-600 hover:text-orange-700 cursor-pointer"
+                  className="text-xs font-semibold text-orange-600 hover:text-orange-700 cursor-pointer"
                 >
                   + Raise Another RMA
                 </button>
@@ -520,18 +520,18 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                   <div
                     key={ticket.id}
                     onClick={() => setInspectingRepairTicket(ticket)}
-                    className="p-2.5 rounded-lg bg-white border border-slate-200 hover:border-orange-300 flex items-center justify-between text-xs cursor-pointer shadow-2xs transition-colors"
+                    className="p-2.5 rounded-lg bg-white border border-slate-200 hover:border-orange-300 flex items-center justify-between text-[13px] cursor-pointer shadow-2xs transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-orange-600">{ticket.ticketNumber}</span>
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-[11px]">
                         {ticket.status.replace(/_/g, ' ')}
                       </Badge>
-                      <span className="text-slate-600 truncate max-w-[200px] text-[11px]">
+                      <span className="text-slate-600 truncate max-w-[200px] text-xs">
                         {ticket.faultDescription}
                       </span>
                     </div>
-                    <span className="text-[11px] font-semibold text-orange-600 flex items-center gap-1">
+                    <span className="text-xs font-semibold text-orange-600 flex items-center gap-1">
                       View RMA <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
@@ -555,12 +555,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
           </div>
 
           {/* Assigned Field Crew */}
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-[13px]">
             <span className="font-bold text-slate-700">Assigned Team:</span>
             <div className="flex flex-wrap gap-1.5">
               {team.map((t) => (
-                <Badge key={t.id} variant="secondary" className="text-[11px]">
-                  {t.name} ({t.role})
+                <Badge key={t.id} variant="secondary" className="text-xs">
+                  {t.name} ({humanize(t.role)})
                 </Badge>
               ))}
             </div>
@@ -571,11 +571,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
             <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="font-bold flex items-center gap-1.5 text-xs text-amber-900">
+                  <div className="font-bold flex items-center gap-1.5 text-[13px] text-amber-900">
                     <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                     <span>Hold Event: {hold.reason}</span>
                   </div>
-                  <p className="text-[11px] text-slate-600 mt-1">
+                  <p className="text-xs text-slate-600 mt-1">
                     Raised at {formatDateTime(hold.raisedAt)}
                   </p>
                 </div>
@@ -584,7 +584,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     type="button"
                     size="sm"
                     variant="success"
-                    className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 shadow-2xs cursor-pointer flex items-center gap-1"
+                    className="text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 shadow-2xs cursor-pointer flex items-center gap-1"
                     disabled={isResuming}
                     onClick={async () => {
                       setIsResuming(true);
@@ -610,14 +610,14 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
           {/* Work Log Timeline */}
           {workLogs.length > 0 && (
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+              <div className="font-bold text-slate-900 text-[13px] flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5 text-orange-600" />
                 Work Log Entries ({workLogs.length})
               </div>
               <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
                 {workLogs.map((wl) => (
-                  <div key={wl.id} className="p-2 rounded bg-white border border-slate-200 text-[11px] shadow-2xs">
-                    <div className="text-[10px] text-orange-600 font-mono font-semibold">
+                  <div key={wl.id} className="p-2 rounded bg-white border border-slate-200 text-xs shadow-2xs">
+                    <div className="text-[11px] text-orange-600 font-mono font-semibold">
                       {formatDateTime(wl.inTime)}
                     </div>
                     <div className="text-slate-800 mt-0.5 font-medium">
@@ -636,7 +636,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
 
             return (
               <div className="p-3.5 rounded-xl bg-orange-50/40 border border-orange-200 space-y-2.5">
-                <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                <div className="font-bold text-slate-900 text-[13px] flex items-center gap-1.5">
                   <Boxes className="w-4 h-4 text-orange-600" />
                   Products & Hardware Used ({jobProducts.length})
                 </div>
@@ -654,7 +654,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     return (
                       <div
                         key={usage.id}
-                        className="p-2.5 rounded-lg bg-white border border-slate-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs"
+                        className="p-2.5 rounded-lg bg-white border border-slate-200 text-[13px] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 shadow-2xs"
                       >
                         <div>
                           <div className="flex items-center gap-2">
@@ -665,11 +665,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                           </div>
                           {serialList.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
-                              <span className="text-[10px] text-slate-500">Serials:</span>
+                              <span className="text-[11px] text-slate-500">Serials:</span>
                               {serialList.map((sn, idx) => (
                                 <span
                                   key={idx}
-                                  className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-100 border border-slate-300 text-slate-800 font-semibold"
+                                  className="font-mono text-[11px] px-1.5 py-0.2 rounded bg-slate-100 border border-slate-300 text-slate-800 font-semibold"
                                 >
                                   {sn}
                                 </span>
@@ -677,7 +677,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                             </div>
                           )}
                         </div>
-                        <div className="text-[10px] text-slate-400 sm:text-right shrink-0">
+                        <div className="text-[11px] text-slate-400 sm:text-right shrink-0">
                           <div>Added by {addedUser?.name || 'Lead'}</div>
                           <div className="font-mono">{formatDateTime(usage.addedAt)}</div>
                         </div>
@@ -693,7 +693,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
           {materials.length > 0 && (
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-              <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+              <div className="font-bold text-slate-900 text-[13px] flex items-center gap-1.5">
                 <Package className="w-3.5 h-3.5 text-orange-600" />
                 Materials Consumed ({materials.length})
               </div>
@@ -701,7 +701,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                 {materials.map((m) => (
                   <div
                     key={m.id}
-                    className="p-2 rounded bg-white border border-slate-200 text-[11px] flex justify-between shadow-2xs"
+                    className="p-2 rounded bg-white border border-slate-200 text-xs flex justify-between shadow-2xs"
                   >
                     <span className="text-slate-800 font-medium">{m.materialName}</span>
                     <span className="text-slate-500">
@@ -730,10 +730,10 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
             return (
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                  <div className="font-bold text-slate-900 text-[13px] flex items-center gap-1.5">
                     <Truck className="w-4 h-4 text-orange-600" />
                     <span>Delivery Challans & Dispatches ({jobChallans.length})</span>
-                    <span className="text-[10px] font-normal text-slate-500 hidden sm:inline">
+                    <span className="text-[11px] font-normal text-slate-500 hidden sm:inline">
                       &bull; Material transfer without pricing
                     </span>
                   </div>
@@ -746,7 +746,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                       setInspectingChallan(null);
                       setIsChallanModalOpen(true);
                     }}
-                    className="text-xs h-7 px-2.5 rounded-lg border-slate-300 bg-white hover:bg-slate-100 text-slate-800 font-semibold flex items-center gap-1 cursor-pointer"
+                    className="text-[13px] h-7 px-2.5 rounded-lg border-slate-300 bg-white hover:bg-slate-100 text-slate-800 font-semibold flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
                     + Create Delivery Challan
@@ -756,7 +756,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
 
                 {jobChallans.length === 0 ? (
                   <div className="p-4 rounded-lg bg-white border border-dashed border-slate-300 text-center space-y-2">
-                    <p className="text-xs text-slate-500">
+                    <p className="text-[13px] text-slate-500">
                       No delivery challans issued for this job yet.
                     </p>
                     {linkedQuotation && isManagement && (
@@ -766,7 +766,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                         variant="primary"
                         onClick={() => void handleConvertQuoteToChallan(linkedQuotation)}
                         disabled={isConvertingQuote}
-                        className="text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white rounded-lg shadow-2xs"
+                        className="text-[13px] font-semibold bg-orange-600 hover:bg-orange-700 text-white rounded-lg shadow-2xs"
                       >
                         <Truck className="w-3.5 h-3.5 mr-1" />
                         Convert Quotation {linkedQuotation.quotationNo} to Delivery Challan
@@ -782,21 +782,21 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                       >
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono font-bold text-orange-600 text-xs">{dc.challanNo}</span>
-                            <span className="text-[10px] text-slate-500 font-medium">&bull; {formatDate(dc.date)}</span>
-                            <Badge variant="outline" className="text-[10px]">
+                            <span className="font-mono font-bold text-orange-600 text-[13px]">{dc.challanNo}</span>
+                            <span className="text-[11px] text-slate-500 font-medium">&bull; {formatDate(dc.date)}</span>
+                            <Badge variant="outline" className="text-[11px]">
                               {dc.lineItems.length} Goods Item(s)
                             </Badge>
                             {dc.quotationId && (
-                              <span className="text-[10px] text-slate-500 font-mono">
+                              <span className="text-[11px] text-slate-500 font-mono">
                                 From Quote: {dc.quotationId}
                               </span>
                             )}
                           </div>
-                          <div className="text-[11px] text-slate-600 mt-1">
+                          <div className="text-xs text-slate-600 mt-1">
                             Transport: <strong className="text-slate-800">{dc.transportedBy || 'Field Transit'}</strong>
                           </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 truncate max-w-md">
+                          <div className="text-[11px] text-slate-500 mt-0.5 truncate max-w-md">
                             Items: {dc.lineItems.map((li) => `${li.itemDescription} (${li.qty} Nos)`).join(', ')}
                           </div>
                         </div>
@@ -810,7 +810,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                               setInspectingChallan(dc);
                               setIsChallanModalOpen(true);
                             }}
-                            className="text-[11px] h-7 px-2.5 rounded-lg border-slate-300 hover:bg-slate-50"
+                            className="text-xs h-7 px-2.5 rounded-lg border-slate-300 hover:bg-slate-50"
                           >
                             View / Print
                           </Button>
@@ -822,7 +822,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                               setInspectingChallan(dc);
                               setIsChallanModalOpen(true);
                             }}
-                            className="text-[11px] h-7 px-2.5 rounded-lg"
+                            className="text-xs h-7 px-2.5 rounded-lg"
                           >
                             <Edit className="w-3 h-3 mr-1" /> Edit
                           </Button>
@@ -843,14 +843,14 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                 className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1 hover:border-emerald-300 hover:bg-emerald-50/30 cursor-pointer transition-colors"
                 title="Click to view full Tax Invoice preview"
               >
-                <div className="font-bold text-slate-900 flex items-center justify-between text-xs">
+                <div className="font-bold text-slate-900 flex items-center justify-between text-[13px]">
                   <span className="flex items-center gap-1">
                     <ReceiptText className="w-3.5 h-3.5 text-emerald-600" />
                     Tax Invoice {invoice.invoiceNo}
                   </span>
                   <ExternalLink className="w-3 h-3 text-slate-400" />
                 </div>
-                <div className="text-[11px] text-slate-600 font-medium">
+                <div className="text-xs text-slate-600 font-medium">
                   Total: <strong className="text-slate-900">{formatINR(invoice.grandTotal)}</strong> &bull; Paid:{' '}
                   <span className="text-emerald-700 font-bold">{formatINR(invoice.amountPaid)}</span>
                 </div>
@@ -859,12 +859,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
 
             {otp && (
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                <div className="font-bold text-slate-900 flex items-center gap-1 text-xs">
+                <div className="font-bold text-slate-900 flex items-center gap-1 text-[13px]">
                   <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
                   Customer Verification OTP
                 </div>
-                <div className="text-[11px] text-slate-600 font-medium">
-                  Status: <strong className="text-slate-900">{otp.status}</strong> &bull; Verified at:{' '}
+                <div className="text-xs text-slate-600 font-medium">
+                  Status: <strong className="text-slate-900">{humanize(otp.status)}</strong> &bull; Verified at:{' '}
                   {otp.verifiedAt ? formatDateTime(otp.verifiedAt) : 'Pending'}
                 </div>
               </div>
@@ -882,7 +882,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                   type="button"
                   variant="outline"
                   size="md"
-                  className="text-xs rounded-xl font-semibold flex items-center gap-1 cursor-pointer"
+                  className="text-[13px] rounded-xl font-semibold flex items-center gap-1 cursor-pointer"
                   onClick={() => setIsEditOpen(true)}
                 >
                   <Edit className="w-3.5 h-3.5" />
@@ -893,7 +893,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     type="button"
                     variant="outline"
                     size="md"
-                    className="text-xs text-rose-600 hover:bg-rose-50 border-rose-300 rounded-xl font-semibold cursor-pointer"
+                    className="text-[13px] text-rose-600 hover:bg-rose-50 border-rose-300 rounded-xl font-semibold cursor-pointer"
                     onClick={() => setIsCancelOpen(true)}
                   >
                     Cancel Job
@@ -906,7 +906,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                 type="button"
                 variant="outline"
                 size="md"
-                className="text-xs text-rose-600 hover:bg-rose-50 border-rose-300 rounded-xl font-semibold flex items-center gap-1 cursor-pointer"
+                className="text-[13px] text-rose-600 hover:bg-rose-50 border-rose-300 rounded-xl font-semibold flex items-center gap-1 cursor-pointer"
                 onClick={() => setShowDeleteConfirm(true)}
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -930,12 +930,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
           subtitle={`#${job.jobNumber}`}
           icon={<Trash2 className="w-5 h-5 text-rose-600" />}
         >
-          <div className="space-y-3.5 text-xs">
+          <div className="space-y-3.5 text-[13px]">
             <p className="text-slate-700 leading-relaxed">
               This will permanently delete job <strong className="font-mono text-slate-900">#{job.jobNumber}</strong> ({job.category} &bull; {job.productModel}) from active dispatch. This action cannot be undone.
             </p>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs leading-relaxed">
               <strong>Billing Integrity Note:</strong> Any linked customer invoices or commercial quotations will remain intact in accounting records.
             </div>
 
@@ -945,7 +945,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                 variant="secondary"
                 size="md"
                 onClick={() => setShowDeleteConfirm(false)}
-                className="rounded-xl text-xs"
+                className="rounded-xl text-[13px]"
               >
                 Cancel
               </Button>
@@ -953,7 +953,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                 type="button"
                 variant="danger"
                 size="md"
-                className="rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white"
+                className="rounded-xl text-[13px] font-semibold bg-rose-600 hover:bg-rose-700 text-white"
                 disabled={isDeleting}
                 onClick={async () => {
                   const num = job.jobNumber;

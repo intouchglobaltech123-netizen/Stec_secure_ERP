@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CreditNoteDocument } from '@/components/invoices/TaxInvoiceDocument';
+import { FitToWidth } from '@/components/ui/fit-to-width';
 
 const labelCls = 'block font-semibold text-slate-700 mb-1';
 const MODES: PaymentMode[] = ['UPI', 'CASH', 'NEFT', 'CHEQUE'];
@@ -74,7 +75,7 @@ export const CancelInvoiceModal: React.FC<{
       icon={<Ban className="w-5 h-5 text-rose-600" />}
     >
       {received.length > 0 ? (
-        <div className="space-y-3 text-xs">
+        <div className="space-y-3 text-[13px]">
           <p className="text-slate-700">
             {formatINR(receivedTotal)} has already been received against this invoice, so it cannot be cancelled.
             Issue a <strong>credit note</strong> to reduce it instead.
@@ -86,7 +87,7 @@ export const CancelInvoiceModal: React.FC<{
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-3 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-3 text-[13px]">
           <p className="text-slate-600">
             The invoice stays on record, stamped <strong>Cancelled</strong>, and its number is not reused. It stops
             counting in balances and reports, and its job, quotation or challan can be invoiced again.
@@ -106,7 +107,7 @@ export const CancelInvoiceModal: React.FC<{
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Billed to the wrong customer"
-              className="w-full rounded-md border border-slate-300 bg-white p-2.5 text-xs"
+              className="w-full rounded-md border border-slate-300 bg-white p-2.5 text-[13px]"
             />
           </div>
           <div className="space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
@@ -124,7 +125,7 @@ export const CancelInvoiceModal: React.FC<{
                 <select
                   value={customerNumber}
                   onChange={(e) => setCustomerNumber(e.target.value)}
-                  className="w-full h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+                  className="w-full h-8 rounded-lg border border-slate-300 bg-white px-2 text-[13px]"
                 >
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -132,7 +133,7 @@ export const CancelInvoiceModal: React.FC<{
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-slate-500">
+                <p className="mt-1 text-xs text-slate-500">
                   Dated today, with the customer's current details and GST state. Edit it afterwards if items need
                   correcting.
                 </p>
@@ -231,14 +232,14 @@ export const CreditNoteModal: React.FC<{
       subtitle="Reduces what the invoice bills. Tax follows the original invoice."
       icon={<FileMinus className="w-5 h-5 text-orange-600" />}
     >
-      <form onSubmit={handleSubmit} className="space-y-3 text-xs">
+      <form onSubmit={handleSubmit} className="space-y-3 text-[13px]">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Reason</label>
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value as CreditNoteReason)}
-              className="w-full h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+              className="w-full h-8 rounded-lg border border-slate-300 bg-white px-2 text-[13px]"
             >
               {CREDIT_NOTE_REASONS.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -253,13 +254,13 @@ export const CreditNoteModal: React.FC<{
               value={reasonNote}
               onChange={(e) => setReasonNote(e.target.value)}
               placeholder="e.g. 1 camera returned unused"
-              className="h-8 text-xs bg-white"
+              className="h-8 text-[13px] bg-white"
             />
           </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="stack-on-phone w-full text-left text-[13px]">
             <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
               <tr>
                 <th className="p-2">Invoice line</th>
@@ -278,7 +279,7 @@ export const CreditNoteModal: React.FC<{
                   <tr key={idx}>
                     <td className="p-2">
                       <div className="font-semibold text-slate-900">{item.itemName}</div>
-                      <div className="text-[10px] text-slate-500 font-mono">
+                      <div className="text-[11px] text-slate-500 font-mono">
                         {item.hsnSac} · {item.gstRate}% GST
                       </div>
                     </td>
@@ -294,7 +295,7 @@ export const CreditNoteModal: React.FC<{
                         step="any"
                         value={line.qty}
                         onChange={(e) => setLine(idx, { qty: Math.max(0, Number(e.target.value) || 0) })}
-                        className="h-8 text-xs bg-white text-center"
+                        className="h-8 text-[13px] bg-white text-center"
                       />
                     </td>
                     <td className="p-2">
@@ -305,7 +306,7 @@ export const CreditNoteModal: React.FC<{
                         step="any"
                         value={line.rate}
                         onChange={(e) => setLine(idx, { rate: Math.max(0, Number(e.target.value) || 0) })}
-                        className="h-8 text-xs bg-white text-right font-mono"
+                        className="h-8 text-[13px] bg-white text-right font-mono"
                       />
                     </td>
                     <td className="p-2 text-right font-mono">{formatINR(line.qty * line.rate)}</td>
@@ -315,7 +316,7 @@ export const CreditNoteModal: React.FC<{
             </tbody>
           </table>
         </div>
-        <p className="text-[11px] text-slate-500">
+        <p className="text-xs text-slate-500">
           Returned goods: enter the quantity returned at the invoiced rate. Price correction or discount: enter the
           quantity and the reduction per unit. Returned serial-numbered items must be put back into stock from
           Inventory.
@@ -423,21 +424,21 @@ export const CreditNotePreviewModal: React.FC<{
     >
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 shrink-0 bg-white">
         <div className="flex items-center gap-2">
-          <Badge variant="orange" className="text-xs font-mono font-bold">
+          <Badge variant="orange" className="text-[13px] font-mono font-bold">
             {cn.creditNoteNo}
           </Badge>
-          <span className="text-[11px] font-mono text-slate-500">against {cn.invoiceNo}</span>
+          <span className="text-xs font-mono text-slate-500">against {cn.invoiceNo}</span>
         </div>
         <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="outline"
             onClick={() => exportElementToPdfWithToast('printable-credit-note-doc', { filename: `CreditNote-${cn.creditNoteNo}-${cn.billTo.name}` })}
-            className="h-8 text-xs rounded-lg"
+            className="h-8 text-[13px] rounded-lg"
           >
             <Download className="w-3.5 h-3.5 mr-1" /> Download PDF
           </Button>
-          <Button size="sm" variant="outline" onClick={() => window.print()} className="h-8 text-xs rounded-lg">
+          <Button size="sm" variant="outline" onClick={() => window.print()} className="h-8 text-[13px] rounded-lg">
             <Printer className="w-3.5 h-3.5 mr-1" /> Print
           </Button>
           <button
@@ -453,7 +454,7 @@ export const CreditNotePreviewModal: React.FC<{
         {isManagement && refundable > 0 && (
           <form
             onSubmit={handleRefund}
-            className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs space-y-2"
+            className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-[13px] space-y-2"
           >
             <div className="font-semibold text-amber-900 flex items-center gap-1.5">
               <Undo2 className="w-4 h-4" /> {formatINR(refundable)} is due back to the customer
@@ -468,7 +469,7 @@ export const CreditNotePreviewModal: React.FC<{
                   step="any"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value) || 0)}
-                  className="h-8 text-xs bg-white font-mono"
+                  className="h-8 text-[13px] bg-white font-mono"
                 />
               </div>
               <div>
@@ -476,7 +477,7 @@ export const CreditNotePreviewModal: React.FC<{
                 <select
                   value={mode}
                   onChange={(e) => setMode(e.target.value as PaymentMode)}
-                  className="w-full h-8 rounded-lg border border-slate-300 bg-white px-2 text-xs"
+                  className="w-full h-8 rounded-lg border border-slate-300 bg-white px-2 text-[13px]"
                 >
                   {MODES.map((m) => (
                     <option key={m} value={m}>
@@ -487,7 +488,7 @@ export const CreditNotePreviewModal: React.FC<{
               </div>
               <div>
                 <label className={labelCls}>UTR / cheque no.</label>
-                <Input value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} className="h-8 text-xs bg-white" />
+                <Input value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)} className="h-8 text-[13px] bg-white" />
               </div>
               <Button type="submit" size="sm" disabled={saving || !(amount > 0)}>
                 {saving ? 'Saving…' : 'Record refund'}
@@ -495,7 +496,9 @@ export const CreditNotePreviewModal: React.FC<{
             </div>
           </form>
         )}
-        <CreditNoteDocument creditNote={cn} />
+        <FitToWidth>
+          <CreditNoteDocument creditNote={cn} />
+        </FitToWidth>
       </div>
     </Modal>
   );

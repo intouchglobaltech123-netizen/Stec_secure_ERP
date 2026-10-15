@@ -483,10 +483,10 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                   ? `Assign Job (${initialEnquiry.enquiryType === 'SERVICE' ? 'Service' : 'Installation'})`
                   : `Create New ${jobType === 'SERVICE' ? 'Service' : 'Installation'} Job`}
               </h2>
-              <p className="text-xs text-slate-500 font-medium">
+              <p className="text-[13px] text-slate-500 font-medium">
                 {initialEnquiry
-                  ? `Converting Enquiry #${initialEnquiry.enquiryNumber} • Assign team and launch dispatch`
-                  : 'Fresh team assignment with dedicated Team Lead authority'}
+                  ? `From enquiry ${initialEnquiry.enquiryNumber} — choose the team and the team lead`
+                  : 'Choose the customer, the work, the team and the team lead'}
               </p>
             </div>
           </div>
@@ -499,17 +499,17 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-xs">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-[13px]">
           {/* Scrollable Form Body */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 overscroll-contain">
             {/* 1. Department / Job Type: Read-only badge when from Enquiry, minimal toggle when standalone (Part A) */}
             {initialEnquiry ? (
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-700">Department / Job Type:</span>
+                  <span className="text-[13px] font-semibold text-slate-700">Department / Job Type:</span>
                   <Badge
                     variant={jobType === 'SERVICE' ? 'default' : 'success'}
-                    className="text-xs font-bold px-2.5 py-0.5 rounded-md flex items-center gap-1.5"
+                    className="text-[13px] font-bold px-2.5 py-0.5 rounded-md flex items-center gap-1.5"
                   >
                     {jobType === 'SERVICE' ? (
                       <Wrench className="w-3.5 h-3.5" />
@@ -519,18 +519,18 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                     {jobType === 'SERVICE' ? 'Service Job' : 'Installation Job'}
                   </Badge>
                 </div>
-                <span className="text-[11px] text-slate-500 font-mono">
+                <span className="text-xs text-slate-500 font-mono">
                   Inherited from Enquiry #{initialEnquiry.enquiryNumber}
                 </span>
               </div>
             ) : (
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                <span className="text-xs font-semibold text-slate-700">Department / Job Type:</span>
+                <span className="text-[13px] font-semibold text-slate-700">Department / Job Type:</span>
                 <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-2xs">
                   <button
                     type="button"
                     onClick={() => setJobType('SERVICE')}
-                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1 rounded-md text-[13px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       jobType === 'SERVICE'
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
@@ -542,7 +542,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setJobType('INSTALLATION')}
-                    className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1 rounded-md text-[13px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       jobType === 'INSTALLATION'
                         ? 'bg-emerald-600 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
@@ -558,13 +558,13 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
             {/* 2. Customer Selection / Quick Add & Site Location (Part C) */}
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-slate-700">
+                <label className="text-[13px] font-semibold text-slate-700">
                   Customer Details *
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsQuickAddCustomer(!isQuickAddCustomer)}
-                  className="text-[11px] text-orange-600 hover:text-orange-700 font-semibold cursor-pointer"
+                  className="text-xs text-orange-600 hover:text-orange-700 font-semibold cursor-pointer"
                 >
                   {isQuickAddCustomer ? '← Select Existing Customer' : '+ Quick-Add New Customer'}
                 </button>
@@ -578,7 +578,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                       setSelectedCustomerId(e.target.value);
                       setSiteLocationInput('');
                     }}
-                    className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                    className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
                   >
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -591,7 +591,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                   {currentCustomer && (
                     <div className="pt-2 border-t border-slate-200">
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5 text-orange-600" />
                           Site Location (Google Maps)
                         </span>
@@ -600,7 +600,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                             href={currentCustomer.siteLocationMapLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 underline"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 underline"
                           >
                             <ExternalLink className="w-3 h-3" />
                             View on Google Maps
@@ -609,10 +609,10 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                       </div>
 
                       {currentCustomer.siteLocationMapLink ? (
-                        <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs">
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px]">
                           <div className="flex items-center gap-2 text-emerald-950 truncate mr-2">
                             <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            <span className="text-[11px] font-mono truncate text-emerald-900">
+                            <span className="text-xs font-mono truncate text-emerald-900">
                               {currentCustomer.siteLocationMapLink}
                             </span>
                           </div>
@@ -620,7 +620,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                             href={currentCustomer.siteLocationMapLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-2.5 py-1 rounded bg-white text-emerald-700 hover:bg-emerald-100/60 border border-emerald-300 font-bold text-[10px] shrink-0 shadow-2xs inline-flex items-center gap-1"
+                            className="px-2.5 py-1 rounded bg-white text-emerald-700 hover:bg-emerald-100/60 border border-emerald-300 font-bold text-[11px] shrink-0 shadow-2xs inline-flex items-center gap-1"
                           >
                             <ExternalLink className="w-3 h-3" />
                             Open Maps
@@ -633,20 +633,20 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                               placeholder="Add site location link (e.g. https://maps.app.goo.gl/...)"
                               value={siteLocationInput}
                               onChange={(e) => setSiteLocationInput(e.target.value)}
-                              className="text-xs h-8 bg-white font-mono flex-1 border-slate-300"
+                              className="text-[13px] h-8 bg-white font-mono flex-1 border-slate-300"
                             />
                             {siteLocationInput.trim() && (
                               <button
                                 type="button"
                                 onClick={handleSaveCustomerMapLink}
                                 disabled={saving}
-                                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shrink-0 shadow-2xs cursor-pointer flex items-center gap-1"
+                                className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shrink-0 shadow-2xs cursor-pointer flex items-center gap-1"
                               >
                                 <Check className="w-3 h-3" /> Save Link
                               </button>
                             )}
                           </div>
-                          <p className="text-[10px] text-slate-400 italic">
+                          <p className="text-[11px] text-slate-400 italic">
                             Optional: saving a Google Maps link updates this client profile for future dispatch.
                           </p>
                         </div>
@@ -661,13 +661,13 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                       placeholder="Customer / Company Name *"
                       value={newCustName}
                       onChange={(e) => setNewCustName(e.target.value)}
-                      className="text-xs h-9 bg-white"
+                      className="text-[13px] h-9 bg-white"
                     />
                     <Input
                       placeholder="Phone Number *"
                       value={newCustPhone}
                       onChange={(e) => setNewCustPhone(e.target.value)}
-                      className="text-xs h-9 bg-white"
+                      className="text-[13px] h-9 bg-white"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -676,14 +676,14 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                         placeholder="Installation / Site Address *"
                         value={newCustAddress}
                         onChange={(e) => setNewCustAddress(e.target.value)}
-                        className="text-xs h-9 bg-white"
+                        className="text-[13px] h-9 bg-white"
                       />
                     </div>
                     <Input
                       placeholder="GSTIN (Optional)"
                       value={newCustGstin}
                       onChange={(e) => setNewCustGstin(e.target.value)}
-                      className="text-xs h-9 font-mono uppercase bg-white"
+                      className="text-[13px] h-9 font-mono uppercase bg-white"
                     />
                   </div>
                   <div>
@@ -691,7 +691,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                       placeholder="Site Location (Google Maps Link) — https://maps.app.goo.gl/..."
                       value={newCustSiteLocation}
                       onChange={(e) => setNewCustSiteLocation(e.target.value)}
-                      className="text-xs h-9 font-mono bg-white"
+                      className="text-[13px] h-9 font-mono bg-white"
                     />
                   </div>
                 </div>
@@ -701,13 +701,13 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
             {/* 3. Category & Customer Status Row (Exact Baseline & Height Alignment) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 leading-normal">
+                <label className="block text-[13px] font-semibold text-slate-700 leading-normal">
                   Service Category <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as ServiceCategory)}
-                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs transition-colors"
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs transition-colors"
                 >
                   {SERVICE_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
@@ -718,13 +718,13 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 leading-normal">
+                <label className="block text-[13px] font-semibold text-slate-700 leading-normal">
                   Contract / Warranty Status <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={customerStatus}
                   onChange={(e) => setCustomerStatus(e.target.value as CustomerStatus)}
-                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs transition-colors"
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs transition-colors"
                 >
                   <option value="WARRANTY">WARRANTY</option>
                   <option value="AMC">AMC</option>
@@ -736,7 +736,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
 
             {/* 4. Scope of Work / Problem Description */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-700 leading-normal">
+              <label className="block text-[13px] font-semibold text-slate-700 leading-normal">
                 Scope of Work / Problem Reported <span className="text-rose-500">*</span>
               </label>
               <textarea
@@ -749,38 +749,38 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                 }
                 value={problemReported}
                 onChange={(e) => setProblemReported(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 leading-relaxed shadow-2xs transition-colors"
+                className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 leading-relaxed shadow-2xs transition-colors"
               />
             </div>
 
             {/* Phase 22: schedule & site contact (optional) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 leading-normal">Scheduled visit</label>
+                <label className="block text-[13px] font-semibold text-slate-700 leading-normal">Scheduled visit</label>
                 <input
                   type="datetime-local"
                   value={scheduledFor}
                   onChange={(e) => setScheduledFor(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 leading-normal">Site contact name</label>
+                <label className="block text-[13px] font-semibold text-slate-700 leading-normal">Site contact name</label>
                 <input
                   value={siteContactName}
                   onChange={(e) => setSiteContactName(e.target.value)}
                   placeholder="Person to meet at site"
-                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 leading-normal">Site contact mobile</label>
+                <label className="block text-[13px] font-semibold text-slate-700 leading-normal">Site contact mobile</label>
                 <input
                   type="tel"
                   inputMode="numeric"
                   value={siteContactPhone}
                   onChange={(e) => setSiteContactPhone(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs font-mono text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] font-mono text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
                 />
               </div>
             </div>
@@ -789,15 +789,15 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3.5">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <label className="font-bold text-slate-800 flex items-center gap-1.5 text-[13px]">
                     <Users className="w-4 h-4 text-orange-600" />
                     Assign Team Members (1 to N) <span className="text-rose-500">*</span>
                   </label>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
+                  <div className="text-xs text-slate-500 mt-0.5">
                     Select all technicians participating in this job
                   </div>
                 </div>
-                <span className="text-[11px] font-mono text-orange-600 font-bold">
+                <span className="text-xs font-mono text-orange-600 font-bold">
                   {assignedTeam.length} selected
                 </span>
               </div>
@@ -818,8 +818,8 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                       }`}
                     >
                       <div className="truncate mr-1">
-                        <div className="font-semibold text-xs text-slate-900 truncate">{t.name}</div>
-                        <div className="text-[10px] text-slate-500">{t.phone}</div>
+                        <div className="font-semibold text-[13px] text-slate-900 truncate">{t.name}</div>
+                        <div className="text-[11px] text-slate-500">{t.phone}</div>
                       </div>
                       {isSelected && <Check className="w-4 h-4 text-orange-600 shrink-0" />}
                     </button>
@@ -831,11 +831,11 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
               {assignedTeam.length > 0 && (
                 <div className="pt-3 border-t border-slate-200 space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <label className="block text-[13px] font-bold text-slate-800 flex items-center gap-1.5">
                       <UserCheck className="w-4 h-4 text-orange-600" />
                       Designate Team Lead *
                     </label>
-                    <span className="text-[10px] text-slate-500">
+                    <span className="text-[11px] text-slate-500">
                       Has execution & billing authority
                     </span>
                   </div>
@@ -856,15 +856,15 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                           }`}
                         >
                           <div className="truncate mr-1">
-                            <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5 truncate">
+                            <div className="text-[13px] font-bold text-slate-900 flex items-center gap-1.5 truncate">
                               <span className="truncate">{tech?.name}</span>
                               {isLead && (
-                                <span className="text-[8px] px-1 py-0.2 rounded bg-amber-200 text-amber-900 font-extrabold uppercase border border-amber-300">
+                                <span className="text-[11px] px-1 py-0.2 rounded bg-amber-200 text-amber-900 font-extrabold uppercase border border-amber-300">
                                   LEAD
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] text-slate-500 mt-0.5">
+                            <div className="text-[11px] text-slate-500 mt-0.5">
                               {isLead ? 'Can invoice & close' : 'Supporting crew'}
                             </div>
                           </div>
@@ -888,20 +888,20 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <label className="text-[13px] font-bold text-slate-800 flex items-center gap-1.5">
                       <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                       Linked Commercial Quotation
-                      <Badge variant="success" className="text-[10px] ml-1">
+                      <Badge variant="success" className="text-[11px] ml-1">
                         Inherited from Enquiry
                       </Badge>
                     </label>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Quotation already created & attached to Enquiry #{initialEnquiry?.enquiryNumber}
                     </p>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-white border border-emerald-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-white border border-emerald-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[13px]">
                   <div className="flex items-start sm:items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
                       <FileSpreadsheet className="w-5 h-5" />
@@ -913,17 +913,17 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                         </span>
                         <Badge
                           variant={quotationStatusMeta(linkedEnquiryQuotation.status).variant}
-                          className="text-[10px]"
+                          className="text-[11px]"
                         >
                           {quotationStatusMeta(linkedEnquiryQuotation.status).label}
                         </Badge>
                         {linkedEnquiryQuotation.whatsappSharedAt && (
-                          <Badge variant="success" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
+                          <Badge variant="success" className="text-[11px] bg-emerald-50 text-emerald-700 border-emerald-200">
                             WhatsApp Sent
                           </Badge>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-600 mt-0.5 flex items-center gap-2 flex-wrap">
+                      <div className="text-xs text-slate-600 mt-0.5 flex items-center gap-2 flex-wrap">
                         <span>
                           Total: <strong className="text-slate-900 font-mono">₹{linkedEnquiryQuotation.grandTotal.toLocaleString('en-IN')}</strong>
                         </span>
@@ -939,7 +939,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="h-8 text-xs text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-300 rounded-lg shrink-0 flex items-center gap-1.5 cursor-pointer self-end sm:self-auto"
+                    className="h-8 text-[13px] text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-300 rounded-lg shrink-0 flex items-center gap-1.5 cursor-pointer self-end sm:self-auto"
                     onClick={() => setPreviewQuotation(linkedEnquiryQuotation)}
                   >
                     <Eye className="w-3.5 h-3.5 text-emerald-600" />
@@ -947,7 +947,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                   </Button>
                 </div>
 
-                <div className="text-[11px] text-emerald-800 bg-emerald-50/70 rounded-lg p-2.5 border border-emerald-200 flex items-center gap-2">
+                <div className="text-xs text-emerald-800 bg-emerald-50/70 rounded-lg p-2.5 border border-emerald-200 flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>
                     This quotation travels through the <strong>Enquiry &rarr; Job &rarr; Invoice</strong> reference chain automatically. No duplicate re-entry or quotation prompts needed.
@@ -958,12 +958,12 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <label className="text-[13px] font-bold text-slate-800 flex items-center gap-1.5">
                       <FileSpreadsheet className="w-4 h-4 text-orange-600" />
                       Quotation & Commercial Scope{' '}
                       <span className="text-slate-400 font-normal">(Optional)</span>
                     </label>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Create a new tailored estimate or proceed without one
                     </p>
                   </div>
@@ -975,7 +975,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                         setSelectedQuotationId('');
                         setQuotationMode('NONE');
                       }}
-                      className="text-[11px] text-rose-600 hover:text-rose-800 font-medium cursor-pointer underline"
+                      className="text-xs text-rose-600 hover:text-rose-800 font-medium cursor-pointer underline"
                     >
                       Clear / Skip Quotation
                     </button>
@@ -983,7 +983,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                 </div>
 
                 {selectedQuotation ? (
-                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs animate-in fade-in duration-150">
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-[13px] animate-in fade-in duration-150">
                     <div className="flex items-center gap-2.5 text-emerald-950">
                       <div className="w-8 h-8 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
                         <FileSpreadsheet className="w-4 h-4" />
@@ -993,7 +993,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                           <span>Attached Quotation:</span>
                           <span className="font-mono text-emerald-700">{selectedQuotation.quotationNo}</span>
                         </div>
-                        <div className="text-[11px] text-slate-600 mt-0.5">
+                        <div className="text-xs text-slate-600 mt-0.5">
                           Total: <strong>₹{selectedQuotation.grandTotal.toLocaleString('en-IN')}</strong> &bull; {selectedQuotation.lineItems.length} item(s)
                         </div>
                       </div>
@@ -1004,7 +1004,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                         setSelectedQuotationId('');
                         setQuotationMode('NONE');
                       }}
-                      className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline cursor-pointer px-2 py-1"
+                      className="text-[13px] font-semibold text-rose-600 hover:text-rose-700 underline cursor-pointer px-2 py-1"
                     >
                       Clear / Skip
                     </button>
@@ -1022,15 +1022,15 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                           <FilePlus2 className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="font-bold text-xs text-slate-900">Create New Quotation</div>
-                          <div className="text-[10px] text-slate-500 mt-0.5">
+                          <div className="font-bold text-[13px] text-slate-900">Create New Quotation</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">
                             Opens builder pre-filled with customer details, attaches estimate upon save
                           </div>
                         </div>
                       </div>
                       <Plus className="w-4 h-4 text-orange-600 shrink-0 ml-1" />
                     </button>
-                    <p className="text-[10px] text-slate-400 italic">
+                    <p className="text-[11px] text-slate-400 italic">
                       Note: Quotation is optional. You can skip this and proceed directly with job creation.
                     </p>
                   </div>
@@ -1039,7 +1039,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
             )}
 
             {/* 7. Billing Note */}
-            <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 text-orange-900 text-[11px] leading-relaxed">
+            <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 text-orange-900 text-xs leading-relaxed">
               <strong>Billing Note:</strong> Service labor rate and GST choice (18% GST vs Exempted) will be entered directly by Team Lead upon job completion.
             </div>
           </div>

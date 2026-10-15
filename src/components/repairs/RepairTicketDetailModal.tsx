@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { humanize } from '@/lib/utils';
 import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { errorMessage } from '@/lib/api';
@@ -375,14 +376,14 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
           <span>{ticket.ticketNumber}</span>
           {getStatusBadge(ticket.status)}
           {ticket.repairPath && (
-            <Badge variant="outline" className="text-[10px] font-mono uppercase">
+            <Badge variant="outline" className="text-[11px] font-mono uppercase">
               {ticket.repairPath === 'IN_HOUSE' ? 'In-House' : 'Vendor'}
             </Badge>
           )}
         </div>
       }
       subtitle={
-        <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500">
+        <div className="flex items-center gap-2 flex-wrap text-[13px] text-slate-500">
           <span>Logged on {formatDateTime(ticket.createdAt)} by {createdUser?.name || 'User'}</span>
           <span>&bull;</span>
           <span className="font-semibold text-orange-700 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded flex items-center gap-1">
@@ -400,7 +401,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
             <Lock className="w-6 h-6" />
           </div>
           <h3 className="text-base font-bold text-slate-900">Access Restricted</h3>
-          <p className="text-xs text-slate-600 max-w-md mx-auto">
+          <p className="text-[13px] text-slate-600 max-w-md mx-auto">
             You are not the technician assigned to this repair ticket ({ticket.ticketNumber}).
             Only the assigned technician (<strong className="text-slate-800">{assignedTech?.name || 'Assigned Technician'}</strong>) or management can view and act on this ticket.
           </p>
@@ -416,15 +417,15 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
         {isOverdue && (
           <div className="p-4 rounded-xl bg-gradient-to-r from-rose-50 via-rose-50/70 to-amber-50 border border-rose-200 shadow-2xs space-y-1.5">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-rose-900 text-xs uppercase tracking-wider">
+              <div className="flex items-center gap-2 font-bold text-rose-900 text-[13px] uppercase tracking-wider">
                 <AlertTriangle className="w-4 h-4 text-rose-600" />
                 Vendor Repair Past Expected Return Window
               </div>
-              <Badge variant="danger" className="text-[10px]">
+              <Badge variant="danger" className="text-[11px]">
                 {overdueDays} DAYS OVERDUE
               </Badge>
             </div>
-            <p className="text-xs text-rose-800 leading-relaxed">
+            <p className="text-[13px] text-rose-800 leading-relaxed">
               Unit was dispatched to <strong>{vendor?.name || 'Vendor'}</strong> on{' '}
               {formatDateOnly(ticket.vendorSentDate)} with promised turnaround by{' '}
               <strong>{formatDateOnly(ticket.vendorExpectedReturnDate)}</strong>. It is now{' '}
@@ -438,21 +439,21 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Customer Card */}
           <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-2">
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-orange-600" />
               Customer &amp; Site
             </div>
             <div>
               <div className="text-sm font-bold text-slate-900">{customer?.name || 'Walk-In Customer'}</div>
-              <div className="text-xs text-slate-600 mt-0.5">📞 {customer?.phone || 'No phone'}</div>
-              <div className="text-xs text-slate-500 mt-0.5 flex items-start gap-1">
+              <div className="text-[13px] text-slate-600 mt-0.5">📞 {customer?.phone || 'No phone'}</div>
+              <div className="text-[13px] text-slate-500 mt-0.5 flex items-start gap-1">
                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                 <span>{customer?.address || 'On-site'}</span>
               </div>
             </div>
 
             {sourceJob && (
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[13px]">
                 <span className="text-slate-500">Source Job:</span>
                 <button
                   type="button"
@@ -470,7 +471,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
 
           {/* Hardware Unit Card */}
           <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-2">
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Cpu className="w-3.5 h-3.5 text-orange-600" />
               Hardware Unit Details
             </div>
@@ -481,31 +482,31 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   <span className="font-mono font-bold text-sm text-orange-700">
                     {serial.serialNumber}
                   </span>
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-[11px]">
                     {product?.category || 'Hardware'}
                   </Badge>
                 </div>
-                <div className="text-xs font-semibold text-slate-800 mt-1">
+                <div className="text-[13px] font-semibold text-slate-800 mt-1">
                   {product?.name || 'Unknown Product Model'}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  Inventory Status: <span className="font-mono font-bold text-slate-700">{serial.status}</span>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  Inventory Status: <span className="font-mono font-bold text-slate-700">{humanize(serial.status)}</span>
                 </div>
               </div>
             ) : (
               <div>
-                <div className="text-xs font-mono font-bold text-slate-800">
+                <div className="text-[13px] font-mono font-bold text-slate-800">
                   {ticket.customUnitDescription || 'Walk-in uncatalogued hardware'}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
+                <div className="text-xs text-slate-500 mt-0.5">
                   Uncatalogued Unit (walk-in intake)
                 </div>
               </div>
             )}
 
             <div className="pt-2 border-t border-slate-100">
-              <div className="text-[11px] font-semibold text-slate-600">Fault Reported:</div>
-              <div className="text-xs text-rose-700 italic bg-rose-50/60 p-2 rounded-lg border border-rose-100 mt-1">
+              <div className="text-xs font-semibold text-slate-600">Fault Reported:</div>
+              <div className="text-[13px] text-rose-700 italic bg-rose-50/60 p-2 rounded-lg border border-rose-100 mt-1">
                 &ldquo;{ticket.faultDescription}&rdquo;
               </div>
             </div>
@@ -514,7 +515,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
           {/* Assigned Technician Card */}
           <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-2 flex flex-col justify-between">
             <div className="space-y-2">
-              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <HardHat className="w-3.5 h-3.5 text-orange-600" />
                 Physical Custody
               </div>
@@ -522,15 +523,15 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                 <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
                   <span>{assignedTech?.name || 'Unassigned'}</span>
                   {isAssignedTechnician && (
-                    <Badge variant="orange" className="text-[10px]">You</Badge>
+                    <Badge variant="orange" className="text-[11px]">You</Badge>
                   )}
                 </div>
-                <div className="text-xs text-slate-600 mt-0.5">📞 {assignedTech?.phone || 'No phone'}</div>
-                <div className="text-xs text-slate-500 mt-0.5">✉️ {assignedTech?.email || 'No email'}</div>
+                <div className="text-[13px] text-slate-600 mt-0.5">📞 {assignedTech?.phone || 'No phone'}</div>
+                <div className="text-[13px] text-slate-500 mt-0.5">✉️ {assignedTech?.email || 'No email'}</div>
               </div>
             </div>
             <div className="pt-2 border-t border-slate-100">
-              <div className="text-[11px] text-slate-600 bg-orange-50/60 p-2 rounded-lg border border-orange-100 leading-tight">
+              <div className="text-xs text-slate-600 bg-orange-50/60 p-2 rounded-lg border border-orange-100 leading-tight">
                 <strong>Physical Handling:</strong> Responsible for unit site pickup, transit handover, and site reinstallation.
               </div>
             </div>
@@ -545,24 +546,19 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                 <Wrench className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-display">
-                  Stage Actions &amp; Lifecycle Controls
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Role-gated transitions for current stage: <strong className="text-slate-800">{ticket.status}</strong>
+                <h3 className="text-base font-bold text-slate-900">Next step</h3>
+                <p className="text-xs text-slate-500">
+                  Current stage: <strong className="text-slate-800">{humanize(ticket.status)}</strong>
                 </p>
               </div>
             </div>
 
-            <div className="text-xs text-slate-500 font-medium">
-              Active Persona: <strong className="text-slate-900">{currentUser?.name}</strong> ({currentUser?.role})
-            </div>
           </div>
 
           {/* STAGE 1: FAULT_REPORTED */}
           {ticket.status === 'FAULT_REPORTED' && (
             <div className="space-y-3">
-              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-[13px] text-amber-900">
                 Unit fault is recorded. Physical collection is assigned to{' '}
                 <strong>{assignedTech?.name || 'Assigned Technician'}</strong>.
               </div>
@@ -570,21 +566,21 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
               {isAssignedTechnician ? (
                 activeActionForm === 'PICKUP' ? (
                   <div className="space-y-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-                    <label className="text-xs font-bold text-slate-800">
+                    <label className="text-[13px] font-bold text-slate-800">
                       Handover / Transit Notes (Optional):
                     </label>
                     <Input
                       placeholder="e.g. Unit picked up from Front Portico, carefully packed in transit box."
                       value={genericNote}
                       onChange={(e) => setGenericNote(e.target.value)}
-                      className="text-xs bg-white"
+                      className="text-[13px] bg-white"
                     />
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         disabled={saving}
                         onClick={handleMarkPickedUp}
-                        className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
+                        className="bg-orange-600 hover:bg-orange-700 text-white text-[13px]"
                       >
                         Confirm Picked Up
                       </Button>
@@ -592,7 +588,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                         size="sm"
                         variant="outline"
                         onClick={() => setActiveActionForm(null)}
-                        className="text-xs"
+                        className="text-[13px]"
                       >
                         Cancel
                       </Button>
@@ -602,14 +598,14 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   <Button
                     size="sm"
                     onClick={() => setActiveActionForm('PICKUP')}
-                    className="bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-2xs flex items-center gap-1.5"
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-semibold text-[13px] shadow-2xs flex items-center gap-1.5"
                   >
                     <Truck className="w-4 h-4" />
                     Mark Picked Up (Assigned Technician)
                   </Button>
                 )
               ) : (
-                <div className="text-xs text-slate-600 italic p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2">
+                <div className="text-[13px] text-slate-600 italic p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2">
                   <Lock className="w-4 h-4 text-slate-400 shrink-0" />
                   <span>
                     Awaiting assigned technician (<strong>{assignedTech?.name || 'Assigned Technician'}</strong>) to physically collect the unit from the customer site and mark Picked Up.
@@ -622,28 +618,28 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
           {/* STAGE 2: PICKED_UP */}
           {ticket.status === 'PICKED_UP' && (
             <div className="space-y-3">
-              <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900">
+              <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-[13px] text-blue-900">
                 Unit is in transit. <strong>Manager or CEO</strong> must confirm physical receipt and sign into the office service lab.
               </div>
 
               {isManagement ? (
                 activeActionForm === 'CHECKIN' ? (
                   <div className="space-y-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-                    <label className="text-xs font-bold text-slate-800">
+                    <label className="text-[13px] font-bold text-slate-800">
                       Office Lab Inspection Notes:
                     </label>
                     <Input
                       placeholder="e.g. Received in workshop. Outer casing inspected, no physical cracks."
                       value={genericNote}
                       onChange={(e) => setGenericNote(e.target.value)}
-                      className="text-xs bg-white"
+                      className="text-[13px] bg-white"
                     />
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         disabled={saving}
                         onClick={handleCheckInAtOffice}
-                        className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
+                        className="bg-orange-600 hover:bg-orange-700 text-white text-[13px]"
                       >
                         Confirm Check-In at Office
                       </Button>
@@ -651,7 +647,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                         size="sm"
                         variant="outline"
                         onClick={() => setActiveActionForm(null)}
-                        className="text-xs"
+                        className="text-[13px]"
                       >
                         Cancel
                       </Button>
@@ -661,14 +657,14 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   <Button
                     size="sm"
                     onClick={() => setActiveActionForm('CHECKIN')}
-                    className="bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-2xs flex items-center gap-1.5"
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-semibold text-[13px] shadow-2xs flex items-center gap-1.5"
                   >
                     <Building2 className="w-4 h-4" />
                     Check In at Office (Manager / CEO)
                   </Button>
                 )
               ) : (
-                <div className="text-xs text-slate-500 italic p-2 bg-slate-100 rounded-lg">
+                <div className="text-[13px] text-slate-500 italic p-2 bg-slate-100 rounded-lg">
                   🔒 Waiting for Manager or CEO to check in unit at office service lab.
                 </div>
               )}
@@ -678,7 +674,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
           {/* STAGE 3: CHECKED_IN_AT_OFFICE */}
           {ticket.status === 'CHECKED_IN_AT_OFFICE' && (
             <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900">
+              <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-[13px] text-amber-900">
                 Unit is safely in the office workshop. <strong>Manager or CEO</strong> must decide the repair path:
                 solve in-house on technician workbench, or dispatch to the authorized vendor RMA center.
               </div>
@@ -692,7 +688,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                       size="sm"
                       variant={activeActionForm === 'IN_HOUSE' ? 'primary' : 'outline'}
                       onClick={() => setActiveActionForm('IN_HOUSE')}
-                      className={`text-xs ${
+                      className={`text-[13px] ${
                         activeActionForm === 'IN_HOUSE' ? 'bg-orange-600 text-white' : ''
                       }`}
                     >
@@ -705,7 +701,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                       size="sm"
                       variant={activeActionForm === 'VENDOR' ? 'primary' : 'outline'}
                       onClick={() => setActiveActionForm('VENDOR')}
-                      className={`text-xs ${
+                      className={`text-[13px] ${
                         activeActionForm === 'VENDOR' ? 'bg-orange-600 text-white' : ''
                       }`}
                     >
@@ -717,29 +713,29 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   {/* In-House Form */}
                   {activeActionForm === 'IN_HOUSE' && (
                     <div className="p-4 rounded-xl border border-orange-200 bg-orange-50/40 space-y-3">
-                      <div className="text-xs font-bold text-slate-800">
+                      <div className="text-[13px] font-bold text-slate-800">
                         Assign In-House Workbench Repair
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-700">
+                        <label className="text-xs font-semibold text-slate-700">
                           Assign Technician:
                         </label>
                         <select
                           value={assignedTechId}
                           onChange={(e) => setAssignedTechId(e.target.value)}
-                          className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                          className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
                         >
                           {users
                             .filter((u) => u.role === 'TECHNICIAN' || u.role === 'MANAGER')
                             .map((u) => (
                               <option key={u.id} value={u.id}>
-                                {u.name} ({u.role})
+                                {u.name} ({humanize(u.role)})
                               </option>
                             ))}
                         </select>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-700">
+                        <label className="text-xs font-semibold text-slate-700">
                           Initial Diagnosis / Repair Scope:
                         </label>
                         <textarea
@@ -747,7 +743,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                           placeholder="e.g. Firmware reflash, optical sensor cleaning, power rail test..."
                           value={inHouseNotes}
                           onChange={(e) => setInHouseNotes(e.target.value)}
-                          className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-900 focus:outline-none focus:border-orange-500 bg-white"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 bg-white"
                         />
                       </div>
                       <div className="flex items-center gap-2 pt-1">
@@ -755,7 +751,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                           size="sm"
                           disabled={saving}
                           onClick={handleStartInHouseRepair}
-                          className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
+                          className="bg-orange-600 hover:bg-orange-700 text-white text-[13px]"
                         >
                           Start In-House Repair
                         </Button>
@@ -763,7 +759,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                           size="sm"
                           variant="outline"
                           onClick={() => setActiveActionForm(null)}
-                          className="text-xs"
+                          className="text-[13px]"
                         >
                           Cancel
                         </Button>
@@ -774,18 +770,18 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   {/* Vendor Form */}
                   {activeActionForm === 'VENDOR' && (
                     <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/40 space-y-3">
-                      <div className="text-xs font-bold text-slate-800">
+                      <div className="text-[13px] font-bold text-slate-800">
                         Dispatch Unit to Vendor Service Center
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <label className="text-[11px] font-semibold text-slate-700">
+                          <label className="text-xs font-semibold text-slate-700">
                             Select Vendor *:
                           </label>
                           <select
                             value={selectedVendorId}
                             onChange={(e) => setSelectedVendorId(e.target.value)}
-                            className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                            className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
                           >
                             {vendors.map((v) => (
                               <option key={v.id} value={v.id}>
@@ -796,20 +792,20 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[11px] font-semibold text-slate-700">
+                          <label className="text-xs font-semibold text-slate-700">
                             Dispatch / Sent Date:
                           </label>
                           <Input
                             type="date"
                             value={vendorSentDate}
                             onChange={(e) => setVendorSentDate(e.target.value)}
-                            className="text-xs bg-white h-9"
+                            className="text-[13px] bg-white h-9"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-rose-700 flex items-center gap-1">
+                        <label className="text-xs font-bold text-rose-700 flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5 text-rose-600" />
                           Vendor Expected Return Date * (REQUIRED):
                         </label>
@@ -818,22 +814,22 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                           required
                           value={vendorExpectedReturnDate}
                           onChange={(e) => setVendorExpectedReturnDate(e.target.value)}
-                          className="text-xs bg-white h-9 border-rose-300 focus:border-rose-500"
+                          className="text-[13px] bg-white h-9 border-rose-300 focus:border-rose-500"
                         />
-                        <p className="text-[10px] text-slate-500">
+                        <p className="text-[11px] text-slate-500">
                           e.g. If vendor commits to 2-3 day turnaround, specify date here. Exceeding this triggers automated Overdue warnings.
                         </p>
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-[11px] font-semibold text-slate-700">
+                        <label className="text-xs font-semibold text-slate-700">
                           Vendor RMA / Courier Notes:
                         </label>
                         <Input
                           placeholder="e.g. Courier tracking #DTDC-99281, RMA ref HKV-4412"
                           value={vendorRepairNotes}
                           onChange={(e) => setVendorRepairNotes(e.target.value)}
-                          className="text-xs bg-white h-9"
+                          className="text-[13px] bg-white h-9"
                         />
                       </div>
 
@@ -842,7 +838,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                           size="sm"
                           disabled={saving}
                           onClick={handleSendToVendor}
-                          className="bg-rose-600 hover:bg-rose-700 text-white text-xs"
+                          className="bg-rose-600 hover:bg-rose-700 text-white text-[13px]"
                         >
                           Dispatch to Vendor
                         </Button>
@@ -850,7 +846,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                           size="sm"
                           variant="outline"
                           onClick={() => setActiveActionForm(null)}
-                          className="text-xs"
+                          className="text-[13px]"
                         >
                           Cancel
                         </Button>
@@ -859,7 +855,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   )}
                 </div>
               ) : (
-                <div className="text-xs text-slate-500 italic p-2 bg-slate-100 rounded-lg">
+                <div className="text-[13px] text-slate-500 italic p-2 bg-slate-100 rounded-lg">
                   🔒 Waiting for Manager or CEO to decide between In-House and Vendor repair.
                 </div>
               )}
@@ -869,7 +865,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
           {/* STAGE 4a: IN_HOUSE_REPAIR */}
           {ticket.status === 'IN_HOUSE_REPAIR' && (
             <div className="space-y-3">
-              <div className="p-3.5 rounded-xl bg-orange-50 border border-orange-200 text-xs text-orange-950 space-y-1">
+              <div className="p-3.5 rounded-xl bg-orange-50 border border-orange-200 text-[13px] text-orange-950 space-y-1">
                 <div className="font-bold flex items-center gap-1.5">
                   <Wrench className="w-3.5 h-3.5 text-orange-600" />
                   Currently On Workbench
@@ -882,7 +878,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   </strong>
                 </div>
                 {ticket.inHouseRepairNotes && (
-                  <div className="text-[11px] text-orange-800 italic mt-0.5">
+                  <div className="text-xs text-orange-800 italic mt-0.5">
                     Scope: &ldquo;{ticket.inHouseRepairNotes}&rdquo;
                   </div>
                 )}
@@ -891,7 +887,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
               {isManagement ? (
                 activeActionForm === 'MARK_FIXED' ? (
                   <div className="space-y-3 p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-                    <label className="text-xs font-bold text-slate-800">
+                    <label className="text-[13px] font-bold text-slate-800">
                       Repair Resolution &amp; Testing Notes:
                     </label>
                     <textarea
@@ -899,14 +895,14 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                       placeholder="Describe what was repaired (e.g. Replaced capacitor, updated firmware, 24-hr soak test passed)..."
                       value={inHouseNotes}
                       onChange={(e) => setInHouseNotes(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 p-2 text-xs text-slate-900 focus:outline-none focus:border-orange-500 bg-white"
+                      className="w-full rounded-lg border border-slate-300 p-2 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 bg-white"
                     />
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
                         disabled={saving}
                         onClick={handleMarkInHouseFixed}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-[13px]"
                       >
                         Confirm Fixed &amp; Ready
                       </Button>
@@ -914,7 +910,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                         size="sm"
                         variant="outline"
                         onClick={() => setActiveActionForm(null)}
-                        className="text-xs"
+                        className="text-[13px]"
                       >
                         Cancel
                       </Button>
@@ -924,14 +920,14 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   <Button
                     size="sm"
                     onClick={() => setActiveActionForm('MARK_FIXED')}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs flex items-center gap-1.5"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[13px] shadow-2xs flex items-center gap-1.5"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     Mark Fixed &amp; Ready to Reinstall (Manager / CEO)
                   </Button>
                 )
               ) : (
-                <div className="text-xs text-slate-600 italic p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2">
+                <div className="text-[13px] text-slate-600 italic p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2">
                   <Lock className="w-4 h-4 text-slate-400 shrink-0" />
                   <span>Waiting for Manager or CEO to verify bench repair and mark Ready to Reinstall.</span>
                 </div>
@@ -942,12 +938,12 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
           {/* STAGE 4b: SENT_TO_VENDOR */}
           {ticket.status === 'SENT_TO_VENDOR' && (
             <div className="space-y-3">
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-[13px] text-slate-700 space-y-1">
                 <div className="font-bold flex items-center gap-1.5 text-slate-900">
                   <Truck className="w-3.5 h-3.5 text-orange-600" />
                   Vendor Dispatch Tracking
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
                   <div>
                     Vendor: <strong>{vendor?.name || 'Authorized Center'}</strong>
                   </div>
@@ -959,7 +955,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   </div>
                 </div>
                 {ticket.vendorRepairNotes && (
-                  <div className="text-[11px] text-slate-500 pt-1">
+                  <div className="text-xs text-slate-500 pt-1">
                     Tracking Notes: {ticket.vendorRepairNotes}
                   </div>
                 )}
@@ -971,7 +967,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                     <Button
                       size="sm"
                       onClick={() => setActiveActionForm('RECEIVED_VENDOR')}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs flex items-center gap-1.5"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[13px] shadow-2xs flex items-center gap-1.5"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       Mark Received from Vendor
@@ -981,7 +977,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                       size="sm"
                       variant="outline"
                       onClick={() => setActiveActionForm('WRITE_OFF')}
-                      className="text-xs text-rose-600 border-rose-200 hover:bg-rose-50 flex items-center gap-1.5"
+                      className="text-[13px] text-rose-600 border-rose-200 hover:bg-rose-50 flex items-center gap-1.5"
                     >
                       <XCircle className="w-4 h-4" />
                       Mark as Write-Off (Unrepairable)
@@ -991,30 +987,30 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   {/* Received form */}
                   {activeActionForm === 'RECEIVED_VENDOR' && (
                     <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
-                      <div className="text-xs font-bold text-slate-800">
+                      <div className="text-[13px] font-bold text-slate-800">
                         Confirm Unit Returned from Vendor &amp; Verified Working
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <label className="text-[11px] font-semibold text-slate-700">
+                          <label className="text-xs font-semibold text-slate-700">
                             Actual Return Date:
                           </label>
                           <Input
                             type="date"
                             value={vendorActualReturnDate}
                             onChange={(e) => setVendorActualReturnDate(e.target.value)}
-                            className="text-xs bg-white h-9"
+                            className="text-[13px] bg-white h-9"
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[11px] font-semibold text-slate-700">
+                          <label className="text-xs font-semibold text-slate-700">
                             Vendor Service Notes / Replaced Parts:
                           </label>
                           <Input
                             placeholder="e.g. Sensor board replaced under warranty, QA test OK"
                             value={vendorReturnNotes}
                             onChange={(e) => setVendorReturnNotes(e.target.value)}
-                            className="text-xs bg-white h-9"
+                            className="text-[13px] bg-white h-9"
                           />
                         </div>
                       </div>
@@ -1023,7 +1019,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                           size="sm"
                           disabled={saving}
                           onClick={handleMarkVendorReceived}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-[13px]"
                         >
                           Confirm Received &amp; Ready to Reinstall
                         </Button>
@@ -1031,7 +1027,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                           size="sm"
                           variant="outline"
                           onClick={() => setActiveActionForm(null)}
-                          className="text-xs"
+                          className="text-[13px]"
                         >
                           Cancel
                         </Button>
@@ -1042,24 +1038,24 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   {/* Write-off form */}
                   {activeActionForm === 'WRITE_OFF' && (
                     <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/40 space-y-3">
-                      <div className="text-xs font-bold text-rose-900">
+                      <div className="text-[13px] font-bold text-rose-900">
                         Declare Unit as Write-Off / Beyond Repair
                       </div>
-                      <p className="text-[11px] text-rose-700">
+                      <p className="text-xs text-rose-700">
                         This will mark the ticket as WRITE_OFF and flag the inventory serial as RETURNED/SCRAP.
                       </p>
                       <Input
                         placeholder="Reason for write-off (e.g. Burnt motherboard, water corrosion beyond repair)..."
                         value={writeOffReason}
                         onChange={(e) => setWriteOffReason(e.target.value)}
-                        className="text-xs bg-white h-9"
+                        className="text-[13px] bg-white h-9"
                       />
                       <div className="flex items-center gap-2 pt-1">
                         <Button
                           size="sm"
                           disabled={saving}
                           onClick={handleMarkWriteOff}
-                          className="bg-rose-600 hover:bg-rose-700 text-white text-xs"
+                          className="bg-rose-600 hover:bg-rose-700 text-white text-[13px]"
                         >
                           Confirm Write-Off
                         </Button>
@@ -1067,7 +1063,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                           size="sm"
                           variant="outline"
                           onClick={() => setActiveActionForm(null)}
-                          className="text-xs"
+                          className="text-[13px]"
                         >
                           Cancel
                         </Button>
@@ -1076,7 +1072,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   )}
                 </div>
               ) : (
-                <div className="text-xs text-slate-500 italic p-2 bg-slate-100 rounded-lg">
+                <div className="text-[13px] text-slate-500 italic p-2 bg-slate-100 rounded-lg">
                   🔒 Waiting for Manager or CEO to record physical receipt from vendor or mark write-off.
                 </div>
               )}
@@ -1086,7 +1082,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
           {/* STAGE 5: READY_TO_REINSTALL */}
           {ticket.status === 'READY_TO_REINSTALL' && (
             <div className="space-y-3">
-              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 space-y-1">
+              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[13px] text-emerald-950 space-y-1">
                 <div className="font-bold flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   Unit Repaired &amp; Ready for Reinstallation
@@ -1099,29 +1095,29 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
               {isAssignedTechnician ? (
                 activeActionForm === 'REINSTALL' ? (
                   <div className="space-y-3 p-4 rounded-xl border border-emerald-200 bg-emerald-50/30">
-                    <div className="text-xs font-bold text-slate-800">
+                    <div className="text-[13px] font-bold text-slate-800">
                       Record Site Reinstallation (Updates SerialUnit Status to INSTALLED)
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-700">
+                      <label className="text-xs font-semibold text-slate-700">
                         Exact Site Spot / Mount Location *:
                       </label>
                       <Input
                         placeholder="e.g. Front Gate Portico, Inside OneVU Cam Portico, 1st Floor Reception"
                         value={reinstalledLocation}
                         onChange={(e) => setReinstalledLocation(e.target.value)}
-                        className="text-xs bg-white h-9"
+                        className="text-[13px] bg-white h-9"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-700">
+                      <label className="text-xs font-semibold text-slate-700">
                         Reinstallation &amp; Verification Notes:
                       </label>
                       <Input
                         placeholder="e.g. Mounted back on bracket, live feed verified on customer app, signoff obtained."
                         value={reinstallNotes}
                         onChange={(e) => setReinstallNotes(e.target.value)}
-                        className="text-xs bg-white h-9"
+                        className="text-[13px] bg-white h-9"
                       />
                     </div>
                     <div className="flex items-center gap-2 pt-1">
@@ -1129,7 +1125,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                         size="sm"
                         disabled={saving}
                         onClick={handleReinstallAtCustomer}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] font-semibold"
                       >
                         Confirm Reinstallation &amp; Close Ticket
                       </Button>
@@ -1137,7 +1133,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                         size="sm"
                         variant="outline"
                         onClick={() => setActiveActionForm(null)}
-                        className="text-xs"
+                        className="text-[13px]"
                       >
                         Cancel
                       </Button>
@@ -1147,14 +1143,14 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                   <Button
                     size="sm"
                     onClick={() => setActiveActionForm('REINSTALL')}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs flex items-center gap-1.5"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[13px] shadow-2xs flex items-center gap-1.5"
                   >
                     <ShieldCheck className="w-4 h-4" />
                     Reinstall at Customer (Assigned Technician)
                   </Button>
                 )
               ) : (
-                <div className="text-xs text-slate-600 italic p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2">
+                <div className="text-[13px] text-slate-600 italic p-3 bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2">
                   <Lock className="w-4 h-4 text-slate-400 shrink-0" />
                   <span>
                     Awaiting assigned technician (<strong>{assignedTech?.name || 'Assigned Technician'}</strong>) to mount the unit at the customer site and confirm reinstallation.
@@ -1166,7 +1162,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
 
           {/* STAGE 6: REINSTALLED */}
           {ticket.status === 'REINSTALLED' && (
-            <div className="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200 text-xs text-emerald-950 space-y-1.5">
+            <div className="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200 text-[13px] text-emerald-950 space-y-1.5">
               <div className="font-bold flex items-center gap-2 text-sm text-emerald-900">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 Terminal State: Reinstalled &amp; Returned to Active Service
@@ -1181,7 +1177,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
               <div className="text-emerald-800">
                 Location: <strong>{ticket.reinstalledLocation || 'Customer site'}</strong>
               </div>
-              <div className="text-[11px] text-emerald-700 pt-1 border-t border-emerald-200">
+              <div className="text-xs text-emerald-700 pt-1 border-t border-emerald-200">
                 ✓ Serial unit record in Inventory was updated to <strong>INSTALLED</strong>. Repair journey successfully closed.
               </div>
             </div>
@@ -1189,7 +1185,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
 
           {/* STAGE 7: WRITE_OFF */}
           {ticket.status === 'WRITE_OFF' && (
-            <div className="p-4 rounded-xl bg-slate-100 border border-slate-300 text-xs text-slate-800 space-y-1.5">
+            <div className="p-4 rounded-xl bg-slate-100 border border-slate-300 text-[13px] text-slate-800 space-y-1.5">
               <div className="font-bold flex items-center gap-2 text-sm text-slate-900">
                 <XCircle className="w-5 h-5 text-rose-600" />
                 Terminal State: Unit Written Off / Scrap
@@ -1210,7 +1206,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                 Lifecycle Audit Trail ({ticket.timeline.length} Transitions)
               </h3>
             </div>
-            <span className="text-[11px] text-slate-500">Immutable chronological log</span>
+            <span className="text-xs text-slate-500">Immutable chronological log</span>
           </div>
 
           <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
@@ -1229,32 +1225,32 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                     }`}
                   />
 
-                  <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/80 text-xs space-y-1">
+                  <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/80 text-[13px] space-y-1">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900 font-mono">
                           {entry.status.replace(/_/g, ' ')}
                         </span>
                         {isLatest && (
-                          <Badge variant="orange" className="text-[9px] py-0 px-1.5">
+                          <Badge variant="orange" className="text-[11px] py-0 px-1.5">
                             Current Stage
                           </Badge>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-500 font-medium">
+                      <div className="text-xs text-slate-500 font-medium">
                         {formatDateTime(entry.timestamp)}
                       </div>
                     </div>
 
-                    <div className="text-[11px] text-slate-600 flex items-center gap-1.5">
+                    <div className="text-xs text-slate-600 flex items-center gap-1.5">
                       <User className="w-3 h-3 text-slate-400" />
                       <span>
-                        Action by <strong>{actor?.name || entry.userId}</strong> ({actor?.role})
+                        Action by <strong>{actor?.name || entry.userId}</strong> ({humanize(actor?.role)})
                       </span>
                     </div>
 
                     {entry.note && (
-                      <div className="text-xs text-slate-700 italic pt-1 border-t border-slate-100">
+                      <div className="text-[13px] text-slate-700 italic pt-1 border-t border-slate-100">
                         &ldquo;{entry.note}&rdquo;
                       </div>
                     )}

@@ -35,6 +35,15 @@ export async function downloadElementAsPdf(
     : options.filename;
   const cleanFilename = `${sanitizeFileName(baseName)}.pdf`;
 
+  // A document zoomed out to fit a narrow screen (FitToWidth) is captured at full size
+  const zoomed: [HTMLElement, string][] = [];
+  for (let p = element.parentElement; p; p = p.parentElement) {
+    if (p.hasAttribute('data-fit-width') && p.style.zoom) {
+      zoomed.push([p, p.style.zoom]);
+      p.style.zoom = '';
+    }
+  }
+
   try {
     let canvas: HTMLCanvasElement;
     try {
@@ -87,6 +96,8 @@ export async function downloadElementAsPdf(
   } catch (err: any) {
     console.error('PDF Generation Error:', err);
     throw new Error(err.message || 'Failed to render PDF document');
+  } finally {
+    for (const [el, z] of zoomed) el.style.zoom = z;
   }
 }
 

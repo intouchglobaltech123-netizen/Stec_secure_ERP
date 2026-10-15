@@ -71,7 +71,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/45 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 bg-black/45 backdrop-blur-xs animate-in fade-in duration-150"
       role="dialog"
       aria-modal="true"
     >
@@ -84,7 +84,7 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Dialog Card */}
       <div
-        className={`relative w-full ${maxWidthClass} max-h-[92vh] flex flex-col rounded-2xl bg-white border border-slate-200 shadow-2xl text-slate-900 overflow-hidden my-auto animate-in zoom-in-95 duration-150 ${className}`}
+        className={`relative w-full ${maxWidthClass} max-h-[94dvh] sm:max-h-[92vh] flex flex-col rounded-t-2xl rounded-b-none sm:rounded-2xl bg-white border border-slate-200 shadow-2xl text-slate-900 overflow-hidden sm:my-auto animate-in zoom-in-95 duration-150 ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Optional Structured Header */}
@@ -98,12 +98,12 @@ export const Modal: React.FC<ModalProps> = ({
               )}
               <div className="min-w-0">
                 {title && (
-                  <h2 className="text-base font-bold text-slate-900 font-display truncate">
+                  <h2 className="text-base font-bold text-slate-900 font-display sm:truncate">
                     {title}
                   </h2>
                 )}
                 {subtitle && (
-                  <p className="text-xs text-slate-500 font-medium truncate">
+                  <p className="text-[13px] text-slate-500 font-medium sm:truncate">
                     {subtitle}
                   </p>
                 )}

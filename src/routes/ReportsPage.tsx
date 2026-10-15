@@ -67,6 +67,14 @@ function exportToCSV(filename: string, headers: string[], rows: (string | number
   toast.success(`Exported ${filename}.csv`);
 }
 
+// Short category names so the chart's labels fit on a phone
+const SHORT_CATEGORY: Record<string, string> = {
+  'Home Automations': 'Home Auto',
+  'Gate Automation': 'Gate',
+  'Biometric & Access Control': 'Biometric',
+  'Burglar Alarm System': 'Alarm',
+};
+
 export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => {
   const { jobs: allJobs, visibleJobs, currentUser, customers, invoices, payments, users, holdEvents } = useStecSecure();
   const jobs = currentUser?.role === 'TECHNICIAN' ? visibleJobs : allJobs;
@@ -387,20 +395,11 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant="orange" className="text-xs">
-              <BarChart3 className="w-3.5 h-3.5 text-orange-600" />
-              Executive Analytics
-            </Badge>
-            <span className="text-xs text-slate-500 font-medium">
-              Real-time Business & Dispatch Telemetry
-            </span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight font-display">
-            Reports & Operational Intelligence
+          <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
+            Reports
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Exportable audits for revenue, AMC contract renewals, debtor dues, field engineer metrics, and active projects
+          <p className="text-sm text-slate-500 mt-0.5">
+            Revenue, AMC renewals, dues, technician performance and ongoing projects
           </p>
         </div>
       </div>
@@ -411,29 +410,29 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           <button
             type="button"
             onClick={() => setActiveReport('REVENUE')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 ${
               activeReport === 'REVENUE'
                 ? 'bg-orange-500 text-white shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>1. Revenue Report</span>
+            <span>Revenue</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveReport('AMC_RENEWAL')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 ${
               activeReport === 'AMC_RENEWAL'
                 ? 'bg-orange-500 text-white shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>2. AMC Renewal Report</span>
+            <span>AMC renewals</span>
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+              className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
                 activeReport === 'AMC_RENEWAL' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
               }`}
             >
@@ -444,16 +443,16 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           <button
             type="button"
             onClick={() => setActiveReport('OUTSTANDING')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 ${
               activeReport === 'OUTSTANDING'
                 ? 'bg-orange-500 text-white shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
             <Building2 className="w-3.5 h-3.5" />
-            <span>3. Outstanding Dues Report</span>
+            <span>Dues</span>
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+              className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
                 activeReport === 'OUTSTANDING' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
               }`}
             >
@@ -464,29 +463,29 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           <button
             type="button"
             onClick={() => setActiveReport('TECHNICIAN')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 ${
               activeReport === 'TECHNICIAN'
                 ? 'bg-orange-500 text-white shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>4. Technician Performance</span>
+            <span>Technicians</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveReport('ONGOING')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 ${
               activeReport === 'ONGOING'
                 ? 'bg-orange-500 text-white shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
             }`}
           >
             <Clock className="w-3.5 h-3.5" />
-            <span>5. Ongoing Projects</span>
+            <span>Ongoing jobs</span>
             <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+              className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
                 activeReport === 'ONGOING' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
               }`}
             >
@@ -504,14 +503,14 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           {/* Top Controls & KPI Summary */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-700">Filter Department:</span>
+              <span className="text-[13px] font-semibold text-slate-700">Filter Department:</span>
               <div className="flex items-center gap-1.5">
                 {(['ALL', 'SERVICE', 'INSTALLATION'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => setRevenueTypeFilter(mode)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                    className={`px-2.5 py-1 rounded-lg text-[13px] font-medium cursor-pointer transition-colors ${
                       revenueTypeFilter === mode
                         ? 'bg-orange-500 text-white'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -527,7 +526,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               variant="outline"
               size="sm"
               onClick={handleDownloadRevenueCSV}
-              className="text-xs font-semibold cursor-pointer shrink-0"
+              className="text-[13px] font-semibold cursor-pointer shrink-0"
             >
               <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
               Download CSV
@@ -538,27 +537,27 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card className="border-slate-200 bg-white shadow-sm">
               <CardContent className="p-4 space-y-1">
-                <div className="text-[10px] uppercase font-bold text-slate-500">Total Billed Revenue</div>
+                <div className="text-[11px] uppercase font-bold text-slate-500">Total Billed Revenue</div>
                 <div className="text-2xl font-bold text-slate-900 font-mono">{formatINR(totalRevenueBilled)}</div>
-                <p className="text-[11px] text-slate-500">Across 6 service categories</p>
+                <p className="text-xs text-slate-500">Across 6 service categories</p>
               </CardContent>
             </Card>
 
             <Card className="border-orange-200 bg-orange-50/70 shadow-sm">
               <CardContent className="p-4 space-y-1">
-                <div className="text-[10px] uppercase font-bold text-orange-900">Total Realized (Collected)</div>
+                <div className="text-[11px] uppercase font-bold text-orange-900">Total Realized (Collected)</div>
                 <div className="text-2xl font-bold text-orange-900 font-mono">{formatINR(totalRevenueCollected)}</div>
-                <p className="text-[11px] text-orange-700">Actual collections received</p>
+                <p className="text-xs text-orange-700">Actual collections received</p>
               </CardContent>
             </Card>
 
             <Card className="border-amber-200 bg-amber-50/70 shadow-sm">
               <CardContent className="p-4 space-y-1">
-                <div className="text-[10px] uppercase font-bold text-amber-900">Outstanding Balance</div>
+                <div className="text-[11px] uppercase font-bold text-amber-900">Outstanding Balance</div>
                 <div className="text-2xl font-bold text-amber-900 font-mono">
                   {formatINR(Math.max(0, totalRevenueBilled - totalRevenueCollected))}
                 </div>
-                <p className="text-[11px] text-amber-700">Unsettled work & invoices</p>
+                <p className="text-xs text-amber-700">Unsettled work & invoices</p>
               </CardContent>
             </Card>
           </div>
@@ -573,19 +572,22 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </CardHeader>
               <CardContent className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={revenueByCategory} margin={{ top: 10, right: 20, left: 10, bottom: 40 }}>
+                  <BarChart data={revenueByCategory} margin={{ top: 10, right: 12, left: 0, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis
                       dataKey="category"
-                      angle={-25}
-                      textAnchor="end"
                       interval={0}
-                      tick={{ fontSize: 10, fill: '#64748b' }}
-                      height={50}
+                      tick={{ fontSize: 11, fill: '#64748b' }}
+                      tickFormatter={(c: string) => SHORT_CATEGORY[c] || c}
+                      height={28}
                     />
-                    <YAxis tick={{ fontSize: 10, fill: '#64748b' }} />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: '#64748b' }}
+                      width={44}
+                      tickFormatter={(val) => `₹${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
+                    />
                     <Tooltip formatter={(value: any) => [formatINR(Number(value)), '']} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Legend verticalAlign="top" wrapperStyle={{ fontSize: 12, paddingBottom: 8 }} />
                     <Bar dataKey="billed" name="Billed (₹)" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="collected" name="Collected (₹)" fill="#f97316" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -600,7 +602,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               <CardContent className="space-y-3">
                 {revenueByCategory.map((item) => (
                   <div key={item.category} className="space-y-1">
-                    <div className="flex justify-between text-xs">
+                    <div className="flex justify-between text-[13px]">
                       <span className="text-slate-800 font-medium truncate max-w-[170px]">{item.category}</span>
                       <span className="text-slate-500 font-mono font-semibold">{item.jobsCount} jobs</span>
                     </div>
@@ -626,7 +628,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <table className="w-full text-left text-xs">
+              <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-3">Service Category</th>
@@ -667,14 +669,14 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           {/* Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-700">Filter Expiry Window:</span>
+              <span className="text-[13px] font-semibold text-slate-700">Filter Expiry Window:</span>
               <div className="flex items-center gap-1.5">
                 {(['30', '60', '90', 'ALL'] as const).map((window) => (
                   <button
                     key={window}
                     type="button"
                     onClick={() => setAmcDaysFilter(window)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                    className={`px-3 py-1 rounded-lg text-[13px] font-medium cursor-pointer transition-colors ${
                       amcDaysFilter === window
                         ? 'bg-orange-500 text-white'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -690,14 +692,14 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               variant="outline"
               size="sm"
               onClick={handleDownloadAmcCSV}
-              className="text-xs font-semibold cursor-pointer shrink-0"
+              className="text-[13px] font-semibold cursor-pointer shrink-0"
             >
               <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
               Download CSV
             </Button>
           </div>
 
-          <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200 text-xs text-orange-900">
+          <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200 text-[13px] text-orange-900">
             <strong>CEO Action Dashboard:</strong> Showing AMC contract accounts sorted by nearest renewal date. Call these clients before their maintenance contracts expire to secure renewals.
           </div>
 
@@ -709,7 +711,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <table className="w-full text-left text-xs">
+              <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-3">Customer Name</th>
@@ -733,12 +735,12 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                       <tr key={item.customer.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="p-3">
                           <div className="font-bold text-slate-900">{item.customer.name}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">{item.customer.id}</div>
+                          <div className="text-[11px] text-slate-400 font-mono">{item.customer.id}</div>
                         </td>
                         <td className="p-3 text-slate-700">{item.customer.contactPerson || '-'}</td>
                         <td className="p-3 font-mono text-slate-600">{item.customer.phone}</td>
                         <td className="p-3">
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-[11px]">
                             {item.latestCategory}
                           </Badge>
                         </td>
@@ -754,15 +756,15 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                         </td>
                         <td className="p-3 text-center">
                           {item.daysRemaining < 0 ? (
-                            <Badge variant="danger" className="text-[10px]">
+                            <Badge variant="danger" className="text-[11px]">
                               EXPIRED
                             </Badge>
                           ) : item.daysRemaining <= 30 ? (
-                            <Badge variant="warning" className="text-[10px]">
+                            <Badge variant="warning" className="text-[11px]">
                               URGENT (&le;30D)
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-[10px]">
+                            <Badge variant="secondary" className="text-[11px]">
                               UPCOMING
                             </Badge>
                           )}
@@ -784,10 +786,10 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
             <div>
-              <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+              <h2 className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">
                 Accounts Receivable Aging & Debtor Audit
               </h2>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-xs text-slate-500">
                 Sorted by highest outstanding balance and overdue aging
               </p>
             </div>
@@ -796,7 +798,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               variant="outline"
               size="sm"
               onClick={handleDownloadOutstandingCSV}
-              className="text-xs font-semibold cursor-pointer shrink-0"
+              className="text-[13px] font-semibold cursor-pointer shrink-0"
             >
               <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
               Download CSV
@@ -806,18 +808,18 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card className="border-rose-200 bg-rose-50/60 shadow-sm">
               <CardContent className="p-4 space-y-1">
-                <div className="text-[10px] uppercase font-bold text-rose-800">Total Uncollected Balance</div>
+                <div className="text-[11px] uppercase font-bold text-rose-800">Total Uncollected Balance</div>
                 <div className="text-2xl font-bold text-rose-800 font-mono">
                   {formatINR(totalOutstandingReportDue)}
                 </div>
-                <p className="text-[11px] text-rose-700">Across {outstandingReport.length} clients</p>
+                <p className="text-xs text-rose-700">Across {outstandingReport.length} clients</p>
               </CardContent>
             </Card>
 
             <Card className="border-slate-200 bg-white shadow-sm">
               <CardContent className="p-4 space-y-1">
-                <div className="text-[10px] uppercase font-bold text-slate-500">Overdue Recovery Strategy</div>
-                <div className="text-xs text-slate-600 pt-1">
+                <div className="text-[11px] uppercase font-bold text-slate-500">Overdue Recovery Strategy</div>
+                <div className="text-[13px] text-slate-600 pt-1">
                   Clients past 15 days require direct management follow-up before initiating further job dispatches or parts warranty allocations.
                 </div>
               </CardContent>
@@ -831,7 +833,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <table className="w-full text-left text-xs">
+              <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-3">Customer Name</th>
@@ -849,7 +851,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                     <tr key={row.customer.id} className="hover:bg-slate-50/80">
                       <td className="p-3">
                         <div className="font-bold text-slate-900">{row.customer.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">{row.customer.id}</div>
+                        <div className="text-[11px] text-slate-400 font-mono">{row.customer.id}</div>
                       </td>
                       <td className="p-3 font-mono text-slate-600">{row.customer.phone}</td>
                       <td className="p-3 text-center font-mono font-semibold text-slate-700">
@@ -864,7 +866,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                       <td className="p-3 text-right font-mono font-bold text-rose-700 text-sm">
                         {formatINR(row.balanceDue)}
                       </td>
-                      <td className="p-3 text-center font-mono text-[11px] text-slate-500">
+                      <td className="p-3 text-center font-mono text-xs text-slate-500">
                         {row.oldestUnpaidDate !== '-' ? formatDate(row.oldestUnpaidDate) : '-'}
                       </td>
                       <td className="p-3 text-center">
@@ -876,7 +878,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                               ? 'warning'
                               : 'secondary'
                           }
-                          className="text-[10px]"
+                          className="text-[11px]"
                         >
                           {row.overdueCategory}
                         </Badge>
@@ -897,10 +899,10 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
             <div>
-              <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+              <h2 className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">
                 Field Technician Performance & Dispatch Efficiency
               </h2>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-xs text-slate-500">
                 Comparative metrics across job completion times, active workloads, and obstacles encountered
               </p>
             </div>
@@ -909,7 +911,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               variant="outline"
               size="sm"
               onClick={handleDownloadTechnicianCSV}
-              className="text-xs font-semibold cursor-pointer shrink-0"
+              className="text-[13px] font-semibold cursor-pointer shrink-0"
             >
               <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
               Download CSV
@@ -924,25 +926,25 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                   <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div>
                       <h3 className="font-bold text-sm text-slate-900">{t.tech.name}</h3>
-                      <div className="text-[10px] text-slate-500">{t.tech.phone}</div>
+                      <div className="text-[11px] text-slate-500">{t.tech.phone}</div>
                     </div>
-                    <Badge variant="orange" className="text-[10px]">
+                    <Badge variant="orange" className="text-[11px]">
                       {t.completionRate}% Done
                     </Badge>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                  <div className="grid grid-cols-2 gap-2 text-center text-[13px]">
                     <div className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                      <div className="text-[9px] uppercase text-slate-500 font-bold">Completed</div>
+                      <div className="text-[11px] uppercase text-slate-500 font-bold">Completed</div>
                       <div className="font-bold text-slate-900 font-mono text-base">{t.completed}</div>
                     </div>
                     <div className="p-2 rounded-lg bg-orange-50/70 border border-orange-100">
-                      <div className="text-[9px] uppercase text-orange-800 font-bold">Active Jobs</div>
+                      <div className="text-[11px] uppercase text-orange-800 font-bold">Active Jobs</div>
                       <div className="font-bold text-orange-800 font-mono text-base">{t.active}</div>
                     </div>
                   </div>
 
-                  <div className="text-[11px] text-slate-600 flex justify-between pt-1">
+                  <div className="text-xs text-slate-600 flex justify-between pt-1">
                     <span>Avg Completion: <strong className="text-slate-900">{t.avgCompletionHours} hrs</strong></span>
                     <span>Holds Raised: <strong className="text-amber-800">{t.holdsRaised}</strong></span>
                   </div>
@@ -959,7 +961,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <table className="w-full text-left text-xs">
+              <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-3">Technician</th>
@@ -1003,14 +1005,14 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-700">Filter Department:</span>
+              <span className="text-[13px] font-semibold text-slate-700">Filter Department:</span>
               <div className="flex items-center gap-1.5">
                 {(['ALL', 'SERVICE', 'INSTALLATION'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => setOngoingDeptFilter(mode)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+                    className={`px-2.5 py-1 rounded-lg text-[13px] font-medium cursor-pointer transition-colors ${
                       ongoingDeptFilter === mode
                         ? 'bg-orange-500 text-white'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -1026,7 +1028,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               variant="outline"
               size="sm"
               onClick={handleDownloadOngoingCSV}
-              className="text-xs font-semibold cursor-pointer shrink-0"
+              className="text-[13px] font-semibold cursor-pointer shrink-0"
             >
               <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
               Download CSV
@@ -1040,7 +1042,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <table className="w-full text-left text-xs">
+              <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
                     <th className="p-3">Job ID</th>
@@ -1078,17 +1080,17 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                           <span className="text-slate-400 group-hover:text-orange-600 font-sans">&rarr;</span>
                         </td>
                         <td className="p-3">
-                          <Badge variant={item.job.type === 'SERVICE' ? 'default' : 'secondary'} className="text-[10px] rounded">
+                          <Badge variant={item.job.type === 'SERVICE' ? 'default' : 'secondary'} className="text-[11px] rounded">
                             {item.job.type}
                           </Badge>
                         </td>
                         <td className="p-3">
                           <div className="font-bold text-slate-900">{item.customerName}</div>
-                          <div className="text-[10px] text-slate-500">{item.customerPhone}</div>
+                          <div className="text-[11px] text-slate-500">{item.customerPhone}</div>
                         </td>
                         <td className="p-3">
                           <div className="text-slate-900 font-medium">{item.job.category}</div>
-                          <div className="text-[10px] text-slate-500">{item.job.productModel}</div>
+                          <div className="text-[11px] text-slate-500">{item.job.productModel}</div>
                         </td>
                         <td className="p-3 font-medium text-slate-700">{item.leadName}</td>
                         <td className="p-3 text-center font-mono text-slate-500">
@@ -1106,7 +1108,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                                 ? 'orange'
                                 : 'default'
                             }
-                            className="text-[10px] rounded"
+                            className="text-[11px] rounded"
                           >
                             {item.job.status.replace('_', ' ')}
                           </Badge>

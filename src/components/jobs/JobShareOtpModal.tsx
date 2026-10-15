@@ -196,12 +196,12 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
           </div>
           <div>
             <h2 className="text-lg font-bold text-slate-900 font-display">
-              {isOtpVerified ? 'Step 3: Record Payment Collection' : 'Customer Share & Sign-off'}
+              {isOtpVerified ? 'Record payment' : 'Customer sign-off'}
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-[13px] text-slate-500">
               {isOtpVerified
-                ? `Select settlement status for Invoice ${invoice?.invoiceNo || ''}`
-                : `Share service report, photos & invoice and verify OTP for ${job.jobNumber}`}
+                ? `How much did the customer pay for ${invoice?.invoiceNo || 'this invoice'}?`
+                : `${job.jobNumber} — send the summary on WhatsApp, then enter the customer's code`}
             </p>
           </div>
         </div>
@@ -214,13 +214,13 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs overscroll-contain">
+      <div className="flex-1 overflow-y-auto p-5 space-y-4 text-[13px] overscroll-contain">
           {/* Job Summary Card with Embedded Photos */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <div>
                 <span className="font-mono text-sm font-bold text-orange-600">{job.jobNumber}</span>
-                <span className="text-slate-600 text-xs ml-2">&bull; {job.productModel}</span>
+                <span className="text-slate-600 text-[13px] ml-2">&bull; {job.productModel}</span>
               </div>
               <Badge variant={isOtpVerified ? 'success' : 'warning'}>
                 {isOtpVerified ? 'OTP VERIFIED' : 'AWAITING OTP'}
@@ -229,7 +229,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-700">
               <div>
-                <div className="text-[10px] text-slate-500 uppercase font-bold">Customer Details</div>
+                <div className="text-[11px] text-slate-500 uppercase font-bold">Customer Details</div>
                 <div className="font-bold text-slate-900 mt-0.5">{customer?.name}</div>
                 <div className="text-slate-600 flex items-center gap-1 mt-0.5 font-medium">
                   <Phone className="w-3 h-3 text-emerald-600" /> {customer?.phone}
@@ -238,11 +238,11 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
 
               {invoice && (
                 <div className="sm:text-right">
-                  <div className="text-[10px] text-slate-500 uppercase font-bold">Invoice Total</div>
+                  <div className="text-[11px] text-slate-500 uppercase font-bold">Invoice Total</div>
                   <div className="font-mono font-bold text-emerald-700 text-base mt-0.5">
                     {formatINR(invoice.grandTotal)}
                   </div>
-                  <div className="text-slate-500 text-[11px]">
+                  <div className="text-slate-500 text-xs">
                     {invoice.invoiceNo} &bull; {invoice.lineItems.length} line item(s)
                   </div>
                 </div>
@@ -252,14 +252,14 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
             {/* Embedded Before and After Photos */}
             {(job.beforePhotoUrl || job.afterPhotoUrl) && (
               <div className="pt-2 border-t border-slate-200 space-y-1.5">
-                <div className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
+                <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <Camera className="w-3.5 h-3.5 text-orange-600" />
                   Photographic Evidence (Embedded in Invoice & Report)
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   {job.beforePhotoUrl && (
                     <div className="space-y-1">
-                      <div className="text-[10px] uppercase font-bold text-blue-700 flex items-center justify-between">
+                      <div className="text-[11px] uppercase font-bold text-blue-700 flex items-center justify-between">
                         <span>Before Photo</span>
                         <span className="text-slate-500 font-normal">Pre-Service</span>
                       </div>
@@ -275,7 +275,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
 
                   {job.afterPhotoUrl && (
                     <div className="space-y-1">
-                      <div className="text-[10px] uppercase font-bold text-emerald-700 flex items-center justify-between">
+                      <div className="text-[11px] uppercase font-bold text-emerald-700 flex items-center justify-between">
                         <span>After Photo</span>
                         <span className="text-slate-500 font-normal">Post-Completion</span>
                       </div>
@@ -303,14 +303,14 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                       <MessageCircle className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-bold text-slate-900 text-xs">Step 1: Share via WhatsApp</div>
-                      <div className="text-[11px] text-slate-600">
+                      <div className="font-bold text-slate-900 text-[13px]">Step 1: Share via WhatsApp</div>
+                      <div className="text-xs text-slate-600">
                         Opens WhatsApp with the job summary, invoice amount and the customer's sign-off code
                       </div>
                     </div>
                   </div>
                   {whatsAppSentAt && (
-                    <Badge variant="success" className="text-[10px]">
+                    <Badge variant="success" className="text-[11px]">
                       Opened at {whatsAppSentAt}
                     </Badge>
                   )}
@@ -320,12 +320,12 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                   <button
                     type="button"
                     onClick={handleSendWhatsApp}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-xs transition-all shadow-sm shadow-emerald-600/25 cursor-pointer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-[13px] transition-all shadow-sm shadow-emerald-600/25 cursor-pointer"
                   >
                     <MessageCircle className="w-4 h-4" />
                     <span>{whatsAppSentAt ? 'Resend via WhatsApp' : 'Send via WhatsApp'}</span>
                   </button>
-                  <span className="text-[11px] text-slate-600 font-medium">
+                  <span className="text-xs text-slate-600 font-medium">
                     Recipient: <strong className="text-slate-900">{customer?.phone}</strong>
                   </span>
                 </div>
@@ -342,8 +342,8 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                       <KeyRound className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-bold text-slate-900 text-xs">Step 2: Customer Sign-off Code</div>
-                      <div className="text-[11px] text-slate-500">
+                      <div className="font-bold text-slate-900 text-[13px]">Step 2: Customer Sign-off Code</div>
+                      <div className="text-xs text-slate-500">
                         Ask the customer for the 4-digit code from the WhatsApp message
                       </div>
                     </div>
@@ -353,7 +353,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                     <button
                       type="button"
                       onClick={handleAutoFillOtp}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-mono hover:bg-slate-200 cursor-pointer transition-colors"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-mono hover:bg-slate-200 cursor-pointer transition-colors"
                     >
                       Demo: insert code <strong>{signOffCode}</strong>
                     </button>
@@ -376,13 +376,13 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                   </div>
                   <Button type="submit" variant="primary" size="md" disabled={isVerifying} className="w-full sm:w-auto">
                     <ShieldCheck className="w-4 h-4 mr-1.5" />
-                    Verify OTP & Proceed to Payment
+                    Verify code & continue
                     <ArrowRight className="w-4 h-4 ml-1.5" />
                   </Button>
                 </div>
 
                 {otpError && (
-                  <p className="text-[11px] text-rose-600 font-semibold">{otpError}</p>
+                  <p className="text-xs text-rose-600 font-semibold">{otpError}</p>
                 )}
               </form>
             </>
@@ -396,17 +396,17 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                   </div>
                   <div>
                     <div className="font-bold text-slate-900 text-sm">Record Payment Status</div>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-xs text-slate-500">
                       Invoice Total: <strong className="text-emerald-700 font-mono">{formatINR(grandTotal)}</strong>
                     </div>
                   </div>
                 </div>
-                <Badge variant="success">OTP Verified</Badge>
+                <Badge variant="success">Code verified</Badge>
               </div>
 
               {/* Payment Settlement Status Options */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-700">
+                <label className="block text-[13px] font-bold text-slate-700">
                   Payment Collection Status *
                 </label>
                 <div className="grid grid-cols-1 gap-2">
@@ -420,14 +420,14 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                     }`}
                   >
                     <div>
-                      <div className="font-bold text-xs text-slate-900">Full Amount Received</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
+                      <div className="font-bold text-[13px] text-slate-900">Full Amount Received</div>
+                      <div className="text-xs text-slate-500 mt-0.5">
                         Customer paid 100% ({formatINR(grandTotal)}) on site
                       </div>
                     </div>
                     <div className="text-right">
                       <span className="font-bold text-emerald-700 text-sm font-mono">{formatINR(grandTotal)}</span>
-                      <div className="text-[10px] text-slate-500">Balance: ₹0</div>
+                      <div className="text-[11px] text-slate-500">Balance: ₹0</div>
                     </div>
                   </button>
 
@@ -441,10 +441,10 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                     }`}
                   >
                     <div>
-                      <div className="font-bold text-xs text-slate-900">
+                      <div className="font-bold text-[13px] text-slate-900">
                         Credit / Partial — Advance Already Taken, Balance Pending
                       </div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
+                      <div className="text-xs text-slate-500 mt-0.5">
                         Advance collected; remaining balance due as credit
                       </div>
                     </div>
@@ -463,16 +463,16 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                     }`}
                   >
                     <div>
-                      <div className="font-bold text-xs text-slate-900">
+                      <div className="font-bold text-[13px] text-slate-900">
                         Credit / Partial — Nothing Received Yet
                       </div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
+                      <div className="text-xs text-slate-500 mt-0.5">
                         Total {formatINR(grandTotal)} outstanding on client credit account
                       </div>
                     </div>
                     <div className="text-right">
                       <span className="font-bold text-rose-600 text-sm font-mono">{formatINR(grandTotal)}</span>
-                      <div className="text-[10px] text-rose-600 font-semibold">Balance Pending</div>
+                      <div className="text-[11px] text-rose-600 font-semibold">Balance Pending</div>
                     </div>
                   </button>
                 </div>
@@ -483,7 +483,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                 <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-amber-900 mb-1">
+                      <label className="block text-xs font-bold text-amber-900 mb-1">
                         Advance Collected (₹) *
                       </label>
                       <Input
@@ -492,11 +492,11 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                         max={grandTotal}
                         value={partialAmountReceived}
                         onChange={(e) => setPartialAmountReceived(Number(e.target.value))}
-                        className="text-xs h-9 bg-white border-amber-300 focus:border-amber-500 font-mono"
+                        className="text-[13px] h-9 bg-white border-amber-300 focus:border-amber-500 font-mono"
                       />
                     </div>
                     <div className="p-2 rounded-lg bg-white border border-slate-200 flex flex-col justify-center">
-                      <div className="text-[10px] text-slate-500 uppercase font-bold">Remaining Balance Due</div>
+                      <div className="text-[11px] text-slate-500 uppercase font-bold">Remaining Balance Due</div>
                       <div className="text-base font-bold text-rose-600 font-mono">
                         {formatINR(Math.max(0, grandTotal - (Number(partialAmountReceived) || 0)))}
                       </div>
@@ -509,7 +509,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
               {paymentOption !== 'NOTHING' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-700 font-semibold mb-1 text-[11px]">
+                    <label className="block text-slate-700 font-semibold mb-1 text-xs">
                       Payment Mode *
                     </label>
                     <div className="grid grid-cols-4 gap-1.5">
@@ -518,7 +518,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                           key={mode}
                           type="button"
                           onClick={() => setPaymentMode(mode)}
-                          className={`h-8 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
+                          className={`h-8 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
                             paymentMode === mode
                               ? 'bg-orange-500 border-orange-500 text-white shadow-2xs'
                               : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -531,14 +531,14 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 font-semibold mb-1 text-[11px]">
+                    <label className="block text-slate-700 font-semibold mb-1 text-xs">
                       UTR / Transaction Ref (Optional)
                     </label>
                     <Input
                       placeholder="e.g. UPI-9982481 or Cheque #"
                       value={referenceNo}
                       onChange={(e) => setReferenceNo(e.target.value)}
-                      className="text-xs h-8 font-mono bg-white"
+                      className="text-[13px] h-8 font-mono bg-white"
                     />
                   </div>
                 </div>

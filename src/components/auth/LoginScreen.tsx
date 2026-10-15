@@ -80,11 +80,11 @@ export const LoginScreen: React.FC = () => {
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center justify-center gap-2 font-display">
             <span>S Tec</span>
             <span className="text-orange-600">Secure</span>
-            <span className="text-xs uppercase font-mono font-bold px-2 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-200">
+            <span className="text-[13px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-200">
               ERP
             </span>
           </h1>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto font-medium">
+          <p className="text-[13px] text-slate-500 max-w-xs mx-auto font-medium">
             Surveillance & Automation Operations ERP
           </p>
         </div>
@@ -95,11 +95,11 @@ export const LoginScreen: React.FC = () => {
             <h2 className="text-base font-bold text-slate-900 flex items-center justify-center gap-2 font-display">
               <KeyRound className="w-4 h-4 text-orange-600" /> Staff Login
             </h2>
-            <p className="text-xs text-slate-500">Enter your mobile number, then your 4-digit PIN</p>
+            <p className="text-[13px] text-slate-500">Enter your mobile number, then your 4-digit PIN</p>
           </div>
 
           <div>
-            <label htmlFor="login-phone" className="block text-xs font-semibold text-slate-700 mb-1">
+            <label htmlFor="login-phone" className="block text-[13px] font-semibold text-slate-700 mb-1">
               Mobile number
             </label>
             <div className="relative">
@@ -138,7 +138,7 @@ export const LoginScreen: React.FC = () => {
           </div>
 
           {error && (
-            <div className="flex items-center justify-center gap-1.5 text-xs text-rose-700 bg-rose-50 py-2 px-3 rounded-lg border border-rose-200 font-medium">
+            <div className="flex items-center justify-center gap-1.5 text-[13px] text-rose-700 bg-rose-50 py-2 px-3 rounded-lg border border-rose-200 font-medium">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{error}</span>
             </div>
@@ -160,7 +160,7 @@ export const LoginScreen: React.FC = () => {
             <button
               type="button"
               onClick={handleDelete}
-              className="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-xs font-semibold text-slate-600 border border-slate-200 transition-all flex items-center justify-center cursor-pointer"
+              className="h-12 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-[13px] font-semibold text-slate-600 border border-slate-200 transition-all flex items-center justify-center cursor-pointer"
             >
               Clear
             </button>
@@ -177,20 +177,20 @@ export const LoginScreen: React.FC = () => {
               aria-label="Log in"
               disabled={pin.length !== 4 || !phoneValid || submitting}
               onClick={() => void submit(phone, pin)}
-              className="h-12 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-30 disabled:pointer-events-none active:scale-95 text-xs font-semibold text-white transition-all flex items-center justify-center cursor-pointer shadow-sm shadow-orange-500/25"
+              className="h-12 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-30 disabled:pointer-events-none active:scale-95 text-[13px] font-semibold text-white transition-all flex items-center justify-center cursor-pointer shadow-sm shadow-orange-500/25"
             >
               {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
             </button>
           </div>
 
-          <p className="text-center text-[11px] text-slate-500">
+          <p className="text-center text-xs text-slate-500">
             Forgot your PIN? Ask the CEO to reset it in Settings → Staff Accounts.
           </p>
 
           {/* Demo logins (demo data only) */}
           {DEMO_MODE && (
             <div className="space-y-2 pt-1">
-              <div className="text-center text-[10px] uppercase font-bold tracking-wider text-slate-500">
+              <div className="text-center text-[11px] uppercase font-bold tracking-wider text-slate-500">
                 Demo accounts
               </div>
               {SEED_USERS.filter((u) => DEMO_ACCOUNT_PINS[u.id]).map((u) => (
@@ -199,7 +199,7 @@ export const LoginScreen: React.FC = () => {
                   type="button"
                   disabled={submitting}
                   onClick={() => handleDemoLogin(u.phone, DEMO_ACCOUNT_PINS[u.id])}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-orange-300 bg-slate-50/60 transition-all text-left cursor-pointer text-xs"
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-orange-300 bg-slate-50/60 transition-all text-left cursor-pointer text-[13px]"
                 >
                   <span className="font-bold text-slate-900">{u.name}</span>
                   <span className="text-slate-500 font-mono">
@@ -212,7 +212,7 @@ export const LoginScreen: React.FC = () => {
         </div>
 
         {/* Footer info */}
-        <p className="text-center text-xs text-slate-500 font-medium">
+        <p className="text-center text-[13px] text-slate-500 font-medium">
           S Tec Secure (Surveillance & Automation's) &copy; {new Date().getFullYear()} &bull; Erode, Tamil Nadu
         </p>
       </div>

@@ -167,7 +167,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
             <h2 className="text-base font-bold text-slate-900 font-display">
               {customer ? `Edit Customer: ${customer.name}` : 'Add New Customer'}
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-[13px] text-slate-500">
               {customer ? `ID: ${customer.id}` : 'Create a client account & site profile'}
             </p>
           </div>
@@ -181,7 +181,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-xs">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-[13px]">
         <div className="flex-1 overflow-y-auto p-5 space-y-3.5 overscroll-contain">
           {/* Customer Name */}
           <div>
@@ -192,7 +192,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
               placeholder="e.g. Greenfield Elite Villas RWA"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="text-xs bg-white"
+              className="text-[13px] bg-white"
               required
             />
           </div>
@@ -209,7 +209,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                   placeholder="9841100222"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="pl-9 text-xs bg-white font-mono"
+                  className="pl-9 text-[13px] bg-white font-mono"
                   required
                 />
               </div>
@@ -224,7 +224,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                   placeholder="client@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-9 text-xs bg-white"
+                  className="pl-9 text-[13px] bg-white"
                 />
               </div>
             </div>
@@ -240,7 +240,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                   placeholder="Mr. Parthasarathy (President)"
                   value={contactPerson}
                   onChange={(e) => setContactPerson(e.target.value)}
-                  className="pl-9 text-xs bg-white"
+                  className="pl-9 text-[13px] bg-white"
                 />
               </div>
             </div>
@@ -253,11 +253,11 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                   placeholder="33AABCG1234F1ZA"
                   value={gstin}
                   onChange={(e) => setGstin(e.target.value)}
-                  className="pl-9 text-xs bg-white font-mono uppercase"
+                  className="pl-9 text-[13px] bg-white font-mono uppercase"
                 />
               </div>
               {gstin.trim() && !gstinValid && (
-                <div className="mt-1 text-[11px] text-rose-600">GSTIN is not valid (check for a typing mistake)</div>
+                <div className="mt-1 text-xs text-rose-600">GSTIN is not valid (check for a typing mistake)</div>
               )}
             </div>
           </div>
@@ -269,7 +269,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
               value={effectiveState}
               disabled={gstinValid}
               onChange={(e) => setStateCode(e.target.value)}
-              className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500 disabled:bg-slate-100"
+              className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 disabled:bg-slate-100"
             >
               {INDIAN_STATES.map((st) => (
                 <option key={st.code} value={st.code}>
@@ -277,7 +277,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 </option>
               ))}
             </select>
-            <div className="mt-1 text-[11px] text-slate-500">
+            <div className="mt-1 text-xs text-slate-500">
               {gstinValid ? 'Taken from the GSTIN. ' : ''}
               Invoices for this customer use{' '}
               <strong>{isInterState(effectiveState) ? 'IGST (outside Tamil Nadu)' : 'CGST + SGST (Tamil Nadu)'}</strong>.
@@ -295,7 +295,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 placeholder="Plot 42, OMR IT Corridor, Thoraipakkam, Chennai - 600097"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="pl-9 text-xs bg-white"
+                className="pl-9 text-[13px] bg-white"
                 required
               />
             </div>
@@ -303,7 +303,7 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 
           {/* Site Location (Google Maps Link) */}
           <div className="p-3 rounded-xl bg-orange-50/60 border border-orange-200 space-y-1.5">
-            <label className="block text-slate-900 font-semibold text-xs flex items-center gap-1.5">
+            <label className="block text-slate-900 font-semibold text-[13px] flex items-center gap-1.5">
               <Link2 className="w-3.5 h-3.5 text-orange-600" />
               Site Location (Google Maps Link)
             </label>
@@ -313,10 +313,10 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
                 placeholder="https://maps.app.goo.gl/..."
                 value={siteLocationMapLink}
                 onChange={(e) => setSiteLocationMapLink(e.target.value)}
-                className="text-xs bg-white font-mono"
+                className="text-[13px] bg-white font-mono"
               />
             </div>
-            <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+            <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
               <span>Used by field technicians on job cards & navigation routes</span>
               {siteLocationMapLink.trim() && (
                 <a
@@ -346,12 +346,12 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
 
             {amcActive && (
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-500">Renewal Date:</span>
+                <span className="text-xs text-slate-500">Renewal Date:</span>
                 <Input
                   type="date"
                   value={amcRenewalDate}
                   onChange={(e) => setAmcRenewalDate(e.target.value)}
-                  className="text-xs h-8 w-36 bg-white"
+                  className="text-[13px] h-8 w-36 bg-white"
                 />
               </div>
             )}

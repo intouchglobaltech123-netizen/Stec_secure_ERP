@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { formatINR, formatDate } from '@/lib/utils';
 import { exportElementToPdfWithToast } from '@/lib/pdf-generator';
+import { FitToWidth } from '@/components/ui/fit-to-width';
 import { amountInWords, customerStateCode, hsnSummary, isInterState, placeOfSupplyLabel, stateName } from '@/lib/gst';
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/api';
@@ -150,30 +151,30 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
       onClose={onClose}
       maxWidth="5xl"
       showCloseButton={false}
-      className="max-h-[94vh] sm:max-h-[92vh] w-[94vw] max-w-5xl"
+      className="max-h-[94vh] sm:max-h-[92vh] w-full sm:w-[94vw] max-w-5xl"
       bodyClassName="p-0 flex flex-col overflow-hidden"
     >
       {/* Top Control Bar */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 shrink-0 bg-white">
-        <div className="flex items-center gap-2">
-          <Badge variant="orange" className="text-xs font-mono font-bold">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3 border-b border-slate-200 shrink-0 bg-white">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="orange" className="text-[13px] font-mono font-bold">
             {quotation.quotationNo}
           </Badge>
           <Badge
             variant={quotationStatusMeta(quotation.status).variant}
-            className="text-xs"
+            className="text-[13px]"
           >
             {quotationStatusMeta(quotation.status).label}
           </Badge>
           {whatsAppSentAt && (
-            <Badge variant="success" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1 font-semibold">
+            <Badge variant="success" className="text-[13px] bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1 font-semibold">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
               Sent via WhatsApp ✓
             </Badge>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {onEdit && (
             <Button
               size="sm"
@@ -182,7 +183,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                 onEdit(quotation);
                 onClose();
               }}
-              className="h-8 text-xs rounded-lg text-orange-700 border-orange-300 hover:bg-orange-50 font-semibold cursor-pointer shadow-2xs"
+              className="h-8 text-[13px] rounded-lg text-orange-700 border-orange-300 hover:bg-orange-50 font-semibold cursor-pointer shadow-2xs"
             >
               <Edit className="w-3.5 h-3.5 mr-1 text-orange-600" />
               Edit Quotation
@@ -192,7 +193,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
             size="sm"
             variant={whatsAppSentAt ? 'outline' : 'secondary'}
             onClick={handleShareWhatsApp}
-            className={`h-8 text-xs rounded-lg ${
+            className={`h-8 text-[13px] rounded-lg ${
               whatsAppSentAt
                 ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-50'
                 : 'text-slate-800'
@@ -206,7 +207,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
             variant="primary"
             onClick={handleConvertToChallan}
             disabled={converting}
-            className="h-8 text-xs rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            className="h-8 text-[13px] rounded-lg bg-orange-600 hover:bg-orange-700 text-white font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Truck className="w-3.5 h-3.5" />
             Convert to Delivery Challan
@@ -220,11 +221,11 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                 filename: `Quotation-${quotation.quotationNo}-${custName}`,
               });
             }}
-            className="h-8 text-xs rounded-lg text-slate-800 hover:bg-slate-50 font-semibold cursor-pointer shadow-2xs"
+            className="h-8 text-[13px] rounded-lg text-slate-800 hover:bg-slate-50 font-semibold cursor-pointer shadow-2xs"
           >
             <Download className="w-3.5 h-3.5 mr-1 text-slate-600" /> Download PDF
           </Button>
-          <Button size="sm" variant="outline" onClick={handlePrint} className="h-8 text-xs rounded-lg">
+          <Button size="sm" variant="outline" onClick={handlePrint} className="h-8 text-[13px] rounded-lg">
             <Printer className="w-3.5 h-3.5 mr-1" /> Print
           </Button>
           <button
@@ -240,20 +241,21 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
       <div className="flex-1 overflow-y-auto p-5 overscroll-contain">
         {/* Visible Outreach Record Banner */}
         {whatsAppSentAt && (
-          <div className="mb-4 p-2.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-950 text-xs flex items-center justify-between print:hidden">
+          <div className="mb-4 p-2.5 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-950 text-[13px] flex items-center justify-between print:hidden">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
                 <strong>Quotation Outreach Logged:</strong> Shared with customer ({customer?.name || 'Customer'} &bull; {customer?.phone}) via WhatsApp on <strong>{whatsAppSentAt}</strong>.
               </span>
             </div>
-            <Badge variant="success" className="text-[10px] bg-emerald-100 text-emerald-800 border-0">
+            <Badge variant="success" className="text-[11px] bg-emerald-100 text-emerald-800 border-0">
               Shared Record
             </Badge>
           </div>
         )}
 
         {/* Real PDF Replica Paper Document */}
+        <FitToWidth>
         <div id="printable-quotation-doc" className="p-6 rounded-xl bg-white text-slate-900 font-sans shadow-xs border border-slate-200 print:shadow-none print:p-0">
           {/* Document Header */}
           <div className="border-b-2 border-slate-900 pb-4 flex justify-between items-start">
@@ -261,16 +263,16 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
               <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase font-display">
                 S Tec Secure <span className="text-orange-600">(Surveillance & Automation's)</span>
               </h1>
-              <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mt-0.5">
+              <p className="text-[11px] text-slate-600 font-bold uppercase tracking-wider mt-0.5">
                 CCTV | HOME AUTOMATIONS | GATE AUTOMATION | BIOMETRIC & ACCESS CONTROL | INTERCOM | BURGLAR ALARM SYSTEM
               </p>
-              <p className="text-[11px] text-slate-700 mt-1">
+              <p className="text-xs text-slate-700 mt-1">
                 14/2 Thundu Kadu Street, Veerappan Chathiram, Erode, Tamil Nadu, India - 638004
               </p>
-              <p className="text-[11px] text-slate-700">
+              <p className="text-xs text-slate-700">
                 Email: stecsecure@gmail.com &bull; Tel: 81485 62605 / 96002 52605
               </p>
-              <p className="text-[11px] font-mono text-orange-600 font-bold mt-0.5">
+              <p className="text-xs font-mono text-orange-600 font-bold mt-0.5">
                 GSTIN: 33KDUPS8091G1ZL &bull; PAN: KDUPS8091G
               </p>
             </div>
@@ -279,7 +281,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
               <div className="inline-block px-3 py-1 bg-orange-500 text-white font-bold text-sm tracking-wider uppercase rounded shadow-2xs">
                 QUOTATION
               </div>
-              <div className="mt-2 text-xs text-slate-700">
+              <div className="mt-2 text-[13px] text-slate-700">
                 <div>
                   <strong>Quotation No: </strong>
                   <span className="font-mono font-bold text-orange-600">{quotation.quotationNo}</span>
@@ -301,15 +303,15 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
           </div>
 
           {/* Quotation For / Customer Section */}
-          <div className="py-3 border-b border-slate-200 grid grid-cols-2 gap-4 text-xs">
+          <div className="py-3 border-b border-slate-200 grid grid-cols-2 gap-4 text-[13px]">
             <div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 QUOTATION FOR:
               </div>
               <div className="font-bold text-sm text-slate-900 mt-0.5">{customer?.name}</div>
               <div className="text-slate-700 mt-0.5">{customer?.address}</div>
               <div className="text-slate-700 mt-0.5">Phone: {customer?.phone}</div>
-              <div className="font-mono text-[11px] text-orange-600 font-semibold mt-0.5">
+              <div className="font-mono text-xs text-orange-600 font-semibold mt-0.5">
                 GSTIN: {customer?.gstin || 'Unregistered'}
               </div>
               <div className="text-slate-700 mt-0.5">
@@ -317,7 +319,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
               </div>
             </div>
 
-            <div className="bg-slate-50 p-2.5 rounded border border-slate-200 text-[11px] space-y-1">
+            <div className="bg-slate-50 p-2.5 rounded border border-slate-200 text-xs space-y-1">
               <div className="font-bold text-slate-800">Proposal Summary:</div>
               <div className="text-slate-600">
                 Supply, delivery, testing & commissioning of electronic security hardware and system setup.
@@ -327,7 +329,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
 
           {/* Line Items Table */}
           <div className="py-3">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-left text-[13px] border-collapse">
               <thead>
                 <tr className="bg-slate-100 text-slate-800 border-y border-slate-200">
                   <th className="p-2 text-center w-8">#</th>
@@ -347,7 +349,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                     <td className="p-2">
                       <div className="font-bold text-slate-900">{item.itemName}</div>
                       {item.description && (
-                        <div className="text-[11px] text-slate-600 mt-0.5">{item.description}</div>
+                        <div className="text-xs text-slate-600 mt-0.5">{item.description}</div>
                       )}
                     </td>
                     <td className="p-2 font-mono text-slate-700">{item.hsnSac || '-'}</td>
@@ -364,7 +366,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
 
           {/* Totals & Commercial Breakdown */}
           <div className="pt-2 border-t border-slate-200 flex justify-end">
-            <div className="w-64 text-xs space-y-1.5">
+            <div className="w-64 text-[13px] space-y-1.5">
               <div className="flex justify-between text-slate-700">
                 <span>Taxable Value:</span>
                 <span className="font-semibold text-slate-900">{formatINR(quotation.totalAmount)}</span>
@@ -387,7 +389,7 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                 </>
               )}
               {quotation.roundOff !== 0 && (
-                <div className="flex justify-between text-slate-600 text-[11px]">
+                <div className="flex justify-between text-slate-600 text-xs">
                   <span>Round Off:</span>
                   <span>{formatINR(quotation.roundOff)}</span>
                 </div>
@@ -398,17 +400,17 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
               </div>
             </div>
           </div>
-          <div className="mt-1 text-xs text-slate-700">
+          <div className="mt-1 text-[13px] text-slate-700">
             <span className="font-semibold">Amount in words: </span>
             {amountInWords(quotation.grandTotal)}
           </div>
 
           {/* HSN-wise tax summary table */}
           <div className="mt-4 pt-3 border-t border-slate-200">
-            <div className="text-[11px] font-bold text-slate-800 uppercase mb-1">
+            <div className="text-xs font-bold text-slate-800 uppercase mb-1">
               HSN / SAC Tax Breakdown
             </div>
-            <table className="w-full text-left text-[11px] border border-slate-200">
+            <table className="w-full text-left text-xs border border-slate-200">
               <thead className="bg-slate-50 text-slate-700 border-b border-slate-200">
                 <tr>
                   <th className="p-1.5">HSN/SAC</th>
@@ -449,16 +451,16 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
           </div>
 
           {/* Terms & Conditions Block */}
-          <div className="mt-4 pt-3 border-t border-slate-200 text-xs">
+          <div className="mt-4 pt-3 border-t border-slate-200 text-[13px]">
             <div className="font-bold text-slate-900 mb-1">Terms & Conditions:</div>
-            <pre className="font-sans text-[11px] text-slate-600 whitespace-pre-line leading-relaxed">
+            <pre className="font-sans text-xs text-slate-600 whitespace-pre-line leading-relaxed">
               {quotation.termsAndConditions}
             </pre>
           </div>
 
           {/* Bank Details & Sign-off */}
-          <div className="mt-4 pt-3 border-t-2 border-slate-900 grid grid-cols-2 gap-4 text-xs items-end">
-            <div className="bg-slate-50 p-3 rounded border border-slate-200 text-[11px]">
+          <div className="mt-4 pt-3 border-t-2 border-slate-900 grid grid-cols-2 gap-4 text-[13px] items-end">
+            <div className="bg-slate-50 p-3 rounded border border-slate-200 text-xs">
               <div className="font-bold text-slate-900">Bank Details for Electronic Remittance:</div>
               <div className="mt-1 text-slate-700">
                 A/C Name: <strong>S TEC SECURE</strong> &bull; Bank: <strong>{quotation.bankDetails.bankName || 'CANARA'}</strong>
@@ -470,19 +472,20 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
                 IFSC Code: <strong className="font-mono">{quotation.bankDetails.ifscCode}</strong> &bull; A/C Type: <strong>Current</strong>
               </div>
               <div className="text-slate-700">Branch: <strong>Veerappan Chathiram, Erode</strong></div>
-              <div className="text-orange-600 font-mono text-[10px] font-semibold">
+              <div className="text-orange-600 font-mono text-[11px] font-semibold">
                 UPI Remittance Available
               </div>
             </div>
 
             <div className="text-right space-y-8 pr-2">
               <div className="text-slate-900 font-bold">For S TEC SECURE</div>
-              <div className="text-slate-500 text-[11px] border-t border-slate-300 pt-1 inline-block">
+              <div className="text-slate-500 text-xs border-t border-slate-300 pt-1 inline-block">
                 Authorized Signatory / Sales Engineer
               </div>
             </div>
           </div>
         </div>
+        </FitToWidth>
       </div>
     </Modal>
 

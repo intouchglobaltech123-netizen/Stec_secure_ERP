@@ -82,7 +82,7 @@ export const RecordAdvanceModal: React.FC<{
       subtitle={quotation ? `Quotation ${quotation.quotationNo}` : job ? `Job ${job.jobNumber}` : undefined}
       icon={<Wallet className="w-5 h-5 text-orange-600" />}
     >
-      <form onSubmit={handleSubmit} className="space-y-3 text-xs">
+      <form onSubmit={handleSubmit} className="space-y-3 text-[13px]">
         <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1">
           <div className="font-semibold text-slate-900">{customer?.name || 'Customer'}</div>
           {quotation && (
@@ -95,7 +95,7 @@ export const RecordAdvanceModal: React.FC<{
             <span>Advance already received</span>
             <span className="font-mono">{formatINR(received)}</span>
           </div>
-          <p className="text-[11px] text-slate-500 pt-1">
+          <p className="text-xs text-slate-500 pt-1">
             The advance is deducted automatically from the final invoice for this{' '}
             {quotation ? 'quotation' : 'job'}.
           </p>
@@ -122,7 +122,7 @@ export const RecordAdvanceModal: React.FC<{
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className={`h-8 rounded-lg border text-[11px] font-bold cursor-pointer ${
+                className={`h-8 rounded-lg border text-xs font-bold cursor-pointer ${
                   mode === m ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-slate-200 text-slate-600'
                 }`}
               >

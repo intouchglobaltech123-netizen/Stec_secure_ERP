@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { formatDate } from '@/lib/utils';
 import { exportElementToPdfWithToast } from '@/lib/pdf-generator';
+import { FitToWidth } from '@/components/ui/fit-to-width';
 import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -243,7 +244,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                   : 'Generate Delivery Challan'
                 : 'Delivery Challan Preview'}
             </h2>
-            <p className="text-xs text-slate-500 font-medium">
+            <p className="text-[13px] text-slate-500 font-medium">
               {activeChallan && mode === 'CREATE'
                 ? 'Update dispatch quantities or line items directly in-place'
                 : 'Official material transfer dispatch document • S Tec Secure'}
@@ -259,10 +260,10 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-4 text-xs overscroll-contain">
+      <div className="flex-1 overflow-y-auto p-5 space-y-4 text-[13px] overscroll-contain">
         {/* MODE: CREATE */}
         {mode === 'CREATE' && (
-          <form onSubmit={handleCreateOrUpdate} className="space-y-4 text-xs">
+          <form onSubmit={handleCreateOrUpdate} className="space-y-4 text-[13px]">
             {/* Customer & Transport Details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
               <div>
@@ -270,7 +271,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                 <select
                   value={customerId}
                   onChange={(e) => setCustomerId(e.target.value)}
-                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
                 >
                   {customers.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -286,7 +287,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                   value={transportedBy}
                   onChange={(e) => setTransportedBy(e.target.value)}
                   placeholder="e.g. Field Bike / Van TN-33-AX-8911"
-                  className="h-9 text-xs bg-white"
+                  className="h-9 text-[13px] bg-white"
                 />
               </div>
             </div>
@@ -298,14 +299,14 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                 <button
                   type="button"
                   onClick={handleAddItem}
-                  className="text-xs text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer font-semibold"
+                  className="text-[13px] text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer font-semibold"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Item
                 </button>
               </div>
 
               <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-2xs">
-                <table className="w-full text-left text-xs">
+                <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="p-2.5">Item Description / Model</th>
@@ -329,7 +330,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                                 })
                               }
                               placeholder="Type item name or pick from catalogue below..."
-                              className="h-8 text-xs bg-white text-slate-900"
+                              className="h-8 text-[13px] bg-white text-slate-900"
                             />
                             <div className="flex flex-wrap gap-1">
                               {products.slice(0, 4).map((p) => (
@@ -337,7 +338,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                                   key={p.id}
                                   type="button"
                                   onClick={() => handleQuickInsertProduct(idx, p.name)}
-                                  className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-orange-50 hover:text-orange-700 cursor-pointer"
+                                  className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-orange-50 hover:text-orange-700 cursor-pointer"
                                 >
                                   + {p.name.slice(0, 20)}...
                                 </button>
@@ -355,7 +356,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                               );
                               return (
                                 <div className="pt-1 space-y-1">
-                                  <div className="text-[10px] text-slate-600">
+                                  <div className="text-[11px] text-slate-600">
                                     In stock: <strong>{available.length}</strong> · Serials picked:{' '}
                                     <strong>
                                       {picked.length}/{item.qty}
@@ -376,7 +377,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                                             type="button"
                                             disabled={!on && picked.length >= item.qty}
                                             onClick={() => toggleSerial(idx, u.id)}
-                                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded border cursor-pointer disabled:opacity-40 ${
+                                            className={`text-[11px] font-mono px-1.5 py-0.5 rounded border cursor-pointer disabled:opacity-40 ${
                                               on
                                                 ? 'bg-orange-500 border-orange-500 text-white'
                                                 : 'bg-white border-slate-300 text-slate-600'
@@ -401,7 +402,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                             onChange={(e) =>
                               handleUpdateItem(idx, { qty: Number(e.target.value) || 1 })
                             }
-                            className="h-8 text-xs text-center bg-white font-mono"
+                            className="h-8 text-[13px] text-center bg-white font-mono"
                           />
                         </td>
                         <td className="p-2 text-center">
@@ -447,37 +448,38 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
 
         {/* MODE: PREVIEW (Printable Paper Style) */}
         {mode === 'PREVIEW' && activeChallan && (
-          <div className="space-y-4 pt-4 text-xs">
+          <div className="space-y-4 pt-4 text-[13px]">
             {/* Paper Replica Container */}
+            <FitToWidth>
             <div id="printable-delivery-challan-doc" className="bg-white text-slate-900 border border-slate-200 rounded-xl p-6 shadow-sm space-y-4 font-sans">
               {/* Top Company Header */}
               <div className="text-center pb-3 border-b border-slate-200 space-y-1">
                 <h3 className="text-lg font-black tracking-wide text-slate-900 uppercase font-display">
                   S Tec Secure <span className="text-orange-600">(Surveillance & Automation's)</span>
                 </h3>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">
                   CCTV | HOME AUTOMATIONS | GATE AUTOMATION | BIOMETRIC & ACCESS CONTROL | INTERCOM | BURGLAR ALARM SYSTEM
                 </p>
-                <p className="text-[10px] text-slate-600">
+                <p className="text-[11px] text-slate-600">
                   14/2 Thundu Kadu Street, Veerappan Chathiram, Erode, Tamil Nadu - 638004 &bull; Phone: 81485 62605 / 96002 52605
                 </p>
-                <p className="text-[10px] font-mono text-orange-600 font-semibold">
+                <p className="text-[11px] font-mono text-orange-600 font-semibold">
                   GSTIN: 33KDUPS8091G1ZL &bull; PAN: KDUPS8091G &bull; Email: stecsecure@gmail.com
                 </p>
-                <div className="inline-block px-3 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200 font-bold text-xs uppercase tracking-widest mt-1 shadow-2xs">
+                <div className="inline-block px-3 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200 font-bold text-[13px] uppercase tracking-widest mt-1 shadow-2xs">
                   DELIVERY CHALLAN
                 </div>
               </div>
 
               {/* Challan Meta & Consignee */}
-              <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="grid grid-cols-2 gap-4 text-[13px]">
                 <div className="space-y-1">
-                  <div className="text-[10px] font-bold text-slate-500 uppercase">Consignee / Deliver To:</div>
+                  <div className="text-[11px] font-bold text-slate-500 uppercase">Consignee / Deliver To:</div>
                   <div className="font-bold text-slate-900 text-sm">{previewCustomer?.name}</div>
                   <div className="text-slate-600">{previewCustomer?.address}</div>
                   <div className="text-slate-600">Phone: {previewCustomer?.phone}</div>
                   {previewCustomer?.gstin && (
-                    <div className="font-mono text-orange-600 text-[11px] font-semibold">GSTIN: {previewCustomer.gstin}</div>
+                    <div className="font-mono text-orange-600 text-xs font-semibold">GSTIN: {previewCustomer.gstin}</div>
                   )}
                 </div>
                 <div className="text-right space-y-1">
@@ -498,7 +500,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
 
               {/* Table of Goods */}
               <div className="border border-slate-200 rounded-lg overflow-hidden">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="p-2 w-12 text-center">S.No</th>
@@ -514,7 +516,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                         <td className="p-2 font-medium text-slate-900">
                           {item.itemDescription}
                           {(item.serialUnitIds?.length ?? 0) > 0 && (
-                            <div className="text-[10px] font-mono font-normal text-slate-500">
+                            <div className="text-[11px] font-mono font-normal text-slate-500">
                               S/N:{' '}
                               {item.serialUnitIds!
                                 .map((id) => serialUnits.find((u) => u.id === id)?.serialNumber || id)
@@ -523,7 +525,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                           )}
                         </td>
                         <td className="p-2 text-center font-bold text-orange-600">{item.qty} Nos</td>
-                        <td className="p-2 text-right text-slate-500 text-[11px]">Site Installation</td>
+                        <td className="p-2 text-right text-slate-500 text-xs">Site Installation</td>
                       </tr>
                     ))}
                   </tbody>
@@ -531,7 +533,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
               </div>
 
               {/* Declarations & Signature blocks */}
-              <div className="pt-6 grid grid-cols-2 gap-8 text-[11px] text-slate-500 border-t border-slate-200">
+              <div className="pt-6 grid grid-cols-2 gap-8 text-xs text-slate-500 border-t border-slate-200">
                 <div className="space-y-6">
                   <p className="italic">
                     "Received the above listed equipment/materials in satisfactory condition for installation."
@@ -549,6 +551,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                 </div>
               </div>
             </div>
+            </FitToWidth>
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2">
@@ -562,7 +565,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                     setMode('CREATE');
                     setLineItems([{ itemDescription: '', qty: 1 }]);
                   }}
-                  className="text-xs"
+                  className="text-[13px]"
                 >
                   <Plus className="w-3.5 h-3.5 mr-1" /> New Challan
                 </Button>
@@ -571,7 +574,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => setMode('CREATE')}
-                  className="text-xs text-slate-700 border-slate-300"
+                  className="text-[13px] text-slate-700 border-slate-300"
                 >
                   <Edit className="w-3.5 h-3.5 mr-1" /> Edit Challan
                 </Button>
@@ -587,7 +590,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                       filename: `DeliveryChallan-${activeChallan.challanNo}`,
                     });
                   }}
-                  className="text-xs font-semibold text-slate-800 hover:bg-slate-50 cursor-pointer shadow-2xs"
+                  className="text-[13px] font-semibold text-slate-800 hover:bg-slate-50 cursor-pointer shadow-2xs"
                 >
                   <Download className="w-3.5 h-3.5 mr-1 text-slate-600" /> Download PDF
                 </Button>
@@ -597,13 +600,13 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => window.print()}
-                  className="text-xs"
+                  className="text-[13px]"
                 >
                   <Printer className="w-3.5 h-3.5 mr-1" /> Print
                 </Button>
 
                 {existingChallanInvoice ? (
-                  <span className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5 px-2">
+                  <span className="text-[13px] font-semibold text-emerald-700 flex items-center gap-1.5 px-2">
                     <ReceiptText className="w-3.5 h-3.5" />
                     Invoiced as {existingChallanInvoice.invoiceNo}
                   </span>
@@ -615,7 +618,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                       size="sm"
                       onClick={handleConvertToInvoice}
                       disabled={converting}
-                      className="text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      className="text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-1.5 cursor-pointer shadow-2xs"
                     >
                       <ReceiptText className="w-3.5 h-3.5" />
                       Convert to Invoice
@@ -623,7 +626,7 @@ export const DeliveryChallanModal: React.FC<DeliveryChallanModalProps> = ({
                   )
                 )}
 
-                <Button type="button" variant="primary" size="sm" onClick={onClose} className="rounded-xl text-xs">
+                <Button type="button" variant="primary" size="sm" onClick={onClose} className="rounded-xl text-[13px]">
                   Done
                 </Button>
               </div>

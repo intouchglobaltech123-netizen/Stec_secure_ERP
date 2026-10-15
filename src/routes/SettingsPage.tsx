@@ -42,16 +42,10 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Badge variant="orange" className="text-xs">
-            <Settings className="w-3.5 h-3.5 text-orange-600" />
-            System Configuration
-          </Badge>
-        </div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight font-display">
-          ERP Settings & System Environment
+        <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
+          Settings
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500">Staff accounts, access control and system information</p>
+        <p className="text-sm text-slate-500 mt-0.5">Staff accounts, backups and which pages each role can open</p>
       </div>
 
       {isCeo && <StaffAccountsCard />}
@@ -72,7 +66,7 @@ export const SettingsPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="stack-on-phone w-full text-[13px]">
                 <thead>
                   <tr className="text-left text-slate-500 border-b border-slate-200">
                     <th className="py-2 pr-4 font-semibold">Page</th>
@@ -110,7 +104,7 @@ export const SettingsPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <p className="text-[11px] text-slate-500 mt-3">
+            <p className="text-xs text-slate-500 mt-3">
               The CEO always has access to every page. Access Control and Staff Accounts are visible only to the CEO.
             </p>
           </CardContent>
@@ -127,7 +121,7 @@ export const SettingsPage: React.FC = () => {
             Stored on the S Tec Secure server and shared by every device. Records you can see:
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+        <CardContent className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[13px]">
           {[
             ['Jobs', jobs.length],
             ['Customers', customers.length],

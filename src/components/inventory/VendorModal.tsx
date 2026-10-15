@@ -96,7 +96,7 @@ export const VendorModal: React.FC<VendorModalProps> = ({ isOpen, vendor, onClos
             <h2 className="text-base font-bold text-slate-900 font-display">
               {vendor ? 'Edit Supplier / Vendor' : 'Add New Supplier / Vendor'}
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-[13px] text-slate-500">
               Register vendor/OEM details, warehouse location, contact and GSTIN
             </p>
           </div>
@@ -110,7 +110,7 @@ export const VendorModal: React.FC<VendorModalProps> = ({ isOpen, vendor, onClos
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-xs">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden text-[13px]">
         <div className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain">
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Vendor / OEM Name *</label>
@@ -119,7 +119,7 @@ export const VendorModal: React.FC<VendorModalProps> = ({ isOpen, vendor, onClos
               placeholder="e.g. Hikvision India Pvt Ltd / CP Plus Regional Hub"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="text-xs h-9 bg-white"
+              className="text-[13px] h-9 bg-white"
             />
           </div>
 
@@ -130,7 +130,7 @@ export const VendorModal: React.FC<VendorModalProps> = ({ isOpen, vendor, onClos
                 placeholder="e.g. Ramesh Kumar (Sales Mgr)"
                 value={contactPerson}
                 onChange={(e) => setContactPerson(e.target.value)}
-                className="text-xs h-9 bg-white"
+                className="text-[13px] h-9 bg-white"
               />
             </div>
 
@@ -141,7 +141,7 @@ export const VendorModal: React.FC<VendorModalProps> = ({ isOpen, vendor, onClos
                 placeholder="e.g. 044-28994883 / 98401 23456"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="text-xs h-9 bg-white"
+                className="text-[13px] h-9 bg-white"
               />
             </div>
           </div>
@@ -153,7 +153,7 @@ export const VendorModal: React.FC<VendorModalProps> = ({ isOpen, vendor, onClos
               placeholder="e.g. 104 Mount Road, Guindy Industrial Estate, Chennai"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="text-xs h-9 bg-white"
+              className="text-[13px] h-9 bg-white"
             />
           </div>
 
@@ -163,7 +163,7 @@ export const VendorModal: React.FC<VendorModalProps> = ({ isOpen, vendor, onClos
               placeholder="e.g. 33AABCH1234F1Z8"
               value={gstin}
               onChange={(e) => setGstin(e.target.value)}
-              className="text-xs h-9 font-mono uppercase bg-white"
+              className="text-[13px] h-9 font-mono uppercase bg-white"
             />
           </div>
 

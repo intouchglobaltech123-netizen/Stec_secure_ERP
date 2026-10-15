@@ -30,6 +30,7 @@ import { DEMO_MODE } from '@/lib/demo-mode';
 import { ChangePinModal } from '@/components/auth/ChangePinModal';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import { AppSection } from '@/lib/stecsecure-types';
+import { humanize } from '@/lib/utils';
 
 // REPLACE WITH ACTUAL S TEC SECURE LOGO (white background version) — see /public/logo-placeholder.png
 export const COMPANY_LOGO_SRC = '/logo.png';
@@ -172,11 +173,11 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
               <div className="font-extrabold text-base tracking-tight text-slate-900 flex items-center gap-1.5 font-display whitespace-nowrap">
                 <span>S Tec</span>
                 <span className="text-orange-600">Secure</span>
-                <span className="text-[10px] uppercase font-mono font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-200 ml-1">
+                <span className="text-[11px] uppercase font-mono font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-200 ml-1">
                   ERP
                 </span>
               </div>
-              <div className="text-[11px] text-slate-500 hidden sm:block -mt-0.5 font-medium">
+              <div className="text-xs text-slate-500 hidden sm:block -mt-0.5 font-medium">
                 Surveillance & Automation Intelligence
               </div>
             </div>
@@ -188,7 +189,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
           {openHoldsCount > 0 && (
             <button
               onClick={() => onNavigate('service-jobs')}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-300 text-amber-900 text-[13px] font-semibold hover:bg-amber-100 transition-colors cursor-pointer shadow-2xs"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
               <span>{openHoldsCount} Hold Pending</span>
@@ -203,29 +204,27 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
             <button
               type="button"
               onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-left transition-all cursor-pointer shadow-2xs"
+              className="flex items-center gap-2 px-1.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-left transition-all cursor-pointer shadow-2xs"
             >
-              <div className="w-7 h-7 rounded-lg bg-orange-100 border border-orange-200 flex items-center justify-center text-xs font-bold text-orange-700">
+              <div className="w-7 h-7 rounded-lg bg-orange-100 border border-orange-200 flex items-center justify-center text-[13px] font-bold text-orange-700">
                 {currentUser?.name.charAt(0)}
               </div>
               <div className="hidden sm:block text-left">
-                <div className="text-xs font-semibold text-slate-900 leading-tight flex items-center gap-1">
+                <div className="text-[13px] font-semibold text-slate-900 leading-tight flex items-center gap-1">
                   <span>{currentUser?.name}</span>
                   <ChevronDown className="w-3 h-3 text-slate-500" />
                 </div>
-                <div className="text-[10px] text-slate-500 font-medium">{currentUser?.role}</div>
+                <div className="text-[11px] text-slate-500 font-medium">{humanize(currentUser?.role)}</div>
               </div>
-              <Badge variant={roleBadgeVariant} className="text-[10px] sm:hidden">
-                {currentUser?.role}
-              </Badge>
+
             </button>
 
             {roleMenuOpen && (
               <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white border border-slate-200 shadow-xl p-2 z-50 animate-in fade-in-50 zoom-in-95">
                 <div className="px-2 py-1.5">
-                  <div className="text-xs font-semibold text-slate-900">{currentUser?.name}</div>
-                  <div className="text-[10px] text-slate-500">
-                    {currentUser?.role} · {currentUser?.phone}
+                  <div className="text-[13px] font-semibold text-slate-900">{currentUser?.name}</div>
+                  <div className="text-[11px] text-slate-500">
+                    {humanize(currentUser?.role)} · {currentUser?.phone}
                   </div>
                 </div>
 
@@ -236,14 +235,14 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
                       setRoleMenuOpen(false);
                       setChangePinOpen(true);
                     }}
-                    className="text-[11px] text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
+                    className="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1 cursor-pointer"
                   >
                     <KeyRound className="w-3 h-3" /> Change PIN
                   </button>
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className="text-[11px] text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer font-medium"
+                    className="text-xs text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer font-medium"
                   >
                     <LogOut className="w-3 h-3" /> Sign Out
                   </button>
@@ -264,9 +263,9 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
             <div className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-semibold text-slate-700">Live Workspace</span>
+                <span className="text-[13px] font-semibold text-slate-700">Live Workspace</span>
               </div>
-              <span className="text-[10px] text-slate-500 font-mono font-medium">
+              <span className="text-[11px] text-slate-500 font-mono font-medium">
                 {DEMO_MODE ? 'v1.0 Demo' : 'v1.0'}
               </span>
             </div>
@@ -298,7 +297,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
                     </div>
                     {item.badge !== undefined && (
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                        className={`text-[13px] px-2 py-0.5 rounded-full font-semibold ${
                           item.badgeVariant === 'danger'
                             ? 'bg-rose-100 text-rose-700 border border-rose-200 animate-pulse'
                             : isActive
@@ -317,15 +316,15 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
 
           {/* Fixed Sidebar Footer pinned at bottom */}
           <div className="p-4 border-t border-slate-200 bg-white shrink-0 space-y-3">
-            <div className="flex items-center justify-between px-2 text-xs text-slate-500">
+            <div className="flex items-center justify-between px-2 text-[13px] text-slate-500">
               <span>Services Scope:</span>
               <span className="text-orange-600 font-semibold">6 Categories</span>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1">
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
               <div className="font-bold text-slate-800 flex items-center gap-1">
                 <Shield className="w-3.5 h-3.5 text-orange-500" /> S Tec Secure
               </div>
-              <p className="text-[10px] text-slate-500 leading-tight">
+              <p className="text-[11px] text-slate-500 leading-tight">
                 CCTV &bull; Home Automations &bull; Gate Automation &bull; Biometric Access
               </p>
             </div>
@@ -377,7 +376,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
                         </div>
                         {item.badge !== undefined && (
                           <span
-                            className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                            className={`text-[13px] px-2 py-0.5 rounded-full font-semibold ${
                               item.badgeVariant === 'danger'
                                 ? 'bg-rose-100 text-rose-700 border border-rose-200 animate-pulse'
                                 : isActive
@@ -399,7 +398,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
                   variant="outline"
                   size="sm"
                   onClick={handleSignOut}
-                  className="w-full text-xs text-rose-600 hover:text-rose-700"
+                  className="w-full text-[13px] text-rose-600 hover:text-rose-700"
                 >
                   <LogOut className="w-3.5 h-3.5 mr-1.5" /> Sign Out
                 </Button>

@@ -96,7 +96,7 @@ const LiveJobTimer: React.FC<{
 
   if (status === 'IN_PROGRESS') {
     return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono font-medium shadow-2xs">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-[13px] font-mono font-medium shadow-2xs">
         <Clock className="w-3.5 h-3.5 text-emerald-600" />
         <span>{formatHHMMSS(currentSeconds)}</span>
       </div>
@@ -105,7 +105,7 @@ const LiveJobTimer: React.FC<{
 
   if (status === 'ON_HOLD') {
     return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs font-mono font-medium shadow-2xs">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[13px] font-mono font-medium shadow-2xs">
         <Clock className="w-3.5 h-3.5 text-amber-600" />
         <span>Paused: {formatHHMMSS(timerElapsedSeconds)}</span>
       </div>
@@ -115,7 +115,7 @@ const LiveJobTimer: React.FC<{
   if (status === 'COMPLETED' || status === 'AWAITING_OTP' || status === 'CLOSED') {
     const finalSecs = totalDurationSeconds ?? timerElapsedSeconds;
     return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-xs font-mono font-medium shadow-2xs">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-[13px] font-mono font-medium shadow-2xs">
         <Clock className="w-3.5 h-3.5 text-slate-500" />
         <span>Duration: {formatHHMMSS(finalSecs)}</span>
       </div>
@@ -453,7 +453,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
       (job.status === 'ASSIGNED' || job.status === 'IN_PROGRESS' || job.status === 'ON_HOLD');
 
     return (
-      <div className="space-y-4 p-4 rounded-md bg-white border border-slate-200 text-xs">
+      <div className="space-y-4 p-4 rounded-md bg-white border border-slate-200 text-[13px]">
         {/* Top Status & Duration Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200">
           <div className="flex flex-wrap items-center gap-2">
@@ -461,10 +461,10 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
             <Badge variant="outline" className="font-semibold">
               {job.category}
             </Badge>
-            <span className="text-slate-500 font-medium text-xs">
+            <span className="text-slate-500 font-medium text-[13px]">
               {job.type === 'INSTALLATION' ? 'Installation' : 'Service'}
             </span>
-            <span className="text-[10px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+            <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
               {formatCreatedBy(job.createdByUserId, users)}
             </span>
           </div>
@@ -476,7 +476,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-xs px-2.5 rounded-md font-semibold"
+                  className="h-7 text-[13px] px-2.5 rounded-md font-semibold"
                   onClick={() => setEditingJob(job)}
                 >
                   Edit Job
@@ -485,7 +485,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs px-2.5 rounded-md font-semibold text-rose-600 border-rose-300 hover:bg-rose-50"
+                    className="h-7 text-[13px] px-2.5 rounded-md font-semibold text-rose-600 border-rose-300 hover:bg-rose-50"
                     onClick={() => setCancellingJob(job)}
                   >
                     Cancel Job
@@ -538,14 +538,14 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Col 1: Customer & Site */}
           <div className="p-3 rounded-md bg-slate-50 border border-slate-200 space-y-1.5">
-            <div className="text-[10px] uppercase font-bold text-slate-500 flex items-center justify-between">
+            <div className="text-[11px] uppercase font-bold text-slate-500 flex items-center justify-between">
               <span>Customer & Site</span>
               {customer?.siteLocationMapLink ? (
                 <a
                   href={customer.siteLocationMapLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-0.5 hover:underline"
+                  className="text-[11px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-0.5 hover:underline"
                 >
                   <span>Google Maps</span>
                   <ExternalLink className="w-2.5 h-2.5" />
@@ -554,7 +554,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 <button
                   type="button"
                   onClick={() => setSiteLocationCustomer(customer || null)}
-                  className="text-[10px] text-orange-600 hover:underline font-semibold cursor-pointer"
+                  className="text-[11px] text-orange-600 hover:underline font-semibold cursor-pointer"
                 >
                   + Add Map Link
                 </button>
@@ -570,9 +570,9 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
 
           {/* Col 2: Problem Scope & Crew */}
           <div className="p-3 rounded-md bg-slate-50 border border-slate-200 space-y-1.5">
-            <div className="text-[10px] uppercase font-bold text-slate-500">Problem / Work Scope</div>
+            <div className="text-[11px] uppercase font-bold text-slate-500">Problem / Work Scope</div>
             <p className="text-slate-800 font-medium leading-relaxed">{job.problemReported}</p>
-            <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px]">
+            <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
               <span className="text-slate-500">Crew Lead:</span>
               <span className="font-bold text-orange-700 flex items-center gap-1">
                 <UserCheck className="w-3.5 h-3.5 text-orange-600" />
@@ -583,7 +583,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
               {team.map((t) => (
                 <span
                   key={t.id}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600"
+                  className="text-[11px] px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600"
                 >
                   {t.name}
                 </span>
@@ -594,8 +594,8 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
           {/* Col 3: Stage Execution Actions */}
           <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-2">
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-500">Execution Action</div>
-              <div className="text-xs font-bold text-slate-900 mt-0.5">
+              <div className="text-[11px] uppercase font-bold text-slate-500">Execution Action</div>
+              <div className="text-[13px] font-bold text-slate-900 mt-0.5">
                 {job.status === 'ASSIGNED' && 'Before Photo & Start Dispatch'}
                 {job.status === 'IN_PROGRESS' && 'Session Active (Timer Running)'}
                 {job.status === 'ON_HOLD' && 'Work Paused (Hold Raised)'}
@@ -625,14 +625,14 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                         variant="primary"
                         size="sm"
                         disabled={!currentBeforePhoto || busyAction === `start-${job.id}`}
-                        className="w-full text-xs font-semibold rounded-md shadow-2xs"
+                        className="w-full text-[13px] font-semibold rounded-md shadow-2xs"
                         onClick={() => handleStartJobWithPhoto(job)}
                       >
                         <Play className="w-3.5 h-3.5 mr-1" /> Start Job Session
                       </Button>
                     </>
                   ) : (
-                    <div className="p-2 bg-white rounded border border-slate-200 text-[11px] text-slate-600 text-center">
+                    <div className="p-2 bg-white rounded border border-slate-200 text-xs text-slate-600 text-center">
                       Only Team Lead ({teamLead?.name}) can start session.
                     </div>
                   )}
@@ -647,7 +647,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                       <Button
                         variant="success"
                         size="sm"
-                        className="text-xs font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
+                        className="text-[13px] font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 text-white"
                         onClick={() => initiateCompleteJob(job)}
                       >
                         <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Complete
@@ -655,14 +655,14 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                       <Button
                         variant="warning"
                         size="sm"
-                        className="text-xs font-semibold rounded-md"
+                        className="text-[13px] font-semibold rounded-md"
                         onClick={() => setSelectedHoldJob(job)}
                       >
                         <AlertTriangle className="w-3.5 h-3.5 mr-1" /> Raise Hold
                       </Button>
                     </div>
                   ) : (
-                    <div className="p-2 bg-white rounded border border-slate-200 text-[11px] text-slate-600 text-center">
+                    <div className="p-2 bg-white rounded border border-slate-200 text-xs text-slate-600 text-center">
                       Work in progress by {teamLead?.name}.
                     </div>
                   )}
@@ -672,21 +672,21 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
               {/* ON_HOLD */}
               {job.status === 'ON_HOLD' && openHold && (
                 <div className="space-y-1.5">
-                  <div className="p-2 rounded bg-amber-100/60 border border-amber-300 text-amber-900 text-[11px]">
+                  <div className="p-2 rounded bg-amber-100/60 border border-amber-300 text-amber-900 text-xs">
                     <strong>Reason:</strong> {openHold.reason}
                   </div>
                   {canResumeHold(job, openHold) ? (
                     <Button
                       size="sm"
                       variant="success"
-                      className="w-full text-xs font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
+                      className="w-full text-[13px] font-semibold rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
                       disabled={busyAction === `resume-${openHold.id}`}
                       onClick={() => handleResolveHold(openHold.id, job.jobNumber)}
                     >
                       <Play className="w-3.5 h-3.5" /> Resume Work
                     </Button>
                   ) : (
-                    <div className="p-2 bg-amber-50 rounded border border-amber-200 text-[11px] text-amber-800 text-center font-medium">
+                    <div className="p-2 bg-amber-50 rounded border border-amber-200 text-xs text-amber-800 text-center font-medium">
                       On Hold &bull; Awaiting Team Lead ({teamLead?.name || 'Lead'}) to resume
                     </div>
                   )}
@@ -695,7 +695,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
 
               {/* AWAITING_OTP — customer sign-off and payment are handled by the team lead (or management) */}
               {job.status === 'AWAITING_OTP' && !isLead && (
-                <div className="p-2 bg-slate-50 rounded border border-slate-200 text-[11px] text-slate-600 text-center font-medium">
+                <div className="p-2 bg-slate-50 rounded border border-slate-200 text-xs text-slate-600 text-center font-medium">
                   Awaiting team lead to verify customer OTP
                 </div>
               )}
@@ -703,7 +703,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 <Button
                   variant="primary"
                   size="sm"
-                  className="w-full text-xs font-semibold rounded-md"
+                  className="w-full text-[13px] font-semibold rounded-md"
                   onClick={() => {
                     setSelectedShareJob(job);
                     setActiveCreatedInvoice(invoice || null);
@@ -718,7 +718,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full text-xs font-semibold rounded-md border-slate-300 hover:bg-slate-100"
+                  className="w-full text-[13px] font-semibold rounded-md border-slate-300 hover:bg-slate-100"
                   onClick={() => setViewingInvoice(invoice)}
                 >
                   <ReceiptText className="w-3.5 h-3.5 mr-1 text-emerald-600" /> View Invoice ({invoice.invoiceNo})
@@ -730,14 +730,11 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
 
         {/* Phase 8: Products & Hardware Used Ledger */}
         <div className="p-3 rounded-md bg-orange-50/40 border border-orange-200 space-y-2.5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <span className="text-[13px] font-bold text-slate-900 flex items-center gap-1.5">
                 <Boxes className="w-4 h-4 text-orange-600" />
-                Products & Hardware Used ({jobProductUsages.length})
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white text-orange-800 border border-orange-300 font-semibold">
-                Warehouse Connected
+                Products used ({jobProductUsages.length})
               </span>
             </div>
 
@@ -746,17 +743,17 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 size="sm"
                 variant="primary"
                 onClick={() => setProductUsedJob(job)}
-                className="h-7 text-xs px-2.5 font-semibold rounded-md shadow-2xs"
+                className="h-7 text-[13px] px-2.5 font-semibold rounded-md shadow-2xs"
               >
-                <Plus className="w-3.5 h-3.5 mr-1" /> Add Product Used
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add product
               </Button>
             )}
           </div>
 
           <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
             {jobProductUsages.length === 0 ? (
-              <div className="p-3 rounded bg-white border border-dashed border-orange-200 text-center text-xs text-slate-500">
-                No products recorded yet. Click &quot;+ Add Product Used&quot; to pick materials anytime.
+              <div className="p-3 rounded bg-white border border-dashed border-orange-200 text-center text-[13px] text-slate-500">
+                No products recorded yet. Tap &quot;Add product&quot; when you use one.
               </div>
             ) : (
               jobProductUsages.map((usage) => {
@@ -769,19 +766,19 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 return (
                   <div
                     key={usage.id}
-                    className="p-2.5 rounded bg-white border border-slate-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1 shadow-2xs"
+                    className="p-2.5 rounded bg-white border border-slate-200 text-[13px] flex flex-col sm:flex-row sm:items-center justify-between gap-1 shadow-2xs"
                   >
                     <div>
                       <span className="font-bold text-slate-900">{prod?.name || 'Equipment'}</span>
-                      <span className="text-[10px] text-slate-500 ml-2">({prod?.category})</span>
+                      <span className="text-[11px] text-slate-500 ml-2">({prod?.category})</span>
                       {allocatedSerials.length > 0 && (
-                        <div className="text-[10px] text-slate-600 mt-0.5 font-mono">
+                        <div className="text-[11px] text-slate-600 mt-0.5 font-mono">
                           Serials: {allocatedSerials.join(', ')}
                         </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-mono font-bold text-orange-600 text-xs px-2 py-0.5 rounded bg-orange-50 border border-orange-200">
+                      <span className="font-mono font-bold text-orange-600 text-[13px] px-2 py-0.5 rounded bg-orange-50 border border-orange-200">
                         Qty: {usage.quantity} {prod?.unit || 'Nos'}
                       </span>
                       {canAddProducts && (
@@ -789,7 +786,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                           type="button"
                           disabled={removingUsageId === usage.id}
                           onClick={() => void handleRemoveUsage(usage.id, prod?.name || 'Equipment')}
-                          className="text-[11px] font-semibold text-rose-600 hover:text-rose-700 cursor-pointer disabled:opacity-50"
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 cursor-pointer disabled:opacity-50"
                           title="Remove this product (added by mistake)"
                         >
                           Remove
@@ -805,7 +802,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
 
         {/* Work Logs & Notes Section */}
         <div className="p-3 rounded-md bg-slate-50 border border-slate-200 space-y-2">
-          <div className="font-bold text-slate-900 text-xs uppercase flex items-center justify-between">
+          <div className="font-bold text-slate-900 text-[13px] uppercase flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5 text-orange-600" />
               Work Log Notes ({allNotes.length})
@@ -814,12 +811,12 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
 
           <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
             {allNotes.length === 0 ? (
-              <p className="text-[11px] text-slate-500 italic">No work notes recorded yet.</p>
+              <p className="text-xs text-slate-500 italic">No work notes recorded yet.</p>
             ) : (
               allNotes.map((note, idx) => (
                 <div
                   key={idx}
-                  className="p-2 rounded bg-white border border-slate-200 text-[11px] text-slate-800"
+                  className="p-2 rounded bg-white border border-slate-200 text-xs text-slate-800"
                 >
                   {note}
                 </div>
@@ -835,14 +832,14 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
               onChange={(e) =>
                 setNoteInputs((prev) => ({ ...prev, [job.id]: e.target.value }))
               }
-              className="text-xs h-8 bg-white rounded-md border-slate-300"
+              className="text-[13px] h-8 bg-white rounded-md border-slate-300"
             />
             <Button
               size="sm"
               variant="outline"
               disabled={busyAction === `note-${job.id}`}
               onClick={() => handleAddNote(job.id)}
-              className="h-8 text-xs font-semibold rounded-md shrink-0 border-slate-300 hover:bg-slate-100"
+              className="h-8 text-[13px] font-semibold rounded-md shrink-0 border-slate-300 hover:bg-slate-100"
             >
               Add Note
             </Button>
@@ -857,32 +854,13 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
       {/* Top Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-md border border-slate-200 shadow-2xs">
         <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <Badge
-              variant={department === 'SERVICE' ? 'default' : 'success'}
-              className="text-xs flex items-center gap-1.5 font-bold uppercase tracking-wider rounded-md"
-            >
-              {department === 'SERVICE' ? (
-                <>
-                  <Wrench className="w-3.5 h-3.5" /> Service Department
-                </>
-              ) : (
-                <>
-                  <Layers className="w-3.5 h-3.5" /> Installation Department
-                </>
-              )}
-            </Badge>
-            <span className="text-xs text-slate-500 font-medium">
-              Role: {currentUser?.role} ({currentUser?.name})
-            </span>
-          </div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            {department === 'SERVICE' ? 'Service Jobs' : 'Installation & Project Jobs'} ({filteredJobs.length})
+            {department === 'SERVICE' ? 'Service Jobs' : 'Installation Jobs'} ({filteredJobs.length})
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-[13px] text-slate-500 mt-0.5">
             {department === 'SERVICE'
-              ? 'Break-fix repair calls, warranty visits, and AMC maintenance'
-              : 'Turnkey surveillance installations, automated gate setup, and hardware commissioning'}
+              ? 'Repair calls, warranty visits and AMC maintenance'
+              : 'New installations: CCTV, gates, access control and automation'}
           </p>
         </div>
 
@@ -893,7 +871,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
               variant="primary"
               size="sm"
               onClick={() => setIsCreateOpen(true)}
-              className="text-xs font-semibold rounded-md shadow-2xs"
+              className="text-[13px] font-semibold rounded-md shadow-2xs"
             >
               <Plus className="w-3.5 h-3.5 mr-1" />
               New {department === 'SERVICE' ? 'Service' : 'Installation'} Job
@@ -923,7 +901,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
           },
           {
             id: 'AWAITING_OTP',
-            label: 'Awaiting OTP',
+            label: 'Awaiting sign-off',
             count: deptJobs.filter((j) => j.status === 'AWAITING_OTP').length,
           },
           {
@@ -948,7 +926,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
               key={tab.id}
               type="button"
               onClick={() => setActiveFilter(tab.id as any)}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-[13px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 isActive
                   ? 'bg-orange-500 text-white shadow-2xs'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -956,7 +934,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
             >
               <span>{tab.label}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-md font-mono font-bold ${
+                className={`text-[11px] px-1.5 py-0.2 rounded-md font-mono font-bold ${
                   isActive ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
                 }`}
               >
@@ -975,7 +953,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
             placeholder="Search by Job #, customer, phone, or scope..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 text-xs h-8 bg-slate-50 border-slate-200 rounded-md"
+            className="pl-9 text-[13px] h-8 bg-slate-50 border-slate-200 rounded-md"
           />
         </div>
 
@@ -983,7 +961,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="text-xs h-8 px-2.5 rounded-md border border-slate-300 bg-slate-50 text-slate-700 focus:outline-none focus:border-orange-500 font-medium"
+            className="text-[13px] h-8 px-2.5 rounded-md border border-slate-300 bg-slate-50 text-slate-700 focus:outline-none focus:border-orange-500 font-medium"
           >
             <option value="ALL">All Categories</option>
             {SERVICE_CATEGORIES.map((cat) => (
@@ -995,10 +973,10 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
         </div>
       </div>
 
-      {/* Phones: one tappable card per job — the table below is too wide for a phone screen */}
-      <div className="sm:hidden space-y-2">
+      {/* Phones and tablets: one tappable card per job — the table below needs a wide screen */}
+      <div className="lg:hidden grid gap-2 md:grid-cols-2">
         {filteredJobs.length === 0 ? (
-          <div className="p-6 text-center text-xs text-slate-500 bg-white border border-slate-200 rounded-md">
+          <div className="p-6 text-center text-[13px] text-slate-500 bg-white border border-slate-200 rounded-md">
             No {department.toLowerCase()} jobs match this filter.
           </div>
         ) : (
@@ -1014,17 +992,17 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 className="w-full text-left bg-white border border-slate-200 rounded-lg p-3 shadow-2xs active:bg-orange-50 space-y-1.5 cursor-pointer"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono font-bold text-xs text-orange-600">#{job.jobNumber}</span>
-                  <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${stage.cls}`}>{stage.label}</span>
+                  <span className="font-mono font-bold text-[13px] text-orange-600">#{job.jobNumber}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-bold border ${stage.cls}`}>{stage.label}</span>
                 </div>
                 <div className="font-semibold text-sm text-slate-900">{customer?.name || job.customerNumber}</div>
-                <div className="text-xs text-slate-600 line-clamp-2">{job.problemReported}</div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                <div className="text-[13px] text-slate-600 line-clamp-2">{job.problemReported}</div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-500">
                   <span>{job.category}</span>
                   {job.scheduledFor && <span>Visit: {formatDateTime(job.scheduledFor)}</span>}
                   <span>Lead: {lead?.name || '—'}</span>
                 </div>
-                <div className="text-[11px] font-semibold text-orange-700">Open job &rarr;</div>
+                <div className="text-xs font-semibold text-orange-700">Open job &rarr;</div>
               </button>
             );
           })
@@ -1032,7 +1010,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
       </div>
 
       {/* Robotics ERP Projects Data Table */}
-      <div className="hidden sm:block bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
+      <div className="hidden lg:block bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="erp-table">
             <thead>
@@ -1053,7 +1031,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                   <td colSpan={8} className="p-10 text-center text-slate-500">
                     <Inbox className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     <div className="font-semibold text-slate-700 text-sm">No jobs found</div>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-[13px] text-slate-500 mt-1">
                       No {department.toLowerCase()} jobs match this status filter.
                     </p>
                   </td>
@@ -1094,11 +1072,11 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                             <button
                               type="button"
                               onClick={() => setSelectedDetailJob(job)}
-                              className="font-bold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer flex items-center gap-1 font-mono text-xs"
+                              className="font-bold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer flex items-center gap-1 font-mono text-[13px]"
                             >
                               <span>#{job.jobNumber}</span>
                             </button>
-                            <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium">
+                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
                               <UserCheck className="w-3 h-3 text-slate-400" />
                               {formatCreatedBy(job.createdByUserId, users)}
                             </span>
@@ -1110,7 +1088,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                           <div className="font-bold text-slate-900 leading-tight truncate max-w-[200px]">
                             {customer?.name || 'Client'}
                           </div>
-                          <div className="text-[11px] text-slate-500 mt-0.5 truncate max-w-[200px]">
+                          <div className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">
                             {customer?.phone} &bull; {customer?.address}
                           </div>
                         </td>
@@ -1118,14 +1096,14 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                         {/* 3. Work Type */}
                         <td>
                           <div className="flex items-center gap-1.5 flex-wrap whitespace-nowrap">
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                            <span className="text-[11px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
                               {job.category}
                             </span>
-                            <span className="text-[11px] text-slate-500 font-medium">
+                            <span className="text-xs text-slate-500 font-medium">
                               ({job.type === 'INSTALLATION' ? 'Installation' : 'Service'})
                             </span>
                           </div>
-                          <div className="text-xs text-slate-700 mt-1 line-clamp-1 max-w-[220px]">
+                          <div className="text-[13px] text-slate-700 mt-1 line-clamp-1 max-w-[220px]">
                             {job.problemReported}
                           </div>
                         </td>
@@ -1133,56 +1111,56 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                         {/* 4. Team Lead */}
                         <td className="whitespace-nowrap">
                           {teamLead ? (
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-800">
+                            <span className="inline-flex items-center gap-1 text-[13px] font-medium text-slate-800">
                               <UserCheck className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                               <span className="truncate max-w-[120px]">{teamLead.name}</span>
                             </span>
                           ) : (
-                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                            <span className="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                               Unassigned
                             </span>
                           )}
                         </td>
 
                         {/* 5. Start Date */}
-                        <td className="text-center font-mono text-xs text-slate-600 whitespace-nowrap">
+                        <td className="text-center font-mono text-[13px] text-slate-600 whitespace-nowrap">
                           {formatDate(job.createdAt)}
                         </td>
 
                         {/* 6. Current Stage/Status */}
                         <td className="text-center whitespace-nowrap">
                           {job.status === 'ASSIGNED' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
                               Assigned
                             </span>
                           )}
                           {job.status === 'IN_PROGRESS' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-700 border border-blue-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                               In Progress
                             </span>
                           )}
                           {job.status === 'ON_HOLD' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                               On Hold
                             </span>
                           )}
                           {job.status === 'AWAITING_OTP' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-orange-50 text-orange-800 border border-orange-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-orange-50 text-orange-800 border border-orange-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                              Awaiting OTP
+                              Awaiting sign-off
                             </span>
                           )}
                           {job.status === 'COMPLETED' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                               Completed
                             </span>
                           )}
                           {job.status === 'CLOSED' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-500">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-500">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-700"></span>
                               Closed
                             </span>
@@ -1190,7 +1168,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                           {job.status === 'CANCELLED' && (
                             <span
                               title={job.cancelledReason}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-300 line-through decoration-slate-400"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 border border-slate-300 line-through decoration-slate-400"
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                               Cancelled
@@ -1201,19 +1179,19 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                         {/* 7. Payment Status */}
                         <td className="text-center whitespace-nowrap">
                           {paymentStatus === 'PAID' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                               Paid
                             </span>
                           )}
                           {paymentStatus === 'PARTIAL' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                               Partial
                             </span>
                           )}
                           {paymentStatus === 'PENDING' && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-rose-50 text-rose-800 border border-rose-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
                               Pending
                             </span>
@@ -1226,7 +1204,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                             <button
                               type="button"
                               onClick={() => setSelectedDetailJob(job)}
-                              className="w-[108px] h-7 px-2 rounded-md text-xs font-bold bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 shadow-2xs cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap transition-colors"
+                              className="w-[108px] h-7 px-2 rounded-md text-[13px] font-bold bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 shadow-2xs cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap transition-colors"
                             >
                               <span>View Details</span>
                               <span>&rarr;</span>
@@ -1292,11 +1270,11 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 <Wrench className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900 font-mono">
-                  Job Execution Center &bull; #{selectedDetailJob.jobNumber}
+                <h2 className="text-base font-bold text-slate-900">
+                  Job {selectedDetailJob.jobNumber}
                 </h2>
-                <p className="text-xs text-slate-500">
-                  Full interactive field session controls, materials ledger, and work notes
+                <p className="text-[13px] text-slate-500">
+                  {customers.find((c) => c.id === selectedDetailJob.customerNumber)?.name || 'Work, products used and notes'}
                 </p>
               </div>
             </div>
@@ -1318,7 +1296,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
               variant="secondary"
               size="sm"
               onClick={() => setSelectedDetailJob(null)}
-              className="rounded-xl text-xs font-semibold"
+              className="rounded-xl text-[13px] font-semibold"
             >
               Close Job Details
             </Button>
@@ -1343,7 +1321,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 <h3 className="text-base font-bold text-slate-900">
                   Complete Job & Generate Invoice
                 </h3>
-                <p className="text-xs text-slate-500 font-mono">{completingJob.jobNumber}</p>
+                <p className="text-[13px] text-slate-500 font-mono">{completingJob.jobNumber}</p>
               </div>
             </div>
             <button
@@ -1355,7 +1333,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
             </button>
           </div>
 
-          <form onSubmit={confirmCompleteJob} className="flex-1 flex flex-col overflow-hidden text-xs">
+          <form onSubmit={confirmCompleteJob} className="flex-1 flex flex-col overflow-hidden text-[13px]">
             <div className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain">
               <JobPhotoUpload
                 label="After Work Photo (Mandatory verification)"
@@ -1366,7 +1344,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
               />
 
               {completingQuotation && (
-                <div className="p-3 rounded-md bg-orange-50 border border-orange-200 text-[11px] text-orange-900 leading-relaxed">
+                <div className="p-3 rounded-md bg-orange-50 border border-orange-200 text-xs text-orange-900 leading-relaxed">
                   Invoice will bill <strong>Quotation {completingQuotation.quotationNo}</strong> as agreed (
                   {formatINR(completingQuotation.grandTotal)}). Products used beyond the quoted quantities are
                   added automatically. Enter labour only if extra work was done beyond the quotation.
@@ -1384,7 +1362,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                     min={0}
                     value={serviceRateInput}
                     onChange={(e) => setServiceRateInput(Number(e.target.value))}
-                    className="text-xs h-9 bg-white rounded-md border-slate-300"
+                    className="text-[13px] h-9 bg-white rounded-md border-slate-300"
                   />
                 </div>
 
@@ -1393,7 +1371,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                   <select
                     value={gstChoiceInput}
                     onChange={(e) => setGstChoiceInput(e.target.value as any)}
-                    className="w-full text-xs h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
+                    className="w-full text-[13px] h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
                   >
                     <option value="GST">Standard 18% GST (CGST + SGST in Tamil Nadu, IGST outside)</option>
                     <option value="NO_GST">Non-GST / Exempt</option>
@@ -1411,7 +1389,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                   placeholder="Describe resolution summary..."
                   value={actionTakenInput}
                   onChange={(e) => setActionTakenInput(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 bg-white p-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500 leading-relaxed shadow-2xs"
+                  className="w-full rounded-md border border-slate-300 bg-white p-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 leading-relaxed shadow-2xs"
                 />
               </div>
 
@@ -1423,7 +1401,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 variant="secondary"
                 size="md"
                 onClick={() => setCompletingJob(null)}
-                className="rounded-xl text-xs"
+                className="rounded-xl text-[13px]"
               >
                 Cancel
               </Button>
@@ -1432,7 +1410,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 variant="success"
                 size="md"
                 disabled={isCompletingSaving}
-                className="rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="rounded-xl text-[13px] font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 Complete & Generate Invoice
               </Button>
@@ -1528,12 +1506,12 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
           subtitle={`#${deletingJob.jobNumber}`}
           icon={<Trash2 className="w-5 h-5 text-rose-600" />}
         >
-          <div className="space-y-3.5 text-xs">
+          <div className="space-y-3.5 text-[13px]">
             <p className="text-slate-700 leading-relaxed">
               This will permanently delete job <strong className="font-mono text-slate-900">#{deletingJob.jobNumber}</strong> ({deletingJob.category} &bull; {deletingJob.productModel}) from active dispatch. This action cannot be undone.
             </p>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs leading-relaxed">
               <strong>Billing Integrity Note:</strong> Any linked customer invoices or commercial quotations will remain intact in accounting records.
             </div>
 
@@ -1543,7 +1521,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 variant="secondary"
                 size="md"
                 onClick={() => setDeletingJob(null)}
-                className="rounded-xl text-xs"
+                className="rounded-xl text-[13px]"
               >
                 Cancel
               </Button>
@@ -1551,7 +1529,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 type="button"
                 variant="danger"
                 size="md"
-                className="rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white"
+                className="rounded-xl text-[13px] font-semibold bg-rose-600 hover:bg-rose-700 text-white"
                 disabled={isDeletingSaving}
                 onClick={async () => {
                   const target = deletingJob;

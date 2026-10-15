@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 
 const STATUSES: CustomerStatus[] = ['OTHERS', 'SERVICE_CALL', 'WARRANTY', 'AMC'];
 const labelCls = 'block font-semibold text-slate-700 mb-1';
-const selectCls = 'w-full h-9 px-3 rounded-md border border-slate-300 bg-white text-xs';
+const selectCls = 'w-full h-9 px-3 rounded-md border border-slate-300 bg-white text-[13px]';
 
 // Phase 22: management changes a job's details, team, lead, schedule and site contact
 export const EditJobModal: React.FC<{ isOpen: boolean; onClose: () => void; job: Job }> = ({
@@ -86,7 +86,7 @@ export const EditJobModal: React.FC<{ isOpen: boolean; onClose: () => void; job:
       title={`Edit ${job.jobNumber}`}
       icon={<Pencil className="w-5 h-5 text-orange-600" />}
     >
-      <form onSubmit={handleSubmit} className="space-y-3 text-xs">
+      <form onSubmit={handleSubmit} className="space-y-3 text-[13px]">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Category</label>
@@ -121,7 +121,7 @@ export const EditJobModal: React.FC<{ isOpen: boolean; onClose: () => void; job:
             required
             value={problem}
             onChange={(e) => setProblem(e.target.value)}
-            className="w-full rounded-md border border-slate-300 bg-white p-2.5 text-xs"
+            className="w-full rounded-md border border-slate-300 bg-white p-2.5 text-[13px]"
           />
         </div>
 
@@ -136,7 +136,7 @@ export const EditJobModal: React.FC<{ isOpen: boolean; onClose: () => void; job:
                   <button
                     type="button"
                     onClick={() => toggleMember(t.id)}
-                    className={`px-2.5 py-1 rounded-l-md border text-[11px] font-semibold cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-l-md border text-xs font-semibold cursor-pointer ${
                       inTeam ? 'bg-orange-500 border-orange-500 text-white' : 'bg-white border-slate-300 text-slate-600'
                     }`}
                   >
@@ -147,7 +147,7 @@ export const EditJobModal: React.FC<{ isOpen: boolean; onClose: () => void; job:
                     disabled={!inTeam}
                     onClick={() => setLead(t.id)}
                     title="Make team lead"
-                    className={`px-1.5 py-1 rounded-r-md border-y border-r text-[11px] cursor-pointer disabled:opacity-30 ${
+                    className={`px-1.5 py-1 rounded-r-md border-y border-r text-xs cursor-pointer disabled:opacity-30 ${
                       isLead ? 'bg-amber-100 border-amber-400 text-amber-700' : 'bg-white border-slate-300 text-slate-400'
                     }`}
                   >
@@ -234,7 +234,7 @@ export const CancelJobModal: React.FC<{ isOpen: boolean; onClose: () => void; jo
       title={`Cancel ${job.jobNumber}?`}
       icon={<Ban className="w-5 h-5 text-rose-600" />}
     >
-      <form onSubmit={handleSubmit} className="space-y-3 text-xs">
+      <form onSubmit={handleSubmit} className="space-y-3 text-[13px]">
         <p className="text-slate-600">
           The job stays on record as Cancelled. Products allocated to it go back to stock. A job that is already
           invoiced cannot be cancelled.
@@ -248,7 +248,7 @@ export const CancelJobModal: React.FC<{ isOpen: boolean; onClose: () => void; jo
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="e.g. Customer postponed the installation"
-            className="w-full rounded-md border border-slate-300 bg-white p-2.5 text-xs"
+            className="w-full rounded-md border border-slate-300 bg-white p-2.5 text-[13px]"
           />
         </div>
         <div className="flex justify-end gap-2 pt-1">
