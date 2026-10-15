@@ -143,6 +143,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
     getJobMaterials,
     getJobHold,
     getJobInvoice,
+    getJobQuotation,
     getJobProductUsages,
     serialUnits,
     products,
@@ -301,11 +302,20 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
     toast.success('Material usage ledger updated');
   };
 
+  const completingQuotation = completingJob ? getJobQuotation(completingJob) : undefined;
+
   const initiateCompleteJob = (job: Job) => {
     setCompletingJob(job);
     setAfterPhotoInput(job.afterPhotoUrl || '');
+    // A quotation already contains the agreed labour — only extra labour is entered at completion
     setServiceRateInput(
-      job.serviceAmount > 0 ? job.serviceAmount : department === 'INSTALLATION' ? 2500 : 1500
+      getJobQuotation(job)
+        ? 0
+        : job.serviceAmount > 0
+        ? job.serviceAmount
+        : department === 'INSTALLATION'
+        ? 2500
+        : 1500
     );
     setGstChoiceInput(job.serviceGstChoice || 'GST');
     setActionTakenInput(
@@ -1163,10 +1173,18 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 onPhotoChange={(url) => setAfterPhotoInput(url || '')}
               />
 
+              {completingQuotation && (
+                <div className="p-3 rounded-md bg-orange-50 border border-orange-200 text-[11px] text-orange-900 leading-relaxed">
+                  Invoice will bill <strong>Quotation {completingQuotation.quotationNo}</strong> as agreed (
+                  {formatINR(completingQuotation.grandTotal)}). Products used beyond the quoted quantities are
+                  added automatically. Enter labour only if extra work was done beyond the quotation.
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-medium mb-1">
-                    Service Labor Rate (INR) *
+                    {completingQuotation ? 'Extra Labour beyond Quotation (INR)' : 'Service Labor Rate (INR) *'}
                   </label>
                   <Input
                     type="number"

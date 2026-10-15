@@ -232,6 +232,7 @@ export interface StecSecureContextType extends ErpState {
   getJobMaterials: (jobId: string) => MaterialUsage[];
   getJobHold: (jobId: string) => HoldEvent | undefined;
   getJobInvoice: (jobId: string) => Invoice | undefined;
+  getJobQuotation: (job: Job) => Quotation | undefined;
   getJobOtp: (jobId: string) => OTPVerification | undefined;
   getJobSerials: (jobId: string) => SerialUnit[];
   getJobProductUsages: (jobId: string) => JobProductUsage[];
@@ -753,6 +754,10 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // One job is billed by one tax invoice — whichever path (completion, quotation, challan) raises it first
   const resolveQuotationId = (ref?: string) =>
     ref ? erpState.quotations.find((q) => q.id === ref || q.quotationNo === ref)?.id : undefined;
+  const getJobQuotation = (job: Job) => {
+    const quotationId = resolveQuotationId(job.quotationId);
+    return quotationId ? erpState.quotations.find((q) => q.id === quotationId) : undefined;
+  };
   const findInvoiceForJob = (job: Job) => {
     const quotationId = resolveQuotationId(job.quotationId);
     return erpState.invoices.find(
@@ -784,93 +789,132 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (delta > 0) finalDuration += delta;
     }
 
+    // Phase 19 (F1): a job raised from a quotation bills the quotation as agreed, plus anything used
+    // beyond it. Jobs without a quotation bill labour + materials + products used, as before.
+    const jobQuotation = getJobQuotation(targetJob);
+
     const sAmount =
       completionData?.serviceAmount ??
-      (targetJob.serviceAmount > 0 ? targetJob.serviceAmount : 1500);
+      (jobQuotation ? 0 : targetJob.serviceAmount > 0 ? targetJob.serviceAmount : 1500);
     const gstChoice = completionData?.serviceGstChoice ?? targetJob.serviceGstChoice ?? 'GST';
     const isTaxable = gstChoice === 'GST';
     const gstRate = isTaxable ? 18 : 0; // service / labour line only
 
-    // Line items for the invoice
-    const lineItems: LineItem[] = [];
-    if (sAmount > 0) {
-      const cgst = Number((sAmount * (gstRate / 200)).toFixed(2));
-      const sgst = Number((sAmount * (gstRate / 200)).toFixed(2));
-      lineItems.push({
-        itemName: `${targetJob.type === 'INSTALLATION' ? 'Installation & Commissioning' : 'Service & Labor Charges'} - ${targetJob.category}`,
-        description:
-          completionData?.actionTaken ||
-          targetJob.problemReported ||
-          'Standard field service resolution & testing',
-        hsnSac: '998719',
-        gstRate,
-        qty: 1,
-        rate: sAmount,
-        amount: sAmount,
+    const makeLine = (
+      itemName: string,
+      description: string,
+      hsnSac: string,
+      lineGstRate: number,
+      qty: number,
+      rate: number
+    ): LineItem => {
+      const amount = Number((qty * rate).toFixed(2));
+      const cgst = Number((amount * (lineGstRate / 200)).toFixed(2));
+      const sgst = Number((amount * (lineGstRate / 200)).toFixed(2));
+      return {
+        itemName,
+        description,
+        hsnSac,
+        gstRate: lineGstRate,
+        qty,
+        rate,
+        amount,
         cgst,
         sgst,
-        total: Number((sAmount + cgst + sgst).toFixed(2)),
-      });
+        total: Number((amount + cgst + sgst).toFixed(2)),
+      };
+    };
+
+    // Line items for the invoice — the quotation as agreed comes first
+    const lineItems: LineItem[] = jobQuotation ? jobQuotation.lineItems.map((li) => ({ ...li })) : [];
+    const quotedLineCount = lineItems.length;
+    // Quoted quantity not yet matched by usage, so items used up to the quote aren't billed twice
+    const quotedQtyLeft = lineItems.map((li) => li.qty);
+    const findQuoteLine = (name: string) => {
+      const n = name.trim().toLowerCase();
+      const names = lineItems.slice(0, quotedLineCount).map((li) => li.itemName.trim().toLowerCase());
+      const exact = names.findIndex((q) => q === n);
+      return exact >= 0 ? exact : names.findIndex((q) => q.includes(n) || n.includes(q));
+    };
+    // How much of `qty` the quotation does not cover, and the quotation line it fell under
+    const consumeQuoted = (name: string, qty: number) => {
+      const idx = jobQuotation ? findQuoteLine(name) : -1;
+      if (idx < 0) return { extraQty: qty, quoteIdx: -1 };
+      const covered = Math.min(qty, quotedQtyLeft[idx]);
+      quotedQtyLeft[idx] -= covered;
+      return { extraQty: qty - covered, quoteIdx: idx };
+    };
+    const extraPrefix = jobQuotation ? `Additional to quotation ${jobQuotation.quotationNo} — ` : '';
+
+    if (sAmount > 0) {
+      lineItems.push(
+        makeLine(
+          jobQuotation
+            ? `Additional Labour beyond Quotation ${jobQuotation.quotationNo}`
+            : `${targetJob.type === 'INSTALLATION' ? 'Installation & Commissioning' : 'Service & Labor Charges'} - ${targetJob.category}`,
+          completionData?.actionTaken || targetJob.problemReported || 'Standard field service resolution & testing',
+          '998719',
+          gstRate,
+          1,
+          sAmount
+        )
+      );
     }
 
     // Material usages if any
     const jobMats = erpState.materialUsages.filter((m) => m.jobId === jobId);
     jobMats.forEach((mat) => {
       const netQty = Math.max(0, mat.deliveredQty - mat.returnedQty);
-      if (netQty > 0) {
-        const prod = erpState.products.find((p) =>
-          p.name.toLowerCase().includes(mat.materialName.toLowerCase())
-        );
-        const rate = prod ? prod.defaultRate : 350;
-        const hsn = prod?.hsnSac || '85258090';
-        const matGstRate = prod?.gstRate ?? 18;
-        const amt = netQty * rate;
-        const cgst = Number((amt * (matGstRate / 200)).toFixed(2));
-        const sgst = Number((amt * (matGstRate / 200)).toFixed(2));
-        lineItems.push({
-          itemName: mat.materialName,
-          description: `Material consumed during ${targetJob.jobNumber}`,
-          hsnSac: hsn,
-          gstRate: matGstRate,
-          qty: netQty,
-          rate,
-          amount: amt,
-          cgst,
-          sgst,
-          total: Number((amt + cgst + sgst).toFixed(2)),
-        });
-      }
+      if (netQty <= 0) return;
+      const { extraQty, quoteIdx } = consumeQuoted(mat.materialName, netQty);
+      if (extraQty <= 0) return;
+      const quoteLine = quoteIdx >= 0 ? lineItems[quoteIdx] : undefined;
+      const prod = erpState.products.find((p) =>
+        p.name.toLowerCase().includes(mat.materialName.toLowerCase())
+      );
+      lineItems.push(
+        makeLine(
+          mat.materialName,
+          `${extraPrefix}Material consumed during ${targetJob.jobNumber}`,
+          quoteLine?.hsnSac || prod?.hsnSac || '85258090',
+          quoteLine?.gstRate ?? prod?.gstRate ?? 18,
+          extraQty,
+          quoteLine?.rate ?? prod?.defaultRate ?? 350
+        )
+      );
     });
 
     // Phase 8: Products Used if any (hardware installed)
     const jobProducts = erpState.jobProductUsages.filter((u) => u.jobId === jobId);
     jobProducts.forEach((pu) => {
       const prod = erpState.products.find((p) => p.id === pu.productId);
-      if (prod) {
-        const rate = prod.defaultRate;
-        const hsn = prod.hsnSac || '85258090';
-        const prodGstRate = prod.gstRate ?? 18;
-        const amt = pu.quantity * rate;
-        const cgst = Number((amt * (prodGstRate / 200)).toFixed(2));
-        const sgst = Number((amt * (prodGstRate / 200)).toFixed(2));
-        const serialText = pu.serialUnitIds && pu.serialUnitIds.length > 0
-          ? ` (S/N: ${pu.serialUnitIds
-              .map((sid) => erpState.serialUnits.find((s) => s.id === sid || s.serialNumber === sid)?.serialNumber || sid)
-              .join(', ')})`
-          : '';
-        lineItems.push({
-          itemName: prod.name,
-          description: `Hardware installed during ${targetJob.jobNumber}${serialText}`,
-          hsnSac: hsn,
-          gstRate: prodGstRate,
-          qty: pu.quantity,
-          rate,
-          amount: amt,
-          cgst,
-          sgst,
-          total: Number((amt + cgst + sgst).toFixed(2)),
-        });
+      if (!prod) return;
+      const serials = (pu.serialUnitIds || []).map(
+        (sid) => erpState.serialUnits.find((s) => s.id === sid || s.serialNumber === sid)?.serialNumber || sid
+      );
+      const serialText = serials.length > 0 ? ` (S/N: ${serials.join(', ')})` : '';
+      const { extraQty, quoteIdx } = consumeQuoted(prod.name, pu.quantity);
+
+      if (quoteIdx >= 0 && extraQty < pu.quantity && serialText) {
+        // Installed serials are recorded on the quotation line they fall under (warranty reference)
+        lineItems[quoteIdx] = {
+          ...lineItems[quoteIdx],
+          description: `${lineItems[quoteIdx].description || ''}${serialText}`.trim(),
+        };
       }
+      if (extraQty <= 0) return;
+
+      const quoteLine = quoteIdx >= 0 ? lineItems[quoteIdx] : undefined;
+      lineItems.push(
+        makeLine(
+          prod.name,
+          `${extraPrefix}Hardware installed during ${targetJob.jobNumber}${quoteIdx >= 0 ? '' : serialText}`,
+          quoteLine?.hsnSac || prod.hsnSac || '85258090',
+          quoteLine?.gstRate ?? prod.gstRate ?? 18,
+          extraQty,
+          quoteLine?.rate ?? prod.defaultRate
+        )
+      );
     });
 
     const totalAmount = lineItems.reduce((acc, item) => acc + item.amount, 0);
@@ -899,6 +943,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       grandTotal,
       bankDetails: CANARA_BANK_DETAILS,
       linkedJobId: jobId,
+      quotationId: jobQuotation?.id,
       amountPaid: 0,
       balanceDue: grandTotal,
       paymentMode: 'PENDING',
@@ -2227,6 +2272,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         getJobMaterials,
         getJobHold,
         getJobInvoice,
+        getJobQuotation,
         getJobOtp,
         getJobSerials,
         getJobProductUsages: (jobId: string) =>

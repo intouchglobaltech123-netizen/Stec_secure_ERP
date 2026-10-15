@@ -38,6 +38,7 @@ React 19, TypeScript (strict), Vite 6, Tailwind CSS 4 (via `@tailwindcss/vite`, 
 - Document numbers come from `nextDocNumber(prefix, existing)` in the context (max existing + 1, never array length). Prefixes use the financial-year start (`financialYearStart()` in `src/lib/numbering.ts`): `INV-2026-001`, `DC-`, `JOB-`, `ENQ-`, `RMA-`, quotations `A26001`.
 - Store dates with `localDateISO()` (IST calendar date), never `toISOString().split('T')[0]` (UTC).
 - An invoice records its source `quotationId` / `deliveryChallanId`; conversions must refuse to invoice the same source twice.
+- One job is billed by one tax invoice (`findInvoiceForJob`). A job with a quotation (`getJobQuotation`) is invoiced at the quotation as agreed, plus usage beyond the quoted quantities and any extra labour; jobs without one bill labour + materials + products used.
 - Photos go through `compressImageFile()` (`src/lib/image-utils.ts`) before being stored.
 - Comments reference development phases ("Phase 13 Part B") — keep that style when extending a phase's feature.
 - Update context state with functional `setErpState(prev => …)` updates; React StrictMode is on, so updaters must be pure.
