@@ -160,6 +160,14 @@ export const findInvoiceForJob = (s: ErpState, job: Job) => {
   );
 };
 
+// Phase 22: the invoice that bills this quotation — directly, via a challan, or via a job raised from it
+export const findInvoiceForQuotation = (s: ErpState, quotationId: string) =>
+  s.invoices.find((i) => i.quotationId === quotationId) ??
+  s.jobs
+    .filter((j) => resolveQuotationId(s, j.quotationId) === quotationId)
+    .map((j) => s.invoices.find((i) => i.linkedJobId === j.id))
+    .find(Boolean);
+
 // Phase 22: advances taken against a quotation or job that are not yet on an invoice
 export const unappliedAdvances = (s: ErpState, ref: { quotationId?: string; jobId?: string }) =>
   s.payments.filter(
@@ -263,6 +271,17 @@ export function normalizeSavedState(parsed: any, { browserLegacyFixes = true } =
   );
   const users = list<User>(parsed.users);
 
+  // Phase 22: "CONVERTED" (shown as Invoiced) means the quotation is billed — older data used it for
+  // "a job was created" and left billed quotations as Draft/Sent; line both up with the invoices
+  const migrated: ErpState['quotations'] = quotations.map((q) => q);
+  const partial = { quotations: migrated, invoices: list<Invoice>(parsed.invoices), jobs: list<Job>(parsed.jobs) } as ErpState;
+  for (let i = 0; i < migrated.length; i++) {
+    const q = migrated[i];
+    const invoiced = Boolean(findInvoiceForQuotation(partial, q.id));
+    if (invoiced && q.status !== 'CONVERTED') migrated[i] = { ...q, status: 'CONVERTED' };
+    else if (!invoiced && q.status === 'CONVERTED') migrated[i] = { ...q, status: 'ACCEPTED' };
+  }
+
   return {
     users: browserLegacyFixes
       ? // Never start with zero users, or nobody could log in
@@ -283,7 +302,7 @@ export function normalizeSavedState(parsed: any, { browserLegacyFixes = true } =
     workLogs: list<WorkLog>(parsed.workLogs),
     holdEvents: list<HoldEvent>(parsed.holdEvents),
     materialUsages: list<MaterialUsage>(parsed.materialUsages),
-    quotations,
+    quotations: migrated,
     invoices: list<Invoice>(parsed.invoices).map((inv) =>
       browserLegacyFixes ? { ...inv, bankDetails: CANARA_BANK_DETAILS } : inv
     ),

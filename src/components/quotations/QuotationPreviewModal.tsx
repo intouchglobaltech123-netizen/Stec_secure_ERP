@@ -1,3 +1,4 @@
+import { quotationStatusMeta } from '@/lib/quotation-status';
 import React, { useState, useEffect } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { Quotation } from '@/lib/stecsecure-types';
@@ -165,16 +166,10 @@ export const QuotationPreviewModal: React.FC<QuotationPreviewModalProps> = ({
             {quotation.quotationNo}
           </Badge>
           <Badge
-            variant={
-              quotation.status === 'CONVERTED'
-                ? 'success'
-                : quotation.status === 'SENT'
-                ? 'default'
-                : 'secondary'
-            }
+            variant={quotationStatusMeta(quotation.status).variant}
             className="text-xs"
           >
-            {quotation.status || 'DRAFT'}
+            {quotationStatusMeta(quotation.status).label}
           </Badge>
           {whatsAppSentAt && (
             <Badge variant="success" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1 font-semibold">

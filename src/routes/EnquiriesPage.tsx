@@ -1,3 +1,4 @@
+import { quotationStatusMeta } from '@/lib/quotation-status';
 import React, { useState, useEffect } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import {
@@ -890,16 +891,10 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-mono font-bold text-orange-600">{q.quotationNo}</span>
                               <Badge
-                                variant={
-                                  q.status === 'CONVERTED'
-                                    ? 'success'
-                                    : q.status === 'SENT'
-                                    ? 'default'
-                                    : 'secondary'
-                                }
+                                variant={quotationStatusMeta(q.status).variant}
                                 className="text-[10px] rounded"
                               >
-                                {q.status || 'DRAFT'}
+                                {quotationStatusMeta(q.status).label}
                               </Badge>
                               {q.whatsappSharedAt && (
                                 <Badge variant="success" className="text-[10px] rounded bg-emerald-50 text-emerald-700 border-emerald-200">

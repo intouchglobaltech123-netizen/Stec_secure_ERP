@@ -71,7 +71,9 @@ export const approveEnquiry: Action<{ enquiryId: string }, void> = (s, _env, { e
     {
       ...s,
       enquiries: updateById(s.enquiries, enquiryId, (e) => ({ ...e, status: 'APPROVED' as const })),
-      quotations: s.quotations.map((q) => (q.enquiryId === enquiryId ? { ...q, status: 'CONVERTED' as const } : q)),
+      quotations: s.quotations.map((q) =>
+        q.enquiryId === enquiryId && q.status !== 'CONVERTED' ? { ...q, status: 'ACCEPTED' as const } : q
+      ),
     },
     undefined
   );
@@ -103,7 +105,9 @@ export const convertEnquiryToJob: Action<{ enquiryId: string; jobId: string }, v
         convertedJobId: jobId,
       })),
       jobs: updateById(s.jobs, jobId, (j) => ({ ...j, enquiryId })),
-      quotations: s.quotations.map((q) => (q.enquiryId === enquiryId ? { ...q, status: 'CONVERTED' as const } : q)),
+      quotations: s.quotations.map((q) =>
+        q.enquiryId === enquiryId && q.status !== 'CONVERTED' ? { ...q, status: 'ACCEPTED' as const } : q
+      ),
     },
     undefined
   );

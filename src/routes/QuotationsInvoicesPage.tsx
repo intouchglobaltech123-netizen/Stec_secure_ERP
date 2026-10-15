@@ -1,6 +1,7 @@
+import { quotationStatusMeta, QUOTATION_STATUS_META, MANUAL_QUOTATION_STATUSES } from '@/lib/quotation-status';
 import React, { useState, useMemo } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
-import { Quotation, Invoice, DeliveryChallan, Job, Enquiry, Customer } from '@/lib/stecsecure-types';
+import { Quotation, QuotationStatus, Invoice, DeliveryChallan, Job, Enquiry, Customer } from '@/lib/stecsecure-types';
 import {
   FileSpreadsheet,
   ReceiptText,
@@ -71,6 +72,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
     convertQuotationToDeliveryChallan,
     convertDeliveryChallanToInvoice,
     convertQuotationToInvoice,
+    setQuotationStatus,
     isManagement,
   } = useStecSecure();
 
@@ -91,7 +93,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
 
   // Search & Filters for Secondary Views
   const [quotationSearch, setQuotationSearch] = useState('');
-  const [quotationStatusFilter, setQuotationStatusFilter] = useState<'ALL' | 'DRAFT' | 'SENT' | 'CONVERTED'>('ALL');
+  const [quotationStatusFilter, setQuotationStatusFilter] = useState<'ALL' | QuotationStatus>('ALL');
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [challanSearch, setChallanSearch] = useState('');
 
@@ -107,6 +109,15 @@ export const QuotationsInvoicesPage: React.FC = () => {
   const [previewQuotation, setPreviewQuotation] = useState<Quotation | null>(null);
   // Phase 22: quotation an advance is being recorded against
   const [advanceQuotation, setAdvanceQuotation] = useState<Quotation | null>(null);
+
+  const handleSetQuotationStatus = async (q: Quotation, status: QuotationStatus) => {
+    try {
+      await setQuotationStatus(q.id, status);
+      toast.success(`Quotation ${q.quotationNo} marked ${QUOTATION_STATUS_META[status].label}.`);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  };
   const [previewChallan, setPreviewChallan] = useState<DeliveryChallan | null>(null);
   const [challanMode, setChallanMode] = useState<'CREATE' | 'PREVIEW' | 'EDIT'>('PREVIEW');
   const [isChallanModalOpen, setIsChallanModalOpen] = useState(false);
@@ -693,16 +704,10 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                         {quot.quotationNo}
                                       </span>
                                       <Badge
-                                        variant={
-                                          quot.status === 'CONVERTED'
-                                            ? 'success'
-                                            : quot.status === 'SENT'
-                                            ? 'default'
-                                            : 'secondary'
-                                        }
+                                        variant={quotationStatusMeta(quot.status).variant}
                                         className="text-[9px] px-1 py-0"
                                       >
-                                        {quot.status || 'DRAFT'}
+                                        {quotationStatusMeta(quot.status).label}
                                       </Badge>
                                     </div>
                                     <div className="flex items-center gap-2 text-[11px]">
@@ -995,16 +1000,10 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                             </span>
                                             {quot ? (
                                               <Badge
-                                                variant={
-                                                  quot.status === 'CONVERTED'
-                                                    ? 'success'
-                                                    : quot.status === 'SENT'
-                                                    ? 'default'
-                                                    : 'secondary'
-                                                }
+                                                variant={quotationStatusMeta(quot.status).variant}
                                                 className="text-[9px]"
                                               >
-                                                {quot.status || 'DRAFT'}
+                                                {quotationStatusMeta(quot.status).label}
                                               </Badge>
                                             ) : (
                                               <Badge variant="secondary" className="text-[9px]">NOT ISSUED</Badge>
@@ -1377,9 +1376,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
               className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-700 focus:outline-none focus:border-orange-500 cursor-pointer w-full sm:w-auto"
             >
               <option value="ALL">All Statuses</option>
-              <option value="DRAFT">Draft</option>
-              <option value="SENT">Sent</option>
-              <option value="CONVERTED">Converted</option>
+              {(Object.keys(QUOTATION_STATUS_META) as QuotationStatus[]).map((st) => (
+                <option key={st} value={st}>
+                  {QUOTATION_STATUS_META[st].label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -1409,13 +1410,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                     ) : (
                       filteredQuotations.map((q) => {
                         const customer = customers.find((c) => c.id === q.customerNumber);
-                        const status = q.status || 'DRAFT';
-                        const statusVariant =
-                          status === 'CONVERTED'
-                            ? 'success'
-                            : status === 'SENT'
-                            ? 'default'
-                            : 'secondary';
+                        const statusMeta = quotationStatusMeta(q.status);
 
                         return (
                           <tr
@@ -1451,8 +1446,8 @@ export const QuotationsInvoicesPage: React.FC = () => {
                             </td>
                             <td className="p-3 text-center">
                               <div className="flex flex-col items-center gap-1">
-                                <Badge variant={statusVariant} className="text-[10px]">
-                                  {status}
+                                <Badge variant={statusMeta.variant} className="text-[10px]" title={q.statusNote}>
+                                  {statusMeta.label}
                                 </Badge>
                                 {q.whatsappSharedAt && (
                                   <Badge variant="success" className="text-[9px] bg-emerald-50 text-emerald-700 border-emerald-200">
@@ -1462,7 +1457,8 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               </div>
                             </td>
                             <td className="p-3 text-right space-x-1.5" onClick={(e) => e.stopPropagation()}>
-                              {isManagement && (
+                              {/* An invoiced quotation is locked — the invoice is edited instead */}
+                              {isManagement && q.status !== 'CONVERTED' && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -1477,6 +1473,24 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                 >
                                   <Edit className="w-3 h-3 mr-1" /> Edit
                                 </Button>
+                              )}
+                              {/* Phase 22: record the customer's decision (Invoiced is set by the invoice itself) */}
+                              {isManagement && q.status !== 'CONVERTED' && (
+                                <select
+                                  value=""
+                                  onChange={(e) => void handleSetQuotationStatus(q, e.target.value as QuotationStatus)}
+                                  className="h-7 rounded-md border border-slate-300 bg-white px-1.5 text-[11px] text-slate-700 cursor-pointer align-middle"
+                                  title="Change status"
+                                >
+                                  <option value="" disabled>
+                                    Mark as…
+                                  </option>
+                                  {MANUAL_QUOTATION_STATUSES.filter((st) => st !== (q.status ?? 'DRAFT')).map((st) => (
+                                    <option key={st} value={st}>
+                                      {QUOTATION_STATUS_META[st].label}
+                                    </option>
+                                  ))}
+                                </select>
                               )}
                               {isManagement && (
                                 <Button

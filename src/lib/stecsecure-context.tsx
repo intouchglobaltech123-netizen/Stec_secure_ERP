@@ -26,6 +26,7 @@ import {
   AppSection,
   ConfigurableRole,
   UserRole,
+  QuotationStatus,
 } from './stecsecure-types';
 import { ErpState, normalizeSavedState, getJobQuotation as getJobQuotationIn } from './erp/core';
 import type { ActionName, ActionArgs, ActionReturn } from './erp/actions';
@@ -153,7 +154,9 @@ export interface StecSecureContextType extends ErpState {
     serialUnitIds?: string[];
   }) => Promise<JobProductUsage>;
 
-  createQuotation: (data: Omit<Quotation, 'id' | 'quotationNo'> & { quotationNo?: string; status?: 'DRAFT' | 'SENT' | 'CONVERTED'; enquiryId?: string }) => Promise<Quotation>;
+  createQuotation: (data: Omit<Quotation, 'id' | 'quotationNo'> & { quotationNo?: string; status?: QuotationStatus; enquiryId?: string }) => Promise<Quotation>;
+  // Phase 22: Sent / Accepted / Rejected / Lost (Invoiced is set by raising the invoice)
+  setQuotationStatus: (quotationId: string, status: QuotationStatus, note?: string) => Promise<Quotation>;
   updateQuotation: (id: string, updates: Partial<Quotation>) => Promise<Quotation>;
   convertQuotationToInvoice: (quotationId: string) => Promise<Invoice>;
   updateInvoice: (id: string, updates: Partial<Invoice>) => Promise<Invoice>;
@@ -535,6 +538,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           run('convertQuotationToDeliveryChallan', { quotationId, jobId }),
         convertDeliveryChallanToInvoice: (challanId) => run('convertDeliveryChallanToInvoice', { challanId }),
         createQuotation: (data) => run('createQuotation', data),
+        setQuotationStatus: (quotationId, status, note) => run('setQuotationStatus', { quotationId, status, note }),
         updateQuotation: (id, updates) => run('updateQuotation', { id, updates }),
         convertQuotationToInvoice: (quotationId) => run('convertQuotationToInvoice', { quotationId }),
         updateInvoice: (id, updates) => run('updateInvoice', { id, updates }),

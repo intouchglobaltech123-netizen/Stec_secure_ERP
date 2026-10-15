@@ -218,6 +218,9 @@ export const COMPANY_DETAILS = {
   },
 };
 
+// Phase 22: Draft → Sent → Accepted / Rejected / Lost → Converted (= invoiced)
+export type QuotationStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'LOST' | 'CONVERTED';
+
 export interface Quotation {
   id: string;
   quotationNo: string; // format A##### e.g. A24081
@@ -232,7 +235,9 @@ export interface Quotation {
   roundOff: number;
   grandTotal: number;
   bankDetails: BankDetails;
-  status?: 'DRAFT' | 'SENT' | 'CONVERTED';
+  status?: QuotationStatus;
+  statusNote?: string; // e.g. why it was rejected or lost
+  statusUpdatedAt?: string;
   enquiryId?: string; // Phase 9.5: Linked back to source Enquiry
   whatsappSharedAt?: string; // Phase 12: WhatsApp outreach timestamp
 }

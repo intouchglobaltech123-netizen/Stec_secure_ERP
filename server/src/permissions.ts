@@ -83,6 +83,7 @@ const RULES: Record<ActionName, Check> = {
   // Commercial documents — management
   createQuotation: managementOnly,
   updateQuotation: managementOnly,
+  setQuotationStatus: managementOnly,
   updateInvoice: managementOnly,
   createDeliveryChallan: managementOnly,
   updateDeliveryChallan: managementOnly,

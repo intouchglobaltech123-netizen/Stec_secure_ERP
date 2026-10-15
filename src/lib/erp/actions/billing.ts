@@ -1,5 +1,6 @@
 // Sales documents and money: quotations, delivery challans, invoices, payments
 import {
+  QuotationStatus,
   Quotation,
   Invoice,
   DeliveryChallan,
@@ -22,6 +23,7 @@ import {
   isPhysicalLineItem,
   applyAdvancesToInvoice,
   unappliedAdvances,
+  findInvoiceForQuotation,
 } from '../core';
 
 // Sequential receipt number for every payment, restarting each financial year
@@ -160,13 +162,7 @@ export const recordAdvance: Action<RecordAdvanceArgs, Payment> = (s, env, data) 
   if (!(data.amount > 0)) throw new Error('Enter the advance amount.');
 
   // Once invoiced, money is recorded as a payment against the invoice instead
-  const invoice = quot
-    ? s.invoices.find((i) => i.quotationId === quot.id) ??
-      s.jobs
-        .filter((j) => resolveQuotationId(s, j.quotationId) === quot.id)
-        .map((j) => findInvoiceForJob(s, j))
-        .find(Boolean)
-    : findInvoiceForJob(s, job!);
+  const invoice = quot ? findInvoiceForQuotation(s, quot.id) : findInvoiceForJob(s, job!);
   if (invoice) {
     throw new Error(`Already invoiced as ${invoice.invoiceNo} — record this as a payment against that invoice.`);
   }
@@ -226,7 +222,7 @@ export const updateDeliveryChallan: Action<{ id: string; updates: Partial<Delive
 
 export type CreateQuotationArgs = Omit<Quotation, 'id' | 'quotationNo'> & {
   quotationNo?: string;
-  status?: 'DRAFT' | 'SENT' | 'CONVERTED';
+  status?: QuotationStatus;
   enquiryId?: string;
 };
 
@@ -259,7 +255,17 @@ export const updateQuotation: Action<{ id: string; updates: Partial<Quotation> }
 ) => {
   const existing = s.quotations.find((q) => q.id === id);
   if (!existing) throw new Error('Quotation not found');
-  const updatedQuot: Quotation = { ...existing, ...updates };
+  const invoice = findInvoiceForQuotation(s, id);
+  if (invoice) {
+    throw new Error(`Quotation ${existing.quotationNo} is invoiced as ${invoice.invoiceNo} — edit the invoice instead.`);
+  }
+  // Phase 22: saving the builder may move Draft ↔ Sent, never undo Accepted / Rejected / Lost
+  const keepStatus = !['DRAFT', 'SENT', undefined].includes(existing.status);
+  const updatedQuot: Quotation = {
+    ...existing,
+    ...updates,
+    status: keepStatus ? existing.status : updates.status ?? existing.status,
+  };
   const enquiryId = updates.enquiryId || existing.enquiryId;
   return done(
     {
@@ -276,6 +282,25 @@ export const updateInvoice: Action<{ id: string; updates: Partial<Invoice> }, In
   if (!existing) throw new Error('Invoice not found');
   const updatedInv: Invoice = { ...existing, ...updates };
   return done({ ...s, invoices: updateById(s.invoices, id, () => updatedInv) }, updatedInv);
+};
+
+// Phase 22: management records the customer's decision on a quotation
+export const setQuotationStatus: Action<
+  { quotationId: string; status: QuotationStatus; note?: string },
+  Quotation
+> = (s, env, { quotationId, status, note }) => {
+  const quot = s.quotations.find((q) => q.id === quotationId);
+  if (!quot) throw new Error('Quotation not found');
+  if (status === 'CONVERTED') throw new Error('A quotation becomes Invoiced only when its invoice is raised.');
+  const invoice = findInvoiceForQuotation(s, quotationId);
+  if (invoice) throw new Error(`Quotation ${quot.quotationNo} is already invoiced as ${invoice.invoiceNo}.`);
+  const updated: Quotation = {
+    ...quot,
+    status,
+    statusNote: note?.trim() || undefined,
+    statusUpdatedAt: env.nowIso,
+  };
+  return done({ ...s, quotations: updateById(s.quotations, quotationId, () => updated) }, updated);
 };
 
 export const convertQuotationToInvoice: Action<{ quotationId: string }, Invoice> = (s, env, { quotationId }) => {
@@ -458,6 +483,15 @@ export const convertDeliveryChallanToInvoice: Action<{ challanId: string }, Invo
     raisedByUserId: env.actor?.id,
   };
 
-  const next = applyAdvancesToInvoice({ ...s, invoices: [newInvoice, ...s.invoices] }, newInvoice.id);
+  const next = applyAdvancesToInvoice(
+    {
+      ...s,
+      invoices: [newInvoice, ...s.invoices],
+      quotations: dc.quotationId
+        ? updateById(s.quotations, dc.quotationId, (q) => ({ ...q, status: 'CONVERTED' as const }))
+        : s.quotations,
+    },
+    newInvoice.id
+  );
   return done(next, next.invoices.find((i) => i.id === newInvoice.id)!);
 };

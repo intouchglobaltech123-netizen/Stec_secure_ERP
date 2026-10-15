@@ -66,7 +66,7 @@ export const createJob: Action<CreateJobArgs, Job> = (s, env, jobData) => {
       quotations: s.quotations.map((q) =>
         (jobData.enquiryId && q.enquiryId === jobData.enquiryId) ||
         (jobData.quotationId && (q.id === jobData.quotationId || q.quotationNo === jobData.quotationId))
-          ? { ...q, status: 'CONVERTED' as const }
+          ? { ...q, status: q.status === 'CONVERTED' ? q.status : ('ACCEPTED' as const) }
           : q
       ),
     },
@@ -554,6 +554,12 @@ export const completeJob: Action<CompleteJobArgs, Invoice | undefined> = (s, env
       }),
   };
   if (alreadyInvoiced) return done(completed, { ...alreadyInvoiced, linkedJobId: jobId });
+  if (jobQuotation) {
+    completed.quotations = updateById(completed.quotations, jobQuotation.id, (q) => ({
+      ...q,
+      status: 'CONVERTED' as const,
+    }));
+  }
   // Phase 22: advances taken against this job or its quotation count towards the new invoice
   const next = applyAdvancesToInvoice(completed, newInvoice!.id);
   return done(next, next.invoices.find((i) => i.id === newInvoice!.id));

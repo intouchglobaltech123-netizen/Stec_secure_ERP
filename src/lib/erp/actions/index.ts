@@ -32,6 +32,7 @@ export const ACTIONS = {
   updateQuotation: billing.updateQuotation,
   updateInvoice: billing.updateInvoice,
   convertQuotationToInvoice: billing.convertQuotationToInvoice,
+  setQuotationStatus: billing.setQuotationStatus,
   convertQuotationToDeliveryChallan: billing.convertQuotationToDeliveryChallan,
   convertDeliveryChallanToInvoice: billing.convertDeliveryChallanToInvoice,
 

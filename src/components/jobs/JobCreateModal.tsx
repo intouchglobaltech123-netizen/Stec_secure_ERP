@@ -1,3 +1,4 @@
+import { quotationStatusMeta } from '@/lib/quotation-status';
 import React, { useState, useEffect, useRef } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import {
@@ -911,16 +912,10 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                           {linkedEnquiryQuotation.quotationNo}
                         </span>
                         <Badge
-                          variant={
-                            linkedEnquiryQuotation.status === 'CONVERTED'
-                              ? 'success'
-                              : linkedEnquiryQuotation.status === 'SENT'
-                              ? 'default'
-                              : 'secondary'
-                          }
+                          variant={quotationStatusMeta(linkedEnquiryQuotation.status).variant}
                           className="text-[10px]"
                         >
-                          {linkedEnquiryQuotation.status || 'DRAFT'}
+                          {quotationStatusMeta(linkedEnquiryQuotation.status).label}
                         </Badge>
                         {linkedEnquiryQuotation.whatsappSharedAt && (
                           <Badge variant="success" className="text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200">
