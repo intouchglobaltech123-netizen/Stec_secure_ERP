@@ -6,7 +6,9 @@ Operations ERP for S Tec Secure, a CCTV / access control / gate & home automatio
 
 - `npm install` — install dependencies
 - `npm run dev` — Vite dev server on http://localhost:3000 (config opens a browser; pass `-- --no-open` to skip)
-- `npm run build` — `tsc -b` type check, then Vite production build into `dist/`
+- `npm run build` — type-checks app and server, builds the app into `dist/` and the server into `server-dist/`
+- `npm run dev:server` — API server on http://localhost:8080 (embedded database, see Server below)
+- `npm start` — production server (API + built app)
 - No test runner or linter is configured yet. `npm run build` is the only automated check — run it after every change.
 
 ## Stack
@@ -24,6 +26,17 @@ React 19, TypeScript (strict), Vite 6, Tailwind CSS 4 (via `@tailwindcss/vite`, 
 - Data models and company constants (`COMPANY_DETAILS`, bank details, `SERVICE_CATEGORIES`) are in `src/lib/stecsecure-types.ts`.
 - **Navigation is not URL routing.** TanStack Router has a single `/` route; `src/router.tsx` (`AppLayout`) switches pages on a `currentSection` state (`NavSection` in `src/components/layout/AppShell.tsx`). Initial section can come from `?section=`.
 - Pages live in `src/routes/*Page.tsx`; feature modals in `src/components/<feature>/`; shared primitives in `src/components/ui/`.
+
+## Server (step 2b — `server/`)
+
+- Node + Express 5 + PostgreSQL. `server/src/index.ts` boots: connect (`db.ts`) → migrate (`migrate.ts`) → load state (`store.ts`) → HTTP (`app.ts`).
+- Without `DATABASE_URL` it uses an embedded PGlite database in `.data/pglite` (local development only). On an empty database it loads demo data when `SEED_DEMO_DATA=true`, otherwise creates the CEO from `INITIAL_CEO_NAME` / `INITIAL_CEO_PHONE` / `INITIAL_CEO_PIN`.
+- Every record is a JSONB row in `records` (collection, id, version, sort_key). `Store` keeps the full `ErpState` in memory and runs the shared `ACTIONS` one at a time; each change is saved in one transaction before it becomes visible. **Run exactly one server instance.** Add schema changes as new entries at the end of `MIGRATIONS`.
+- API: `POST /api/auth/login {phone, pin}` (bcrypt, 5 wrong PINs → 15-minute lock, httpOnly session cookie), `/api/auth/me|logout|change-pin`, `GET /api/state[?since=version]` (204 when unchanged), `POST /api/actions/:name {args}`, `/api/admin/users` (CEO only), `/api/photos/:id`.
+- `permissions.ts` decides who may run each action; `scope.ts` decides what each user receives (technicians: own jobs and related records, no purchase costs). Any new action needs a rule in `permissions.ts`.
+- Photos sent as `data:` URLs in action args are stored in the `photos` table and replaced by `/api/photos/<id>` links.
+- Dev: `npm run dev:server` (port 8080) with `npm run dev` (Vite proxies `/api`). Production: `npm run build` then `npm start` (serves `dist/` too).
+- `npx tsc -p server/tsconfig.json` type-checks the server (part of `npm run build`).
 
 ## Auth and roles
 

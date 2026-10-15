@@ -224,20 +224,23 @@ export function getSeedState(): ErpState {
 // Normalizes a saved state blob (possibly from an older version) into the current shape.
 // A saved list is kept even when empty; only a list missing from an older save starts empty.
 // (Falling back to demo seeds here used to resurrect deleted records.)
-export function normalizeSavedState(parsed: any): ErpState {
+// `browserLegacyFixes` applies one-off fixes for old browser saves (demo CEO name, bank details,
+// demo users when none exist); the server stores real data and never applies them.
+export function normalizeSavedState(parsed: any, { browserLegacyFixes = true } = {}): ErpState {
   const list = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
-  const quotations = list<Quotation>(parsed.quotations).map((q) => ({
-    ...q,
-    bankDetails: CANARA_BANK_DETAILS,
-  }));
+  const quotations = list<Quotation>(parsed.quotations).map((q) =>
+    browserLegacyFixes ? { ...q, bankDetails: CANARA_BANK_DETAILS } : q
+  );
   const users = list<User>(parsed.users);
 
   return {
-    // Never start with zero users, or nobody could log in
-    users: (users.length ? users : SEED_USERS).map((u: User) =>
-      u.id === 'usr-ceo' ? { ...u, name: 'Santhosh', phone: '8148562605', email: 'stecsecure@gmail.com' } : u
-    ),
+    users: browserLegacyFixes
+      ? // Never start with zero users, or nobody could log in
+        (users.length ? users : SEED_USERS).map((u: User) =>
+          u.id === 'usr-ceo' ? { ...u, name: 'Santhosh', phone: '8148562605', email: 'stecsecure@gmail.com' } : u
+        )
+      : users,
     customers: list<Customer>(parsed.customers),
     vendors: list<Vendor>(parsed.vendors),
     products: list<Product>(parsed.products).map((p) => {
@@ -252,10 +255,9 @@ export function normalizeSavedState(parsed: any): ErpState {
     holdEvents: list<HoldEvent>(parsed.holdEvents),
     materialUsages: list<MaterialUsage>(parsed.materialUsages),
     quotations,
-    invoices: list<Invoice>(parsed.invoices).map((inv) => ({
-      ...inv,
-      bankDetails: CANARA_BANK_DETAILS,
-    })),
+    invoices: list<Invoice>(parsed.invoices).map((inv) =>
+      browserLegacyFixes ? { ...inv, bankDetails: CANARA_BANK_DETAILS } : inv
+    ),
     serialUnits: list<SerialUnit>(parsed.serialUnits),
     deliveryChallans: list<DeliveryChallan>(parsed.deliveryChallans),
     payments: list<Payment>(parsed.payments),

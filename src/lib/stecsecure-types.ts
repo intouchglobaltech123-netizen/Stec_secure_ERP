@@ -7,7 +7,7 @@ export interface User {
   name: string;
   role: UserRole;
   phone: string;
-  pin: string; // 4-digit PIN for login
+  pin?: string; // 4-digit PIN — demo/offline mode only; the server keeps hashed PINs separately and never sends them
   photo?: string;
   email?: string;
 }
