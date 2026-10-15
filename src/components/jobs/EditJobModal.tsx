@@ -3,6 +3,7 @@ import { Pencil, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { errorMessage } from '@/lib/api';
+import { humanize } from '@/lib/utils';
 import { CustomerStatus, Job, SERVICE_CATEGORIES, ServiceCategory } from '@/lib/stecsecure-types';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
@@ -107,7 +108,7 @@ export const EditJobModal: React.FC<{ isOpen: boolean; onClose: () => void; job:
             >
               {STATUSES.map((st) => (
                 <option key={st} value={st}>
-                  {st.replace('_', ' ')}
+                  {humanize(st)}
                 </option>
               ))}
             </select>

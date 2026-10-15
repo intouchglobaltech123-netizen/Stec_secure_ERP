@@ -506,7 +506,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
             {initialEnquiry ? (
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-semibold text-slate-700">Department / Job Type:</span>
+                  <span className="text-[13px] font-semibold text-slate-700">Job type</span>
                   <Badge
                     variant={jobType === 'SERVICE' ? 'default' : 'success'}
                     className="text-[13px] font-bold px-2.5 py-0.5 rounded-md flex items-center gap-1.5"
@@ -525,7 +525,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
               </div>
             ) : (
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                <span className="text-[13px] font-semibold text-slate-700">Department / Job Type:</span>
+                <span className="text-[13px] font-semibold text-slate-700">Job type</span>
                 <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-2xs">
                   <button
                     type="button"
@@ -647,7 +647,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                             )}
                           </div>
                           <p className="text-[11px] text-slate-400 italic">
-                            Optional: saving a Google Maps link updates this client profile for future dispatch.
+                            Optional — saved on the customer's record for next time.
                           </p>
                         </div>
                       )}
@@ -726,10 +726,10 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                   onChange={(e) => setCustomerStatus(e.target.value as CustomerStatus)}
                   className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs transition-colors"
                 >
-                  <option value="WARRANTY">WARRANTY</option>
+                  <option value="WARRANTY">Warranty</option>
                   <option value="AMC">AMC</option>
-                  <option value="SERVICE_CALL">SERVICE CALL</option>
-                  <option value="OTHERS">OTHERS</option>
+                  <option value="SERVICE_CALL">Service call</option>
+                  <option value="OTHERS">Other</option>
                 </select>
               </div>
             </div>
@@ -791,10 +791,10 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                 <div>
                   <label className="font-bold text-slate-800 flex items-center gap-1.5 text-[13px]">
                     <Users className="w-4 h-4 text-orange-600" />
-                    Assign Team Members (1 to N) <span className="text-rose-500">*</span>
+                    Team members <span className="text-rose-500">*</span>
                   </label>
                   <div className="text-xs text-slate-500 mt-0.5">
-                    Select all technicians participating in this job
+                    Tick everyone going to this job
                   </div>
                 </div>
                 <span className="text-xs font-mono text-orange-600 font-bold">
@@ -833,10 +833,10 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                   <div className="flex items-center justify-between">
                     <label className="block text-[13px] font-bold text-slate-800 flex items-center gap-1.5">
                       <UserCheck className="w-4 h-4 text-orange-600" />
-                      Designate Team Lead *
+                      Team lead *
                     </label>
                     <span className="text-[11px] text-slate-500">
-                      Has execution & billing authority
+                      Starts, completes and bills the job
                     </span>
                   </div>
 
@@ -865,7 +865,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                               )}
                             </div>
                             <div className="text-[11px] text-slate-500 mt-0.5">
-                              {isLead ? 'Can invoice & close' : 'Supporting crew'}
+                              {isLead ? 'Team lead' : 'Team member'}
                             </div>
                           </div>
                           <div
@@ -896,7 +896,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                       </Badge>
                     </label>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Quotation already created & attached to Enquiry #{initialEnquiry?.enquiryNumber}
+                      The quotation made for enquiry #{initialEnquiry?.enquiryNumber}
                     </p>
                   </div>
                 </div>
@@ -950,7 +950,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                 <div className="text-xs text-emerald-800 bg-emerald-50/70 rounded-lg p-2.5 border border-emerald-200 flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>
-                    This quotation travels through the <strong>Enquiry &rarr; Job &rarr; Invoice</strong> reference chain automatically. No duplicate re-entry or quotation prompts needed.
+                    The job will be billed from this quotation — nothing needs to be typed again.
                   </span>
                 </div>
               </div>
@@ -1040,7 +1040,7 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
 
             {/* 7. Billing Note */}
             <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 text-orange-900 text-xs leading-relaxed">
-              <strong>Billing Note:</strong> Service labor rate and GST choice (18% GST vs Exempted) will be entered directly by Team Lead upon job completion.
+              <strong>Billing:</strong> the team lead enters the service charge and GST when completing the job.
             </div>
           </div>
 

@@ -525,7 +525,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-orange-600">{ticket.ticketNumber}</span>
                       <Badge variant="outline" className="text-[11px]">
-                        {ticket.status.replace(/_/g, ' ')}
+                        {humanize(ticket.status)}
                       </Badge>
                       <span className="text-slate-600 truncate max-w-[200px] text-xs">
                         {ticket.faultDescription}

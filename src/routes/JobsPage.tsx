@@ -594,14 +594,14 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
           {/* Col 3: Stage Execution Actions */}
           <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex flex-col justify-between space-y-2">
             <div>
-              <div className="text-[11px] uppercase font-bold text-slate-500">Execution Action</div>
+              <div className="text-[11px] uppercase font-bold text-slate-500">Next step</div>
               <div className="text-[13px] font-bold text-slate-900 mt-0.5">
-                {job.status === 'ASSIGNED' && 'Before Photo & Start Dispatch'}
-                {job.status === 'IN_PROGRESS' && 'Session Active (Timer Running)'}
-                {job.status === 'ON_HOLD' && 'Work Paused (Hold Raised)'}
-                {job.status === 'COMPLETED' && 'Work Complete (Ready for Invoice)'}
-                {job.status === 'AWAITING_OTP' && 'Awaiting Customer OTP Sign-off'}
-                {job.status === 'CLOSED' && 'Job Verified & Closed'}
+                {job.status === 'ASSIGNED' && 'Take the before photo, then start'}
+                {job.status === 'IN_PROGRESS' && 'Work in progress (timer running)'}
+                {job.status === 'ON_HOLD' && 'Paused — job on hold'}
+                {job.status === 'COMPLETED' && 'Work complete — ready for invoice'}
+                {job.status === 'AWAITING_OTP' && 'Waiting for customer sign-off'}
+                {job.status === 'CLOSED' && 'Signed off and closed'}
                 {job.status === 'CANCELLED' && `Cancelled — ${job.cancelledReason || 'no reason given'}`}
               </div>
             </div>
@@ -1017,12 +1017,12 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
               <tr>
                 <th className="w-32 whitespace-nowrap">Job ID</th>
                 <th className="min-w-[190px]">Customer</th>
-                <th className="min-w-[190px]">Work Type</th>
+                <th className="min-w-[160px]">Work Type</th>
                 <th className="w-36 whitespace-nowrap">Team Lead</th>
-                <th className="w-28 text-center whitespace-nowrap">Start Date</th>
-                <th className="w-32 text-center whitespace-nowrap">Current Stage</th>
-                <th className="w-28 text-center whitespace-nowrap">Payment Status</th>
-                <th className="w-48 text-right pr-4 whitespace-nowrap">Action</th>
+                <th className="w-28 text-center whitespace-nowrap hidden 2xl:table-cell">Start Date</th>
+                <th className="text-center whitespace-nowrap">Stage</th>
+                <th className="text-center whitespace-nowrap">Payment</th>
+                <th className="text-right pr-4 whitespace-nowrap">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -1076,7 +1076,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                             >
                               <span>#{job.jobNumber}</span>
                             </button>
-                            <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                            <span className="hidden 2xl:inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
                               <UserCheck className="w-3 h-3 text-slate-400" />
                               {formatCreatedBy(job.createdByUserId, users)}
                             </span>
@@ -1085,10 +1085,10 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
 
                         {/* 2. Customer */}
                         <td>
-                          <div className="font-bold text-slate-900 leading-tight truncate max-w-[200px]">
+                          <div className="font-bold text-slate-900 leading-tight truncate max-w-[180px]">
                             {customer?.name || 'Client'}
                           </div>
-                          <div className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">
+                          <div className="text-xs text-slate-500 mt-0.5 truncate max-w-[180px]">
                             {customer?.phone} &bull; {customer?.address}
                           </div>
                         </td>
@@ -1123,7 +1123,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                         </td>
 
                         {/* 5. Start Date */}
-                        <td className="text-center font-mono text-[13px] text-slate-600 whitespace-nowrap">
+                        <td className="text-center font-mono text-[13px] text-slate-600 whitespace-nowrap hidden 2xl:table-cell">
                           {formatDate(job.createdAt)}
                         </td>
 
@@ -1204,16 +1204,16 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                             <button
                               type="button"
                               onClick={() => setSelectedDetailJob(job)}
-                              className="w-[108px] h-7 px-2 rounded-md text-[13px] font-bold bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 shadow-2xs cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap transition-colors"
+                              className="h-7 px-2.5 rounded-md text-[13px] font-bold bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 shadow-2xs cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap transition-colors"
                             >
-                              <span>View Details</span>
+                              <span>Open</span>
                               <span>&rarr;</span>
                             </button>
 
                             <button
                               type="button"
                               onClick={() => setExpandedRowJobId(isRowExpanded ? null : job.id)}
-                              className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
+                              className="hidden 2xl:flex w-7 h-7 items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
                               title={isRowExpanded ? 'Collapse row' : 'Quick expand'}
                             >
                               {isRowExpanded ? (
@@ -1336,7 +1336,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
           <form onSubmit={confirmCompleteJob} className="flex-1 flex flex-col overflow-hidden text-[13px]">
             <div className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain">
               <JobPhotoUpload
-                label="After Work Photo (Mandatory verification)"
+                label="After work photo (required)"
                 photoUrl={afterPhotoInput}
                 required
                 samplePhotoFallback={SAMPLE_AFTER_PHOTO}
@@ -1354,7 +1354,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-medium mb-1">
-                    {completingQuotation ? 'Extra Labour beyond Quotation (INR)' : 'Service Labor Rate (INR) *'}
+                    {completingQuotation ? 'Extra labour beyond the quotation (₹)' : 'Service charge (₹) *'}
                   </label>
                   <Input
                     type="number"
@@ -1367,26 +1367,26 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-medium mb-1">GST Billing Category *</label>
+                  <label className="block text-slate-700 font-medium mb-1">GST *</label>
                   <select
                     value={gstChoiceInput}
                     onChange={(e) => setGstChoiceInput(e.target.value as any)}
                     className="w-full text-[13px] h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-900 focus:outline-none focus:border-orange-500 font-medium"
                   >
-                    <option value="GST">Standard 18% GST (CGST + SGST in Tamil Nadu, IGST outside)</option>
-                    <option value="NO_GST">Non-GST / Exempt</option>
+                    <option value="GST">18% GST</option>
+                    <option value="NO_GST">No GST (exempt)</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-slate-700 font-medium mb-1">
-                  Action Taken / Resolution Summary *
+                  What was done *
                 </label>
                 <textarea
                   rows={3}
                   required
-                  placeholder="Describe resolution summary..."
+                  placeholder="Describe the work done…"
                   value={actionTakenInput}
                   onChange={(e) => setActionTakenInput(e.target.value)}
                   className="w-full rounded-md border border-slate-300 bg-white p-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 leading-relaxed shadow-2xs"

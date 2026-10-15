@@ -218,7 +218,7 @@ export const StaffAccountsCard: React.FC = () => {
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>
-                      {r}
+                      {r === 'MANAGER' ? 'Manager (office / billing)' : humanize(r)}
                     </option>
                   ))}
                 </select>

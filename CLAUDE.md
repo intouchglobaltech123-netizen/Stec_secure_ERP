@@ -53,7 +53,8 @@ React 19, TypeScript (strict), Vite 6, Tailwind CSS 4 (via `@tailwindcss/vite`, 
 - Money is INR; format with `formatINR` and dates with `formatDate` / `formatDateTime` from `src/lib/utils.ts`.
 - **UI rules** (phones first — technicians work on phones):
   - Font is Inter (`styles.css`); numbers use `font-mono` (Inter, tabular digits). Text sizes: `text-[11px]` minimum, `text-xs` for secondary text, `text-[13px]`/`text-sm` for body. `Badge` and `Button` never wrap their label.
-  - List tables get `className="stack-on-phone …"`: below 1024px each row becomes a card and each cell is labelled with its `<th>` text (`labelTablesForPhones` in `main.tsx`). Columns that are only for wide screens use `hidden lg:table-cell` / `hidden 2xl:table-cell` on both `th` and `td`.
+  - List tables get `className="stack-on-phone …"`: below 1024px each row becomes a card and each cell is labelled with its `<th>` text (`labelTablesForPhones` in `main.tsx`). Columns that are only for wide screens use `hidden lg:table-cell` / `hidden 2xl:table-cell` / `hidden min-[1800px]:table-cell` on both `th` and `td`.
+  - Every table must fit a 1280px laptop with data in it, without sideways scrolling (cells are tighter between 1024–1535px in `styles.css`). Keep document numbers, dates and status chips `whitespace-nowrap`; put secondary details (created by, start date, duplicate quick-view buttons) behind `2xl:`.
   - Printable documents (invoice, credit note, quotation, challan) never use screen-size classes; wrap them in `FitToWidth` (`components/ui/fit-to-width.tsx`) so small screens show the A4 layout zoomed out. PDF export resets that zoom.
   - `Modal` is a bottom sheet on phones. Tab bars scroll sideways (`overflow-x-auto`, tabs `whitespace-nowrap shrink-0`) with short labels.
   - Show status / type codes with `humanize()` (`IN_STOCK` → "In stock"), never raw. Use plain words in titles and help text — no "cockpit", "telemetry", "execution center".

@@ -706,12 +706,12 @@ export const InventoryPage: React.FC = () => {
                 <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
-                      <th className="p-3">Vendor / OEM Name</th>
+                      <th className="p-3">Supplier</th>
                       <th className="p-3">Contact Person</th>
                       <th className="p-3">Phone</th>
-                      <th className="p-3">Warehouse Address</th>
+                      <th className="p-3">Address</th>
                       <th className="p-3">GSTIN</th>
-                      <th className="p-3">Purchased Units</th>
+                      <th className="p-3 whitespace-nowrap">Units bought</th>
                       {isManagement && <th className="p-3 text-right">Actions</th>}
                     </tr>
                   </thead>
@@ -729,13 +729,13 @@ export const InventoryPage: React.FC = () => {
                           <td className="p-3 text-slate-700">
                             {vend.contactPerson || '-'}
                           </td>
-                          <td className="p-3 text-slate-700">
+                          <td className="p-3 text-slate-700 whitespace-nowrap">
                             <span className="flex items-center gap-1">
                               <Phone className="w-3 h-3 text-slate-400" />
                               {vend.phone}
                             </span>
                           </td>
-                          <td className="p-3 text-slate-600 max-w-xs truncate">
+                          <td className="p-3 text-slate-600 max-w-[220px] truncate" title={vend.address}>
                             {vend.address}
                           </td>
                           <td className="p-3 font-mono text-orange-600 text-xs font-semibold">
@@ -743,7 +743,7 @@ export const InventoryPage: React.FC = () => {
                           </td>
                           <td className="p-3">
                             <Badge variant="outline" className="text-[11px]">
-                              {vendorSerials.length} Units Inwarded
+                              {vendorSerials.length} units
                             </Badge>
                           </td>
                           {isManagement && (

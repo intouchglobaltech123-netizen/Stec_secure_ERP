@@ -115,6 +115,15 @@
   background-color: #f8fafc;
 }
 
+/* Laptops (1024–1535px): slightly tighter cells so wide tables fit without sideways scrolling */
+@media (min-width: 1024px) and (max-width: 1535px) {
+  .erp-table th,
+  .erp-table td {
+    padding-left: 0.625rem;
+    padding-right: 0.625rem;
+  }
+}
+
 /* Phones and tablets: list tables become stacked cards, one per row; each cell shows its column
    heading (data-label is filled in by labelTablesForPhones in main.tsx) */
 @media (max-width: 1023px) {

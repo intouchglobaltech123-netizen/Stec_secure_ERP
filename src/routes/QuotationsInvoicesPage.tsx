@@ -633,12 +633,12 @@ export const QuotationsInvoicesPage: React.FC = () => {
                 <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
-                      <th className="p-3 w-10 text-center hidden lg:table-cell"></th>
+                      <th className="p-3 w-10 text-center hidden 2xl:table-cell"></th>
                       <th className="p-3 min-w-[170px]">Job / Enquiry</th>
                       <th className="p-3 min-w-[150px]">Customer</th>
-                      <th className="p-3 min-w-[140px]">Quotation</th>
+                      <th className="p-3 min-w-[120px]">Quotation</th>
                       <th className="p-3 min-w-[120px]">Challan</th>
-                      <th className="p-3 min-w-[140px]">Invoice</th>
+                      <th className="p-3 min-w-[120px]">Invoice</th>
                       <th className="p-3 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -665,7 +665,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               onClick={() => toggleGroupExpand(group.groupId)}
                             >
                               {/* Expand Toggle */}
-                              <td className="p-3 text-center hidden lg:table-cell">
+                              <td className="p-3 text-center hidden 2xl:table-cell">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -702,7 +702,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                     {group.referenceId}
                                   </span>
                                 </div>
-                                <div className="text-xs text-slate-500 truncate max-w-[220px] mt-0.5" title={group.title}>
+                                <div className="text-xs text-slate-500 truncate max-w-[180px] mt-0.5" title={group.title}>
                                   {group.title}
                                 </div>
                               </td>
@@ -1414,11 +1414,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
                 <table className="stack-on-phone w-full text-left text-[13px]">
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
-                      <th className="p-3">Quotation No</th>
-                      <th className="p-3">Customer / Organization</th>
+                      <th className="p-3 whitespace-nowrap">Quotation</th>
+                      <th className="p-3">Customer</th>
                       <th className="p-3">Date</th>
-                      <th className="p-3">Items & Scope</th>
-                      <th className="p-3 text-right">Taxable</th>
+                      <th className="p-3 hidden 2xl:table-cell">Items</th>
+                      <th className="p-3 text-right hidden 2xl:table-cell">Taxable</th>
                       <th className="p-3 text-right">Grand Total</th>
                       <th className="p-3 text-center">Status</th>
                       <th className="p-3 text-right">Actions</th>
@@ -1442,27 +1442,27 @@ export const QuotationsInvoicesPage: React.FC = () => {
                             className="hover:bg-slate-50 cursor-pointer transition-colors"
                             onClick={() => setPreviewQuotation(q)}
                           >
-                            <td className="p-3 font-mono font-bold text-orange-600">
+                            <td className="p-3 font-mono font-bold text-orange-600 whitespace-nowrap">
                               {q.quotationNo}
                             </td>
                             <td className="p-3">
                               <div className="font-semibold text-slate-900">
                                 {customer?.name || q.customerNumber}
                               </div>
-                              <div className="text-xs text-slate-500 truncate max-w-xs">
+                              <div className="text-xs text-slate-500 truncate max-w-[180px]">
                                 {customer?.address}
                               </div>
                             </td>
-                            <td className="p-3 text-slate-500 font-mono text-xs">
+                            <td className="p-3 text-slate-500 font-mono text-xs whitespace-nowrap">
                               {formatDate(q.date)}
                             </td>
-                            <td className="p-3 text-slate-700">
+                            <td className="p-3 text-slate-700 hidden 2xl:table-cell">
                               <div className="font-medium">{q.lineItems.length} items</div>
-                              <div className="text-[11px] text-slate-500 truncate max-w-xs">
+                              <div className="text-[11px] text-slate-500 truncate max-w-[180px]">
                                 {q.lineItems.map((i) => i.itemName).join(', ')}
                               </div>
                             </td>
-                            <td className="p-3 text-right text-slate-700 font-mono">
+                            <td className="p-3 text-right text-slate-700 font-mono hidden 2xl:table-cell">
                               {formatINR(q.totalAmount)}
                             </td>
                             <td className="p-3 text-right font-bold text-slate-900 font-mono">
@@ -1480,7 +1480,8 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                 )}
                               </div>
                             </td>
-                            <td className="p-3 text-right space-x-1.5" onClick={(e) => e.stopPropagation()}>
+                            <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex flex-wrap items-center justify-end gap-1.5 lg:max-w-[200px] lg:ml-auto">
                               {/* An invoiced quotation is locked — the invoice is edited instead */}
                               {isManagement && q.status !== 'CONVERTED' && (
                                 <Button
@@ -1535,6 +1536,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               >
                                 Preview PDF
                               </Button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1580,10 +1582,10 @@ export const QuotationsInvoicesPage: React.FC = () => {
                         className="hover:bg-slate-50 cursor-pointer transition-colors"
                         onClick={() => setViewCreditNote(cn)}
                       >
-                        <td className="p-3 font-mono font-bold text-orange-700">{cn.creditNoteNo}</td>
+                        <td className="p-3 font-mono font-bold whitespace-nowrap text-orange-700">{cn.creditNoteNo}</td>
                         <td className="p-3 font-mono">{cn.invoiceNo}</td>
                         <td className="p-3 font-semibold text-slate-900">{cn.billTo.name}</td>
-                        <td className="p-3 text-slate-500 font-mono text-xs">{formatDate(cn.date)}</td>
+                        <td className="p-3 text-slate-500 font-mono text-xs whitespace-nowrap">{formatDate(cn.date)}</td>
                         <td className="p-3 text-slate-600">
                           {creditNoteReasonLabel(cn.reason)}
                           {cn.reasonNote && <div className="text-[11px] text-slate-500">{cn.reasonNote}</div>}
@@ -1621,7 +1623,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="p-3">Challan No</th>
-                      <th className="p-3">Customer / Organization</th>
+                      <th className="p-3">Customer</th>
                       <th className="p-3">Date</th>
                       <th className="p-3">Transported By</th>
                       <th className="p-3">Goods / Line Items</th>
@@ -1647,18 +1649,18 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               setIsChallanModalOpen(true);
                             }}
                           >
-                            <td className="p-3 font-mono font-bold text-blue-600">
+                            <td className="p-3 font-mono font-bold whitespace-nowrap text-blue-600">
                               {dc.challanNo}
                             </td>
                             <td className="p-3">
                               <div className="font-semibold text-slate-900">
                                 {customer?.name || dc.customerNumber}
                               </div>
-                              <div className="text-xs text-slate-500 truncate max-w-xs">
+                              <div className="text-xs text-slate-500 truncate max-w-[180px]">
                                 {customer?.address}
                               </div>
                             </td>
-                            <td className="p-3 text-slate-500 font-mono text-xs">
+                            <td className="p-3 text-slate-500 font-mono text-xs whitespace-nowrap">
                               {formatDate(dc.date)}
                             </td>
                             <td className="p-3 text-slate-700">
@@ -1668,7 +1670,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               <div className="font-medium text-slate-900">
                                 {dc.lineItems.length} Item(s)
                               </div>
-                              <div className="text-[11px] text-slate-500 truncate max-w-xs">
+                              <div className="text-[11px] text-slate-500 truncate max-w-[180px]">
                                 {dc.lineItems.map((li) => `${li.itemDescription} (${li.qty})`).join(', ')}
                               </div>
                             </td>
@@ -1739,7 +1741,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                   <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
                       <th className="p-3">Invoice No</th>
-                      <th className="p-3">Customer / Organization</th>
+                      <th className="p-3">Customer</th>
                       <th className="p-3">Date</th>
                       <th className="p-3 text-right">Grand Total</th>
                       <th className="p-3 text-right">Paid</th>
@@ -1770,18 +1772,18 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               setInvoiceMode('PREVIEW');
                             }}
                           >
-                            <td className={`p-3 font-mono font-bold ${cancelled ? 'text-slate-400 line-through' : 'text-emerald-700'}`}>
+                            <td className={`p-3 font-mono font-bold whitespace-nowrap ${cancelled ? 'text-slate-400 line-through' : 'text-emerald-700'}`}>
                               {inv.invoiceNo}
                             </td>
                             <td className="p-3">
                               <div className="font-semibold text-slate-900">
                                 {customer?.name || inv.customerNumber}
                               </div>
-                              <div className="text-xs text-slate-500 truncate max-w-xs">
+                              <div className="text-xs text-slate-500 truncate max-w-[180px]">
                                 {customer?.address}
                               </div>
                             </td>
-                            <td className="p-3 text-slate-500 font-mono text-xs">
+                            <td className="p-3 text-slate-500 font-mono text-xs whitespace-nowrap">
                               {formatDate(inv.date)}
                             </td>
                             <td className="p-3 text-right font-mono font-semibold text-slate-900">

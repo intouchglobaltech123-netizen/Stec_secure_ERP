@@ -473,7 +473,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
           <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-2">
             <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Cpu className="w-3.5 h-3.5 text-orange-600" />
-              Hardware Unit Details
+              Unit details
             </div>
 
             {serial ? (
@@ -517,7 +517,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
             <div className="space-y-2">
               <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <HardHat className="w-3.5 h-3.5 text-orange-600" />
-                Physical Custody
+                Who collects it
               </div>
               <div>
                 <div className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
@@ -532,7 +532,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
             </div>
             <div className="pt-2 border-t border-slate-100">
               <div className="text-xs text-slate-600 bg-orange-50/60 p-2 rounded-lg border border-orange-100 leading-tight">
-                <strong>Physical Handling:</strong> Responsible for unit site pickup, transit handover, and site reinstallation.
+                <strong>Handles:</strong> picking up the unit, bringing it to the office and reinstalling it.
               </div>
             </div>
           </div>
@@ -1203,10 +1203,10 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
             <div className="flex items-center gap-2">
               <History className="w-4 h-4 text-orange-600" />
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider font-display">
-                Lifecycle Audit Trail ({ticket.timeline.length} Transitions)
+                History ({ticket.timeline.length} {ticket.timeline.length === 1 ? 'step' : 'steps'})
               </h3>
             </div>
-            <span className="text-xs text-slate-500">Immutable chronological log</span>
+            <span className="text-xs text-slate-500">Every stage change, with who and when</span>
           </div>
 
           <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
@@ -1229,7 +1229,7 @@ export const RepairTicketDetailModal: React.FC<RepairTicketDetailModalProps> = (
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-900 font-mono">
-                          {entry.status.replace(/_/g, ' ')}
+                          {humanize(entry.status)}
                         </span>
                         {isLatest && (
                           <Badge variant="orange" className="text-[11px] py-0 px-1.5">

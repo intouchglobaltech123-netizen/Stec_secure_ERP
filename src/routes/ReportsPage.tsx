@@ -22,7 +22,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatINR, formatDate, formatDateTime } from '@/lib/utils';
+import { formatINR, formatDate, formatDateTime, humanize } from '@/lib/utils';
 import { invoiceCategory, invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
 import {
   ResponsiveContainer,
@@ -384,7 +384,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       p.leadName,
       formatDate(p.job.timerStartedAt || p.job.createdAt),
       p.daysElapsed,
-      p.job.status.replace('_', ' '),
+      humanize(p.job.status),
       p.job.problemReported,
     ]);
     exportToCSV('stec_ongoing_projects_report', headers, rows);
@@ -1110,7 +1110,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                             }
                             className="text-[11px] rounded"
                           >
-                            {item.job.status.replace('_', ' ')}
+                            {humanize(item.job.status)}
                           </Badge>
                         </td>
                       </tr>

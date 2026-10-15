@@ -156,7 +156,7 @@ export const AddProductUsedModal: React.FC<AddProductUsedModalProps> = ({
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900 font-display">
-              Add Product / Hardware Used
+              Add product used
             </h2>
             <p className="text-[13px] text-slate-500">
               {job.jobNumber} — products and parts used on this job
@@ -244,13 +244,11 @@ export const AddProductUsedModal: React.FC<AddProductUsedModalProps> = ({
           <div className="p-3 rounded-xl bg-orange-50/50 border border-orange-200/80 space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-slate-800 font-bold text-[13px] flex items-center gap-1.5">
-                {job.type === 'INSTALLATION' ? 'Quantity to Install' : 'Quantity Used / Replaced'}{' '}
+                {job.type === 'INSTALLATION' ? 'Quantity installed' : 'Quantity used'}{' '}
                 <span className="text-rose-500">*</span>
               </label>
-              <span className="text-xs text-slate-500">
-                {job.type === 'INSTALLATION'
-                  ? 'Specify batch quantity (e.g. 6 cameras)'
-                  : 'Specify replacement parts quantity'}
+              <span className="hidden sm:inline text-xs text-slate-500">
+                {job.type === 'INSTALLATION' ? 'e.g. 6 cameras' : 'Parts fitted or replaced'}
               </span>
             </div>
 
@@ -327,14 +325,14 @@ export const AddProductUsedModal: React.FC<AddProductUsedModalProps> = ({
 
           {/* Optional Serial Picker (Multi-select) */}
           <div className="space-y-2 pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <span className="font-semibold text-slate-800 text-[13px] flex items-center gap-1.5">
                   <Tag className="w-3.5 h-3.5 text-orange-600" />
-                  Assign Serial Number(s) (Optional)
+                  Serial numbers (optional)
                 </span>
                 <span className="text-[11px] text-slate-500 block">
-                  Select up to {quantity} serial unit(s) for warranty and asset binding
+                  Pick up to {quantity} — recorded at this customer for warranty
                 </span>
               </div>
 
@@ -396,10 +394,10 @@ export const AddProductUsedModal: React.FC<AddProductUsedModalProps> = ({
                         >
                           {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
-                        <span className="font-mono font-bold text-slate-900">{s.serialNumber}</span>
+                        <span className="font-mono font-bold text-slate-900 whitespace-nowrap">{s.serialNumber}</span>
                       </div>
 
-                      <div className="text-[11px] text-slate-500 text-right">
+                      <div className="hidden sm:block text-[11px] text-slate-500 text-right">
                         <span>{vendor?.name || 'Warehouse Stock'}</span>
                         {s.purchaseDate && <span className="ml-1 text-slate-400 font-mono">&bull; {s.purchaseDate}</span>}
                       </div>

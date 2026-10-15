@@ -487,7 +487,7 @@ export const PaymentsPage: React.FC = () => {
               <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
-                    <th className="p-3 font-semibold text-slate-700">Customer ID</th>
+                    <th className="p-3 font-semibold text-slate-700 hidden 2xl:table-cell">Customer ID</th>
                     <th
                       className="p-3 font-semibold text-slate-700 cursor-pointer hover:text-slate-900 select-none"
                       onClick={() => handleSortCockpit('name')}
@@ -582,7 +582,7 @@ export const PaymentsPage: React.FC = () => {
                             idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'
                           }`}
                         >
-                          <td className="p-3 font-mono font-semibold text-slate-500">
+                          <td className="p-3 font-mono font-semibold text-slate-500 whitespace-nowrap hidden 2xl:table-cell">
                             {cust.id}
                           </td>
                           <td className="p-3">
@@ -618,19 +618,19 @@ export const PaymentsPage: React.FC = () => {
                           </td>
                           <td className="p-3 text-center">
                             {entry.hasOverdue ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                              <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                                 Overdue &gt;15D
                               </span>
                             ) : !hasBalance ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 Fully Settled
                               </span>
                             ) : isPartial ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                              <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                                 Partial
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-orange-50 text-orange-800 border border-orange-200">
+                              <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-md text-[11px] font-semibold bg-orange-50 text-orange-800 border border-orange-200">
                                 Pending
                               </span>
                             )}
@@ -769,7 +769,7 @@ export const PaymentsPage: React.FC = () => {
                             {job?.jobNumber || '-'}
                           </td>
                           <td className="p-3">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                            <span className="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                               {p.mode}
                             </span>
                           </td>
@@ -1000,7 +1000,7 @@ export const PaymentsPage: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain">
               {/* Customer Selector */}
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Select Customer *</label>
+                <label className="block font-semibold text-slate-700 mb-1">Customer *</label>
                 <select
                   value={manualCustomerId}
                   onChange={(e) => handleCustomerSelectChange(e.target.value)}
@@ -1017,7 +1017,7 @@ export const PaymentsPage: React.FC = () => {
               {/* Invoice Selector */}
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  Target Outstanding Invoice *
+                  Invoice *
                 </label>
                 <select
                   value={manualInvoiceId}
@@ -1070,7 +1070,7 @@ export const PaymentsPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
-                    UTR / Cheque / Transaction Ref No
+                    UTR / cheque no.
                   </label>
                   <Input
                     placeholder="e.g. UTR-4029104881"

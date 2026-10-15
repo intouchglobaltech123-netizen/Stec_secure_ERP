@@ -514,13 +514,13 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
                             placeholder="Item name"
                             value={item.itemName}
                             onChange={(e) => handleUpdateItem(idx, { itemName: e.target.value })}
-                            className="h-8 text-[13px] bg-white font-semibold text-slate-900"
+                            className="h-8 text-[13px] bg-white font-semibold text-slate-900 sm:flex-1 min-w-0"
                           />
                           <select
                             onChange={(e) => handlePickProduct(idx, e.target.value)}
                             value=""
                             aria-label="Pick Product from Catalog"
-                            className="w-full sm:w-auto h-8 rounded-lg bg-slate-100 border border-slate-200 text-[11px] text-orange-700 px-1.5 focus:outline-none cursor-pointer font-medium"
+                            className="w-full sm:w-32 sm:shrink-0 h-8 rounded-lg bg-slate-100 border border-slate-200 text-[11px] text-orange-700 px-1.5 focus:outline-none cursor-pointer font-medium"
                           >
                             <option value="" disabled>
                               Pick Catalog...

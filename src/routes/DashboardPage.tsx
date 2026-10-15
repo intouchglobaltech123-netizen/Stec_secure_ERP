@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { errorMessage } from '@/lib/api';
-import { formatINR, formatDateTime, formatDate } from '@/lib/utils';
+import { formatINR, formatDateTime, formatDate, humanize } from '@/lib/utils';
 import { invoiceCategory, invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
 import {
   SERVICE_CATEGORIES,
@@ -962,7 +962,7 @@ export const DashboardPage: React.FC = () => {
                   }
                   className="text-[11px] shrink-0"
                 >
-                  {job.status.replace('_', ' ')}
+                  {humanize(job.status)}
                 </Badge>
               </div>
             ))}

@@ -46,7 +46,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
-import { formatDate, formatDateTime, formatINR, formatCreatedBy } from '@/lib/utils';
+import { formatDate, formatDateTime, formatINR, formatCreatedBy, humanize } from '@/lib/utils';
 import { JobCreateModal } from '@/components/jobs/JobCreateModal';
 import { JobDetailModal } from '@/components/jobs/JobDetailModal';
 import { QuotationBuilderModal } from '@/components/quotations/QuotationBuilderModal';
@@ -461,11 +461,11 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
               <tr>
                 <th className="w-32 whitespace-nowrap">ID</th>
                 <th className="min-w-[190px]">Customer</th>
-                <th className="min-w-[190px]">Work Type</th>
-                <th className="w-28 whitespace-nowrap hidden 2xl:table-cell">Referred By</th>
-                <th className="w-36 whitespace-nowrap">Assigned Technician</th>
-                <th className="w-24 text-right whitespace-nowrap hidden 2xl:table-cell">Amount</th>
-                <th className="w-28 text-center whitespace-nowrap">Start Date</th>
+                <th className="min-w-[160px]">Work Type</th>
+                <th className="w-28 whitespace-nowrap hidden min-[1800px]:table-cell">Referred By</th>
+                <th className="whitespace-nowrap">Technician</th>
+                <th className="w-24 text-right whitespace-nowrap hidden min-[1800px]:table-cell">Amount</th>
+                <th className="w-28 text-center whitespace-nowrap hidden 2xl:table-cell">Start Date</th>
                 <th className="w-28 text-center whitespace-nowrap">Status</th>
                 <th className="text-right pr-4 whitespace-nowrap">Action</th>
               </tr>
@@ -505,15 +505,15 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                     <tr key={enq.id} className="transition-colors hover:bg-slate-50/90">
                       {/* 1. ID & Creator */}
                       <td className="whitespace-nowrap">
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col items-start gap-1">
                           <button
                             type="button"
                             onClick={() => setViewEnquiry(enq)}
-                            className="font-bold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer font-mono"
+                            className="font-bold text-orange-600 hover:text-orange-700 hover:underline cursor-pointer font-mono text-left"
                           >
                             #{enq.enquiryNumber}
                           </button>
-                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
+                          <span className="hidden 2xl:inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium">
                             <UserCheck className="w-3 h-3 text-slate-400" />
                             {formatCreatedBy(enq.createdByUserId, users)}
                           </span>
@@ -522,10 +522,10 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
 
                       {/* 2. Customer */}
                       <td>
-                        <div className="font-bold text-slate-900 leading-tight truncate max-w-[200px]">
+                        <div className="font-bold text-slate-900 leading-tight truncate max-w-[180px]">
                           {enq.customerName}
                         </div>
-                        <div className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">
+                        <div className="text-xs text-slate-500 mt-0.5 truncate max-w-[180px]">
                           {enq.customerPhone} &bull; {enq.customerAddress}
                         </div>
                       </td>
@@ -546,7 +546,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                       </td>
 
                       {/* 4. Referred By */}
-                      <td className="text-slate-700 whitespace-nowrap hidden 2xl:table-cell">
+                      <td className="text-slate-700 whitespace-nowrap hidden min-[1800px]:table-cell">
                         {enq.source ? (
                           <span className="text-[13px] font-medium">{enq.source}</span>
                         ) : (
@@ -569,7 +569,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                       </td>
 
                       {/* 6. Amount */}
-                      <td className="text-right font-mono whitespace-nowrap hidden 2xl:table-cell">
+                      <td className="text-right font-mono whitespace-nowrap hidden min-[1800px]:table-cell">
                         {amountValue && amountValue > 0 ? (
                           <span className="font-bold text-slate-900">{formatINR(amountValue)}</span>
                         ) : (
@@ -578,7 +578,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                       </td>
 
                       {/* 7. Start Date */}
-                      <td className="text-center font-mono text-[13px] text-slate-600 whitespace-nowrap">
+                      <td className="text-center font-mono text-[13px] text-slate-600 whitespace-nowrap hidden 2xl:table-cell">
                         {formatDate(enq.createdAt)}
                       </td>
 
@@ -645,7 +645,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                           <button
                             type="button"
                             onClick={() => setViewEnquiry(enq)}
-                            className="w-7 h-7 flex items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
+                            className="hidden 2xl:flex w-7 h-7 items-center justify-center rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer transition-colors"
                             title="Quick View Enquiry Details"
                           >
                             <Eye className="w-3.5 h-3.5" />
@@ -720,7 +720,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                         : 'bg-amber-50 text-amber-800 border border-amber-300'
                     }`}
                   >
-                    {viewEnquiry.status.replace('_', ' ')}
+                    {viewEnquiry.status === 'FOLLOW_UP' ? 'Follow-up' : humanize(viewEnquiry.status)}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[13px] text-slate-500">

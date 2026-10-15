@@ -386,7 +386,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                 <th className="p-3.5">Hardware / Serial Unit</th>
                 <th className="p-3.5">Assigned Tech</th>
                 <th className="p-3.5">Status</th>
-                <th className="p-3.5">Repair Path</th>
+                <th className="p-3.5 hidden 2xl:table-cell">Repair Path</th>
                 <th className="p-3.5">Days in Stage</th>
                 <th className="p-3.5">Alerts / SLA</th>
                 <th className="p-3.5 text-right">Action</th>
@@ -489,7 +489,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                       <td className="p-3.5">{renderStatusBadge(ticket.status)}</td>
 
                       {/* Repair Path */}
-                      <td className="p-3.5">
+                      <td className="p-3.5 hidden 2xl:table-cell">
                         {ticket.repairPath === 'IN_HOUSE' ? (
                           <span className="inline-flex items-center gap-1 font-semibold text-orange-800 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded text-xs">
                             <Wrench className="w-3 h-3 text-orange-600" /> In-House
