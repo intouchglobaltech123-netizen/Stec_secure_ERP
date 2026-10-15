@@ -15,9 +15,12 @@ React 19, TypeScript (strict), Vite 6, Tailwind CSS 4 (via `@tailwindcss/vite`, 
 
 ## Architecture
 
-- **No backend.** All data lives in one React context, `src/lib/stecsecure-context.tsx`, and is persisted as a single JSON blob in browser `localStorage` under `stecsecure_erp_v1`. Every device/browser has its own separate copy of the data.
-- `getInitialState()` in the context loads that blob, falls back to demo data from `src/lib/seed-data.ts`, and applies ad-hoc migrations on every load.
-- All business actions (create job, raise invoice, record payment, stock-in serials, repair transitions…) are functions on the context; pages and modals call them via `useStecSecure()`.
+- **No backend yet** (step 2 adds one). All data lives in one React context, `src/lib/stecsecure-context.tsx`, persisted as a single JSON blob in browser `localStorage` under `stecsecure_erp_v1`. Every device/browser has its own separate copy of the data.
+- On load, `getInitialState()` runs the saved blob through `normalizeSavedState()` (migrations for older saves), or falls back to demo data from `src/lib/seed-data.ts`.
+- **Business rules live in `src/lib/erp/`** (Phase 20) and are shared with the coming server:
+  - `core.ts` — `ErpState`, `ActionEnv` (actor, time, India date, financial year, id generator), seed/normalize of saved state, and shared helpers (`invoiceTotals`, `makeLineItem`, `getJobQuotation`, `findInvoiceForJob`, `isPhysicalLineItem`).
+  - `actions/*.ts` — every business action as a **pure function** `(state, env, args) => { state, result }`, registered by name in `actions/index.ts` (`ACTIONS`). No React, no `localStorage`, no `Date.now()`/`new Date()` for business values — use `env`.
+  - The context only holds state and auth, and exposes each action through `run(name, args)`, which applies it to the latest state synchronously (`stateRef`). To add an action: write it in `actions/`, register it in `ACTIONS`, add a wrapper and its signature in the context.
 - Data models and company constants (`COMPANY_DETAILS`, bank details, `SERVICE_CATEGORIES`) are in `src/lib/stecsecure-types.ts`.
 - **Navigation is not URL routing.** TanStack Router has a single `/` route; `src/router.tsx` (`AppLayout`) switches pages on a `currentSection` state (`NavSection` in `src/components/layout/AppShell.tsx`). Initial section can come from `?section=`.
 - Pages live in `src/routes/*Page.tsx`; feature modals in `src/components/<feature>/`; shared primitives in `src/components/ui/`.
@@ -35,10 +38,10 @@ React 19, TypeScript (strict), Vite 6, Tailwind CSS 4 (via `@tailwindcss/vite`, 
 
 - Money is INR; format with `formatINR` and dates with `formatDate` / `formatDateTime` from `src/lib/utils.ts`.
 - GST line items use the `LineItem` shape (`amount`, `cgst`, `sgst`, `total`). Hardware/material lines use the product's own `gstRate`; the job's GST choice applies only to the service line.
-- Document numbers come from `nextDocNumber(prefix, existing)` in the context (max existing + 1, never array length). Prefixes use the financial-year start (`financialYearStart()` in `src/lib/numbering.ts`): `INV-2026-001`, `DC-`, `JOB-`, `ENQ-`, `RMA-`, quotations `A26001`.
-- Store dates with `localDateISO()` (IST calendar date), never `toISOString().split('T')[0]` (UTC).
+- Document numbers come from `nextDocNumber(prefix, existing)` in `src/lib/numbering.ts` (max existing + 1, never array length). Prefixes use the financial-year start (`financialYearStart()` in `src/lib/numbering.ts`): `INV-2026-001`, `DC-`, `JOB-`, `ENQ-`, `RMA-`, quotations `A26001`.
+- Store dates with `env.today` / `localDateISO()` (India calendar date via `Asia/Kolkata`, correct even on a UTC server), never `toISOString().split('T')[0]` (UTC).
 - An invoice records its source `quotationId` / `deliveryChallanId`; conversions must refuse to invoice the same source twice.
 - One job is billed by one tax invoice (`findInvoiceForJob`). A job with a quotation (`getJobQuotation`) is invoiced at the quotation as agreed, plus usage beyond the quoted quantities and any extra labour; jobs without one bill labour + materials + products used.
 - Photos go through `compressImageFile()` (`src/lib/image-utils.ts`) before being stored.
 - Comments reference development phases ("Phase 13 Part B") — keep that style when extending a phase's feature.
-- Update context state with functional `setErpState(prev => …)` updates; React StrictMode is on, so updaters must be pure.
+- Never set ERP state directly from components; go through an action. React StrictMode is on, so actions must stay pure.
