@@ -401,6 +401,18 @@ export interface RepairTicket {
   timeline: RepairTimelineEntry[];
 }
 
+// Phase 22: in-app notifications — addressed to specific staff, read state per person
+export interface AppNotification {
+  id: string;
+  createdAt: string;
+  recipientUserIds: string[];
+  readBy: string[];
+  title: string;
+  body?: string;
+  section?: string; // AppSection to open when clicked
+  jobId?: string;
+}
+
 // Phase 18: CEO-managed access control — which app sections each role may open
 export type AppSection =
   | 'dashboard'

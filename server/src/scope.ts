@@ -11,6 +11,12 @@ export function canAccessSection(state: ErpState, user: User, section: AppSectio
 }
 
 export function scopeStateFor(state: ErpState, user: User): ErpState {
+  // Everyone — management included — receives only notifications addressed to them
+  const scoped = scopeRecordsFor(state, user);
+  return { ...scoped, notifications: state.notifications.filter((n) => n.recipientUserIds.includes(user.id)) };
+}
+
+function scopeRecordsFor(state: ErpState, user: User): ErpState {
   if (isManagementRole(user)) return state;
 
   const allows = (section: AppSection) => canAccessSection(state, user, section);

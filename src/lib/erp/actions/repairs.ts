@@ -7,7 +7,7 @@ import {
   SerialUnit,
 } from '../../stecsecure-types';
 import { nextDocNumber } from '../../numbering';
-import { Action, done, updateById } from '../core';
+import { Action, done, updateById, withNotification } from '../core';
 
 export interface CreateRepairTicketArgs {
   customerId: string;
@@ -44,7 +44,7 @@ export const createRepairTicket: Action<CreateRepairTicketArgs, RepairTicket> = 
     ],
   };
 
-  return done(
+  const created = done(
     {
       ...s,
       serialUnits: data.serialUnitId
@@ -56,6 +56,15 @@ export const createRepairTicket: Action<CreateRepairTicketArgs, RepairTicket> = 
         : s.serialUnits,
       repairTickets: [newTicket, ...s.repairTickets],
     },
+    newTicket
+  ).state;
+  const customer = s.customers.find((c) => c.id === data.customerId);
+  return done(
+    withNotification(created, env, [data.assignedTechnicianId], {
+      title: `Repair ticket ${newTicket.ticketNumber} assigned to you`,
+      body: `${customer ? `${customer.name} · ` : ''}${data.faultDescription}`,
+      section: 'repairs',
+    }),
     newTicket
   );
 };

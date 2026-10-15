@@ -22,6 +22,9 @@ import {
   getJobQuotation,
   findInvoiceForJob,
   applyAdvancesToInvoice,
+  withNotification,
+  managementIds,
+  jobSection,
 } from '../core';
 
 export type CreateJobArgs = Omit<Job, 'id' | 'createdAt' | 'jobNumber'> & {
@@ -47,7 +50,7 @@ export const createJob: Action<CreateJobArgs, Job> = (s, env, jobData) => {
     createdAt: env.nowIso,
   };
 
-  return done(
+  const created = done(
     {
       ...s,
       jobs: [newJob, ...s.jobs],
@@ -70,6 +73,18 @@ export const createJob: Action<CreateJobArgs, Job> = (s, env, jobData) => {
           : q
       ),
     },
+    newJob
+  ).state;
+  const customer = s.customers.find((c) => c.id === newJob.customerNumber);
+  return done(
+    withNotification(created, env, [...newJob.assignedTeam, newJob.teamLeadUserId], {
+      title: `New job ${newJob.jobNumber} assigned to you`,
+      body: `${newJob.category} ${newJob.type === 'INSTALLATION' ? 'installation' : 'service'}${
+        customer ? ` · ${customer.name}` : ''
+      }${newJob.scheduledFor ? ` · visit ${newJob.scheduledFor.replace('T', ' ')}` : ''}`,
+      section: jobSection(newJob),
+      jobId: newJob.id,
+    }),
     newJob
   );
 };
@@ -216,7 +231,12 @@ export const raiseHold: Action<{ jobId: string; reason: string }, void> = (s, en
     status: 'OPEN',
   };
 
-  const withNote = withWorkLogNote(s, env, jobId, `[HOLD RAISED] ${reason}`);
+  const withNote = withNotification(withWorkLogNote(s, env, jobId, `[HOLD RAISED] ${reason}`), env, managementIds(s), {
+    title: `${targetJob?.jobNumber || 'A job'} is on hold`,
+    body: `${env.actor?.name || 'Technician'}: ${reason}`,
+    section: targetJob ? jobSection(targetJob) : undefined,
+    jobId,
+  });
   return done(
     {
       ...withNote,
@@ -235,10 +255,16 @@ export const raiseHold: Action<{ jobId: string; reason: string }, void> = (s, en
 export const resolveHoldEvent: Action<{ holdId: string }, void> = (s, env, { holdId }) => {
   const hold = s.holdEvents.find((h) => h.id === holdId);
   if (!hold) return done(s, undefined);
+  const heldJob = s.jobs.find((j) => j.id === hold.jobId);
 
   return done(
     {
-      ...s,
+      ...withNotification(s, env, heldJob ? [...heldJob.assignedTeam, heldJob.teamLeadUserId, hold.raisedByUserId] : [], {
+        title: `${heldJob?.jobNumber || 'Job'} resumed — hold cleared`,
+        body: hold.reason,
+        section: heldJob ? jobSection(heldJob) : undefined,
+        jobId: hold.jobId,
+      }),
       holdEvents: updateById(s.holdEvents, holdId, (h) => ({
         ...h,
         status: 'RESOLVED' as const,
@@ -312,7 +338,14 @@ export const editJob: Action<{ jobId: string; updates: EditableJobFields }, Job>
     : '[JOB UPDATED] Job details updated';
 
   const withJob = { ...s, jobs: updateById(s.jobs, jobId, () => updated) };
-  return done(withWorkLogNote(withJob, env, jobId, note), updated);
+  const added = team.filter((id) => !job.assignedTeam.includes(id));
+  const notified = withNotification(withWorkLogNote(withJob, env, jobId, note), env, added, {
+    title: `You were added to job ${job.jobNumber}`,
+    body: updated.problemReported,
+    section: jobSection(job),
+    jobId,
+  });
+  return done(notified, updated);
 };
 
 // Phase 22: cancel instead of delete — the record stays, allocated stock goes back to the shelf
@@ -325,7 +358,7 @@ export const cancelJob: Action<{ jobId: string; reason: string }, void> = (s, en
   if (invoice) throw new Error(`Job ${job.jobNumber} is already invoiced as ${invoice.invoiceNo} and cannot be cancelled.`);
 
   const elapsed = elapsedSeconds(job, env);
-  return done(
+  const cancelled = done(
     {
       ...s,
       jobs: updateById(s.jobs, jobId, (j) => ({
@@ -353,6 +386,15 @@ export const cancelJob: Action<{ jobId: string; reason: string }, void> = (s, en
           : su
       ),
     },
+    undefined
+  ).state;
+  return done(
+    withNotification(cancelled, env, [...job.assignedTeam, job.teamLeadUserId], {
+      title: `Job ${job.jobNumber} was cancelled`,
+      body: reason.trim(),
+      section: jobSection(job),
+      jobId,
+    }),
     undefined
   );
 };
@@ -562,7 +604,18 @@ export const completeJob: Action<CompleteJobArgs, Invoice | undefined> = (s, env
   }
   // Phase 22: advances taken against this job or its quotation count towards the new invoice
   const next = applyAdvancesToInvoice(completed, newInvoice!.id);
-  return done(next, next.invoices.find((i) => i.id === newInvoice!.id));
+  const finalInvoice = next.invoices.find((i) => i.id === newInvoice!.id)!;
+  return done(
+    withNotification(next, env, managementIds(s), {
+      title: `${targetJob.jobNumber} completed by ${env.actor?.name || 'the team'}`,
+      body: `Invoice ${finalInvoice.invoiceNo} · ₹${finalInvoice.grandTotal.toLocaleString('en-IN')}${
+        finalInvoice.amountPaid ? ` (₹${finalInvoice.amountPaid.toLocaleString('en-IN')} advance applied)` : ''
+      }`,
+      section: jobSection(targetJob),
+      jobId,
+    }),
+    finalInvoice
+  );
 };
 
 export interface RaiseJobInvoiceArgs {

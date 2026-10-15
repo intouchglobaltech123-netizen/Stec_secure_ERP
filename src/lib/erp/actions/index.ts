@@ -62,6 +62,7 @@ export const ACTIONS = {
   transitionRepairTicket: repairs.transitionRepairTicket,
 
   updateAccessControl: admin.updateAccessControl,
+  markNotificationsRead: admin.markNotificationsRead,
 } as const;
 
 export type ActionName = keyof typeof ACTIONS;

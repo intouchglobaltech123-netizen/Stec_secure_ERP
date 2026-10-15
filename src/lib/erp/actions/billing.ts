@@ -24,7 +24,19 @@ import {
   applyAdvancesToInvoice,
   unappliedAdvances,
   findInvoiceForQuotation,
+  withNotification,
+  managementIds,
 } from '../core';
+
+// Phase 22: tell management about money received (not the person who recorded it)
+const notifyPayment = (s: ErpState, env: ActionEnv, payment: Payment, what: string) => {
+  const customer = s.customers.find((c) => c.id === payment.customerNumber);
+  return withNotification(s, env, managementIds(s), {
+    title: `₹${payment.amount.toLocaleString('en-IN')} received${customer ? ` from ${customer.name}` : ''}`,
+    body: `${what} · ${payment.mode} · receipt ${payment.receiptNo}${env.actor ? ` · by ${env.actor.name}` : ''}`,
+    section: 'payments',
+  });
+};
 
 // Sequential receipt number for every payment, restarting each financial year
 const nextReceiptNo = (s: ErpState, env: ActionEnv) =>
@@ -79,7 +91,7 @@ export const recordPaymentAfterOtp: Action<RecordPaymentAfterOtpArgs, Payment | 
         }
       : null;
 
-  return done(
+  const paid = done(
     {
       ...s,
       invoices: updateById(s.invoices, data.invoiceId, (i) => ({
@@ -91,7 +103,8 @@ export const recordPaymentAfterOtp: Action<RecordPaymentAfterOtpArgs, Payment | 
       payments: createdPayment ? [createdPayment, ...s.payments] : s.payments,
     },
     createdPayment
-  );
+  ).state;
+  return done(createdPayment ? notifyPayment(paid, env, createdPayment, `Invoice ${inv.invoiceNo}`) : paid, createdPayment);
 };
 
 export interface RecordManualPaymentArgs {
@@ -124,19 +137,17 @@ export const recordManualPayment: Action<RecordManualPaymentArgs, Payment | null
     referenceNo: data.referenceNo || undefined,
   };
 
-  return done(
-    {
-      ...s,
-      invoices: updateById(s.invoices, data.invoiceId, (i) => ({
-        ...i,
-        amountPaid: newAmountPaid,
-        balanceDue: newBalanceDue,
-        paymentMode: newBalanceDue === 0 ? data.paymentMode : newAmountPaid > 0 ? data.paymentMode : 'PENDING',
-      })),
-      payments: [createdPayment, ...s.payments],
-    },
-    createdPayment
-  );
+  const paid: ErpState = {
+    ...s,
+    invoices: updateById(s.invoices, data.invoiceId, (i) => ({
+      ...i,
+      amountPaid: newAmountPaid,
+      balanceDue: newBalanceDue,
+      paymentMode: newBalanceDue === 0 ? data.paymentMode : newAmountPaid > 0 ? data.paymentMode : 'PENDING',
+    })),
+    payments: [createdPayment, ...s.payments],
+  };
+  return done(notifyPayment(paid, env, createdPayment, `Invoice ${inv.invoiceNo}`), createdPayment);
 };
 
 export const addPayment: Action<Omit<Payment, 'id'>, Payment> = (s, env, payment) => {
@@ -188,7 +199,8 @@ export const recordAdvance: Action<RecordAdvanceArgs, Payment> = (s, env, data) 
     receiptNo: nextReceiptNo(s, env),
     referenceNo: data.referenceNo || undefined,
   };
-  return done({ ...s, payments: [advance, ...s.payments] }, advance);
+  const what = quot ? `Advance for quotation ${quot.quotationNo}` : `Advance for job ${job!.jobNumber}`;
+  return done(notifyPayment({ ...s, payments: [advance, ...s.payments] }, env, advance, what), advance);
 };
 
 export interface CreateDeliveryChallanArgs {

@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { DEMO_MODE } from '@/lib/demo-mode';
 import { ChangePinModal } from '@/components/auth/ChangePinModal';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 import { AppSection } from '@/lib/stecsecure-types';
 
 // REPLACE WITH ACTUAL S TEC SECURE LOGO (white background version) — see /public/logo-placeholder.png
@@ -193,6 +194,9 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
               <span>{openHoldsCount} Hold Pending</span>
             </button>
           )}
+
+          {/* Phase 22: notifications */}
+          <NotificationBell onNavigate={onNavigate} />
 
           {/* Account menu */}
           <div className="relative">

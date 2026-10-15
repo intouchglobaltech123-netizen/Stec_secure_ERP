@@ -20,6 +20,7 @@ import {
   JobProductUsage,
   RepairTicket,
   LineItem,
+  AppNotification,
   AccessControl,
   DEFAULT_ACCESS_CONTROL,
 } from '../stecsecure-types';
@@ -63,6 +64,7 @@ export interface ErpState {
   enquiries: Enquiry[];
   jobProductUsages: JobProductUsage[];
   repairTickets: RepairTicket[];
+  notifications: AppNotification[];
   accessControl: AccessControl;
 }
 
@@ -160,6 +162,33 @@ export const findInvoiceForJob = (s: ErpState, job: Job) => {
   );
 };
 
+// Phase 22: in-app notifications. The person who caused the event is never notified; only the most
+// recent ones are kept so the list (and every sync) stays small.
+const MAX_NOTIFICATIONS = 300;
+
+export const managementIds = (s: ErpState) =>
+  s.users.filter((u) => u.role === 'CEO' || u.role === 'MANAGER').map((u) => u.id);
+
+export function withNotification(
+  s: ErpState,
+  env: ActionEnv,
+  to: (string | undefined)[],
+  message: { title: string; body?: string; section?: string; jobId?: string }
+): ErpState {
+  const recipients = [...new Set(to.filter((id): id is string => Boolean(id) && id !== env.actor?.id))];
+  if (!recipients.length) return s;
+  const notification: AppNotification = {
+    id: env.newId('NTF'),
+    createdAt: env.nowIso,
+    recipientUserIds: recipients,
+    readBy: [],
+    ...message,
+  };
+  return { ...s, notifications: [notification, ...s.notifications].slice(0, MAX_NOTIFICATIONS) };
+}
+
+export const jobSection = (job: { type: string }) => (job.type === 'INSTALLATION' ? 'installation-jobs' : 'service-jobs');
+
 // Phase 22: the invoice that bills this quotation — directly, via a challan, or via a job raised from it
 export const findInvoiceForQuotation = (s: ErpState, quotationId: string) =>
   s.invoices.find((i) => i.quotationId === quotationId) ??
@@ -254,6 +283,7 @@ export function getSeedState(): ErpState {
     enquiries: SEED_ENQUIRIES,
     jobProductUsages: SEED_JOB_PRODUCT_USAGES,
     repairTickets: SEED_REPAIR_TICKETS,
+    notifications: [],
     accessControl: DEFAULT_ACCESS_CONTROL,
   };
 }
@@ -318,6 +348,7 @@ export function normalizeSavedState(parsed: any, { browserLegacyFixes = true } =
     }),
     jobProductUsages: list<JobProductUsage>(parsed.jobProductUsages),
     repairTickets: list<RepairTicket>(parsed.repairTickets),
+    notifications: list<AppNotification>(parsed.notifications),
     accessControl: { ...DEFAULT_ACCESS_CONTROL, ...(parsed.accessControl || {}) },
   };
 }

@@ -45,6 +45,8 @@ export interface StecSecureContextType extends ErpState {
   // Phase 18: Access control (CEO-managed)
   canAccessSection: (section: AppSection) => boolean;
   updateAccessControl: (role: ConfigurableRole, sections: AppSection[]) => Promise<void>;
+  // Phase 22: mark my notifications read (all, or the given ids)
+  markNotificationsRead: (ids?: string[]) => Promise<void>;
 
   // Auth (Phase 21: server sessions, phone + PIN)
   login: (phone: string, pin: string) => Promise<{ success: boolean; message?: string }>;
@@ -490,6 +492,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         visibleRepairTickets,
         canAccessSection,
         updateAccessControl: (role, sections) => run('updateAccessControl', { role, sections }),
+        markNotificationsRead: (ids) => run('markNotificationsRead', { ids }),
         login,
         logout,
         changeOwnPin: async (currentPin, newPin) => {

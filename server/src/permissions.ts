@@ -130,6 +130,8 @@ const RULES: Record<ActionName, Check> = {
   },
 
   updateAccessControl: ceoOnly,
+  // Only ever touches the caller's own notifications
+  markNotificationsRead: () => null,
 };
 
 export function checkPermission(name: ActionName, state: ErpState, user: User, args: unknown): string | null {
