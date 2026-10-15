@@ -169,7 +169,7 @@ export const AppShell: React.FC<AppShellProps> = ({ currentSection, onNavigate, 
             className="flex items-center gap-3 cursor-pointer group py-1"
           >
             <div>
-              <div className="font-extrabold text-base tracking-tight text-slate-900 flex items-center gap-1.5 font-display">
+              <div className="font-extrabold text-base tracking-tight text-slate-900 flex items-center gap-1.5 font-display whitespace-nowrap">
                 <span>S Tec</span>
                 <span className="text-orange-600">Secure</span>
                 <span className="text-[10px] uppercase font-mono font-bold px-1.5 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-200 ml-1">

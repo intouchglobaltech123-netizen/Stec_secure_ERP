@@ -23,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatINR, formatDate, formatDateTime } from '@/lib/utils';
-import { invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
+import { invoiceCategory, invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
 import {
   ResponsiveContainer,
   BarChart,
@@ -87,43 +87,40 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
   // ==========================================
   // 1. REVENUE REPORT COMPUTATIONS
   // ==========================================
+  // Step 3: revenue comes from the invoices themselves (net of credit notes, cancelled ones excluded),
+  // so it matches the Dashboard and Payments. Invoices raised straight from a quotation or challan have
+  // no job and count under Installation Projects.
   const revenueByCategory = useMemo(() => {
+    const jobById = new Map(allJobs.map((j) => [j.id, j]));
+    const visibleIds = new Set(jobs.map((j) => j.id));
+    const liveInvoices = invoices.filter(
+      (inv) =>
+        !isCancelledInvoice(inv) &&
+        // a technician's report covers only their own jobs
+        (currentUser?.role !== 'TECHNICIAN' || (inv.linkedJobId !== undefined && visibleIds.has(inv.linkedJobId)))
+    );
+    const department = (inv: (typeof invoices)[number]) =>
+      (inv.linkedJobId && jobById.get(inv.linkedJobId)?.type) || 'INSTALLATION';
+
     return SERVICE_CATEGORIES.map((cat) => {
       const catJobs = jobs.filter(
-        (j) =>
-          j.category === cat &&
-          (revenueTypeFilter === 'ALL' || j.type === revenueTypeFilter)
+        (j) => j.category === cat && (revenueTypeFilter === 'ALL' || j.type === revenueTypeFilter)
       );
-
-      let billed = 0;
-      let collected = 0;
-
-      catJobs.forEach((job) => {
-        // Step 3: the job's live invoice, net of credit notes; a job whose invoice was cancelled bills nothing
-        const jobInvoices = invoices.filter((i) => i.linkedJobId === job.id);
-        const inv = jobInvoices.find((i) => !isCancelledInvoice(i));
-        if (inv) {
-          billed += invoiceNetTotal(inv);
-          collected += inv.amountPaid;
-        } else if (jobInvoices.length) {
-          // only cancelled invoices
-        } else if (job.serviceAmount) {
-          billed += job.serviceAmount;
-          if (job.status === 'CLOSED') {
-            collected += job.serviceAmount;
-          }
-        }
-      });
-
+      const catInvoices = liveInvoices.filter(
+        (inv) =>
+          invoiceCategory(inv, allJobs) === cat && (revenueTypeFilter === 'ALL' || department(inv) === revenueTypeFilter)
+      );
+      const billed = catInvoices.reduce((sum, inv) => sum + invoiceNetTotal(inv), 0);
+      const collected = catInvoices.reduce((sum, inv) => sum + Math.min(inv.amountPaid || 0, invoiceNetTotal(inv)), 0);
       return {
         category: cat,
         jobsCount: catJobs.length,
         billed,
         collected,
-        outstanding: Math.max(0, billed - collected),
+        outstanding: catInvoices.reduce((sum, inv) => sum + inv.balanceDue, 0),
       };
     });
-  }, [jobs, invoices, revenueTypeFilter]);
+  }, [allJobs, jobs, invoices, revenueTypeFilter, currentUser]);
 
   const totalRevenueBilled = revenueByCategory.reduce((sum, c) => sum + c.billed, 0);
   const totalRevenueCollected = revenueByCategory.reduce((sum, c) => sum + c.collected, 0);

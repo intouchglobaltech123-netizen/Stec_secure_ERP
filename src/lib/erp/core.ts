@@ -80,6 +80,7 @@ export interface ActionEnv {
   today: string; // India calendar date, YYYY-MM-DD, for document dates
   fy: number; // financial-year start year, for document number prefixes
   newId: (prefix: string) => string;
+  randomCode: (digits: number) => string; // e.g. a customer sign-off code
 }
 
 export type ActionResult<R> = { state: ErpState; result: R };
@@ -103,6 +104,8 @@ export function makeEnv(actor: User | null, now: Date = new Date()): ActionEnv {
     today: localDateISO(now),
     fy: financialYearStart(now),
     newId: (prefix) => `${prefix}-${uniqueStamp()}`,
+    randomCode: (digits) =>
+      String(globalThis.crypto.getRandomValues(new Uint32Array(1))[0] % 10 ** digits).padStart(digits, '0'),
   };
 }
 

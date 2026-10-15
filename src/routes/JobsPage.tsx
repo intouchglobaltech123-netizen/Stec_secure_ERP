@@ -125,6 +125,17 @@ const LiveJobTimer: React.FC<{
   return null;
 };
 
+// Stage label and colours for the phone job cards
+const MOBILE_JOB_STAGE: Record<JobStatus, { label: string; cls: string }> = {
+  ASSIGNED: { label: 'Assigned', cls: 'bg-slate-50 text-slate-700 border-slate-300' },
+  IN_PROGRESS: { label: 'In Progress', cls: 'bg-blue-50 text-blue-800 border-blue-300' },
+  ON_HOLD: { label: 'On Hold', cls: 'bg-amber-50 text-amber-800 border-amber-300' },
+  AWAITING_OTP: { label: 'Awaiting Sign-off', cls: 'bg-orange-50 text-orange-800 border-orange-300' },
+  COMPLETED: { label: 'Completed', cls: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
+  CLOSED: { label: 'Closed', cls: 'bg-emerald-100 text-emerald-900 border-emerald-500' },
+  CANCELLED: { label: 'Cancelled', cls: 'bg-slate-100 text-slate-600 border-slate-300' },
+};
+
 export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) => {
   const {
     visibleJobs,
@@ -984,8 +995,44 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
         </div>
       </div>
 
+      {/* Phones: one tappable card per job — the table below is too wide for a phone screen */}
+      <div className="sm:hidden space-y-2">
+        {filteredJobs.length === 0 ? (
+          <div className="p-6 text-center text-xs text-slate-500 bg-white border border-slate-200 rounded-md">
+            No {department.toLowerCase()} jobs match this filter.
+          </div>
+        ) : (
+          filteredJobs.map((job) => {
+            const customer = customers.find((c) => c.id === job.customerNumber);
+            const lead = users.find((u) => u.id === (job.teamLeadUserId || job.assignedTeam[0]));
+            const stage = MOBILE_JOB_STAGE[job.status];
+            return (
+              <button
+                key={job.id}
+                type="button"
+                onClick={() => setSelectedDetailJob(job)}
+                className="w-full text-left bg-white border border-slate-200 rounded-lg p-3 shadow-2xs active:bg-orange-50 space-y-1.5 cursor-pointer"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono font-bold text-xs text-orange-600">#{job.jobNumber}</span>
+                  <span className={`px-2 py-0.5 rounded text-[11px] font-bold border ${stage.cls}`}>{stage.label}</span>
+                </div>
+                <div className="font-semibold text-sm text-slate-900">{customer?.name || job.customerNumber}</div>
+                <div className="text-xs text-slate-600 line-clamp-2">{job.problemReported}</div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                  <span>{job.category}</span>
+                  {job.scheduledFor && <span>Visit: {formatDateTime(job.scheduledFor)}</span>}
+                  <span>Lead: {lead?.name || '—'}</span>
+                </div>
+                <div className="text-[11px] font-semibold text-orange-700">Open job &rarr;</div>
+              </button>
+            );
+          })
+        )}
+      </div>
+
       {/* Robotics ERP Projects Data Table */}
-      <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
+      <div className="hidden sm:block bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="erp-table">
             <thead>

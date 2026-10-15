@@ -549,7 +549,7 @@ export const completeJob: Action<CompleteJobArgs, Invoice | undefined> = (s, env
   const newOtp: OTPVerification = {
     id: env.newId('OTP'),
     jobId,
-    otpCode: '1234',
+    otpCode: env.randomCode(4),
     sentAt: env.nowIso,
     status: 'PENDING',
   };
@@ -667,7 +667,7 @@ export const raiseJobInvoice: Action<RaiseJobInvoiceArgs, Invoice> = (s, env, in
   const newOtp: OTPVerification = {
     id: env.newId('OTP'),
     jobId,
-    otpCode: '1234',
+    otpCode: env.randomCode(4),
     sentAt: env.nowIso,
     status: 'PENDING',
   };

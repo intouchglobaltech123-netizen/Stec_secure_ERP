@@ -32,6 +32,7 @@ import { Modal } from '@/components/ui/modal';
 import { formatINR } from '@/lib/utils';
 import { generateInternalBarcode, copyBarcodeToClipboard } from '@/lib/barcode-utils';
 import { toast } from 'sonner';
+import { DEMO_MODE } from '@/lib/demo-mode';
 
 interface AddStockModalProps {
   isOpen: boolean;
@@ -714,7 +715,8 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                       </Button>
                     </div>
 
-                    {/* Quick Demo Test Chips */}
+                    {/* Quick Demo Test Chips — demo data only (they name demo products) */}
+                    {DEMO_MODE && (
                     <div className="pt-2 border-t border-slate-100 space-y-1.5">
                       <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
                         <span>Click demo barcodes to test:</span>
@@ -755,6 +757,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                         </button>
                       </div>
                     </div>
+                    )}
                   </div>
                 ) : (
                   /* Searchable Autocomplete Input */
@@ -1113,6 +1116,8 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                 </p>
               </div>
 
+              {/* Made-up serials are for the demo only — real stock needs the serials on the units */}
+              {DEMO_MODE && (
               <button
                 type="button"
                 onClick={handleAutoGenerateSerials}
@@ -1121,6 +1126,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({
                 <Sparkles className="w-3.5 h-3.5 text-orange-600" />
                 + Auto-generate sample serials
               </button>
+              )}
             </div>
 
             {/* Clarity Box: 5 units = 5 different serial numbers */}

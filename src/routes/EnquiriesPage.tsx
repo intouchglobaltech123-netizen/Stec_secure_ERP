@@ -1372,14 +1372,14 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
               </div>
             </div>
 
-            {/* Honest Local Demo Disclaimer */}
+            {/* What a reminder does (and does not do) */}
             <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 text-[11px] leading-relaxed space-y-1">
               <div className="font-bold flex items-center gap-1.5 text-amber-900">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                Local Demo To-Do Record
+                Reminder note
               </div>
               <p className="text-amber-900/90">
-                S Tec Secure runs client-side on local storage with no cloud background scheduler. Confirming creates a scheduled reminder record in <strong>Follow-up Notes</strong> for staff reference and to-do tracking, rather than an automated push notification.
+                The reminder is saved in this enquiry's <strong>Follow-up Notes</strong> for everyone to see. The app does not send an alert at that time — check the follow-up list each day.
               </p>
             </div>
 

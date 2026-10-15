@@ -6,3 +6,5 @@ dist-ssr
 .DS_Store
 .data
 server-dist
+# Generated user guide (PDF / Word) — shared outside git
+user-guide/

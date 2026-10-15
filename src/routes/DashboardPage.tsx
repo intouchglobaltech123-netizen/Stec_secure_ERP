@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { errorMessage } from '@/lib/api';
 import { formatINR, formatDateTime, formatDate } from '@/lib/utils';
-import { invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
+import { invoiceCategory, invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
 import {
   SERVICE_CATEGORIES,
   ServiceCategory,
@@ -196,24 +196,7 @@ export const DashboardPage: React.FC = () => {
     });
 
     invoices.forEach((inv) => {
-      let cat: ServiceCategory = 'CCTV';
-      if (inv.linkedJobId) {
-        const job = jobs.find((j) => j.id === inv.linkedJobId);
-        if (job?.category) cat = job.category;
-      } else {
-        const text = (inv.lineItems || []).map((l) => `${l.itemName} ${l.description}`).join(' ').toLowerCase();
-        if (text.includes('biometric') || text.includes('face') || text.includes('essl')) {
-          cat = 'Biometric & Access Control';
-        } else if (text.includes('barrier') || text.includes('gate') || text.includes('swing')) {
-          cat = 'Gate Automation';
-        } else if (text.includes('intercom') || text.includes('door phone') || text.includes('vdp')) {
-          cat = 'Intercom';
-        } else if (text.includes('alarm') || text.includes('burglar')) {
-          cat = 'Burglar Alarm System';
-        } else if (text.includes('home') || text.includes('automation') || text.includes('smart switch')) {
-          cat = 'Home Automations';
-        }
-      }
+      const cat: ServiceCategory = invoiceCategory(inv, jobs);
       // Step 3: net of credit notes; cancelled invoices bill nothing
       totals[cat] = (totals[cat] || 0) + invoiceNetTotal(inv);
     });

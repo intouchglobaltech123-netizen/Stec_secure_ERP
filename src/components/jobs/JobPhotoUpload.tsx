@@ -3,6 +3,7 @@ import { Camera, UploadCloud, X, CheckCircle2, Image as ImageIcon } from 'lucide
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { compressImageFile } from '@/lib/image-utils';
+import { DEMO_MODE } from '@/lib/demo-mode';
 
 interface JobPhotoUploadProps {
   label: string;
@@ -108,10 +109,11 @@ export const JobPhotoUpload: React.FC<JobPhotoUploadProps> = ({
               Click to upload photo or drag & drop
             </div>
             <div className="text-[10px] text-slate-500 mt-0.5">
-              PNG, JPG, WebP supported (stored locally)
+              PNG, JPG, WebP supported
             </div>
           </div>
-          {samplePhotoFallback && (
+          {/* A sample picture would let a job start or close without a real site photo — demo only */}
+          {DEMO_MODE && samplePhotoFallback && (
             <Button
               type="button"
               variant="outline"

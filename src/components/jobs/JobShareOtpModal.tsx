@@ -24,6 +24,7 @@ import { Modal } from '@/components/ui/modal';
 import { formatINR, formatDateTime } from '@/lib/utils';
 import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
+import { DEMO_MODE } from '@/lib/demo-mode';
 
 interface JobShareOtpModalProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
   onClose,
   onJobClosed,
 }) => {
-  const { customers, getJobMaterials, getJobInvoice, verifyJobOtp, recordPaymentAfterOtp } =
+  const { customers, getJobMaterials, getJobInvoice, getJobOtp, verifyJobOtp, recordPaymentAfterOtp } =
     useStecSecure();
 
   const [whatsAppSentAt, setWhatsAppSentAt] = useState<string | null>(null);
@@ -80,14 +81,31 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
 
   const grandTotal = invoice?.grandTotal || job.serviceAmount || 0;
 
+  // Step 3: opens WhatsApp on this phone with the job summary and the customer's sign-off code.
+  // (Until the WhatsApp Business API is connected, the code travels in this message.)
+  const signOffCode = getJobOtp(job.id)?.otpCode;
   const handleSendWhatsApp = () => {
-    const timestamp = new Date().toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-    setWhatsAppSentAt(timestamp);
-    toast.success(`Job summary and invoice shared to ${customer?.phone} via WhatsApp.`);
+    const phone = (customer?.phone || '').replace(/\D/g, '').slice(-10);
+    if (phone.length !== 10) {
+      toast.error("The customer's mobile number is missing — add it on the Customers page first.");
+      return;
+    }
+    const lines = [
+      `Dear ${customer?.name || 'Customer'},`,
+      `S Tec Secure has completed job ${job.jobNumber} (${job.category}) at your site.`,
+      invoice
+        ? `Invoice ${invoice.invoiceNo}: ₹${invoice.grandTotal.toLocaleString('en-IN')}` +
+          (invoice.amountPaid ? ` (paid ₹${invoice.amountPaid.toLocaleString('en-IN')}, balance ₹${invoice.balanceDue.toLocaleString('en-IN')})` : '')
+        : '',
+      signOffCode
+        ? `Your sign-off code is ${signOffCode}. Please give this code to our technician only if you are satisfied with the work.`
+        : '',
+      'Thank you for choosing S Tec Secure.',
+    ].filter(Boolean);
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank');
+    setWhatsAppSentAt(
+      new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+    );
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -105,8 +123,8 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
         setIsOtpVerified(true);
         setPartialAmountReceived(Math.round(grandTotal / 2));
       } else {
-        setOtpError('Invalid OTP code. Please enter 1234');
-        toast.error('Invalid OTP. Use demo code 1234');
+        setOtpError('Wrong code. Ask the customer for the 4-digit code in the WhatsApp message (or send it again).');
+        toast.error('Wrong sign-off code.');
       }
     } catch (err) {
       toast.error(errorMessage(err));
@@ -116,7 +134,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
   };
 
   const handleAutoFillOtp = () => {
-    setOtpInput('1234');
+    setOtpInput(signOffCode || '');
     setOtpError(null);
   };
 
@@ -277,7 +295,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
 
           {!isOtpVerified ? (
             <>
-              {/* STEP 1: Mock WhatsApp Share */}
+              {/* STEP 1: WhatsApp the job summary and sign-off code to the customer */}
               <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -287,13 +305,13 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                     <div>
                       <div className="font-bold text-slate-900 text-xs">Step 1: Share via WhatsApp</div>
                       <div className="text-[11px] text-slate-600">
-                        Dispatch job summary, before/after photos & invoice to customer's WhatsApp
+                        Opens WhatsApp with the job summary, invoice amount and the customer's sign-off code
                       </div>
                     </div>
                   </div>
                   {whatsAppSentAt && (
                     <Badge variant="success" className="text-[10px]">
-                      Sent at {whatsAppSentAt}
+                      Opened at {whatsAppSentAt}
                     </Badge>
                   )}
                 </div>
@@ -313,7 +331,7 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                 </div>
               </div>
 
-              {/* STEP 2: Mock OTP Customer Sign-off */}
+              {/* STEP 2: Customer reads back the sign-off code */}
               <form
                 onSubmit={handleVerifyOtp}
                 className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3"
@@ -324,20 +342,22 @@ export const JobShareOtpModal: React.FC<JobShareOtpModalProps> = ({
                       <KeyRound className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="font-bold text-slate-900 text-xs">Step 2: Customer OTP Verification</div>
+                      <div className="font-bold text-slate-900 text-xs">Step 2: Customer Sign-off Code</div>
                       <div className="text-[11px] text-slate-500">
-                        Enter customer's 4-digit code to authenticate completion
+                        Ask the customer for the 4-digit code from the WhatsApp message
                       </div>
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleAutoFillOtp}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-mono hover:bg-slate-200 cursor-pointer transition-colors"
-                  >
-                    Demo Code: <strong>1234</strong> (Click to insert)
-                  </button>
+                  {DEMO_MODE && (
+                    <button
+                      type="button"
+                      onClick={handleAutoFillOtp}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-mono hover:bg-slate-200 cursor-pointer transition-colors"
+                    >
+                      Demo: insert code <strong>{signOffCode}</strong>
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
