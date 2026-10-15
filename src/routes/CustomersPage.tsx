@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
+import { invoiceNetTotal } from '@/lib/invoice-status';
 import { Customer } from '@/lib/stecsecure-types';
 import {
   Users,
@@ -97,7 +98,7 @@ export const CustomersPage: React.FC = () => {
         {filteredCustomers.map((cust) => {
           const customerJobs = visibleJobs.filter((j) => j.customerNumber === cust.id);
           const custInvoices = invoices.filter((i) => i.customerNumber === cust.id);
-          const totalBilled = custInvoices.reduce((sum, i) => sum + i.grandTotal, 0);
+          const totalBilled = custInvoices.reduce((sum, i) => sum + invoiceNetTotal(i), 0);
           const totalPaid = custInvoices.reduce((sum, i) => sum + i.amountPaid, 0);
           const outstandingBalance = custInvoices.reduce((sum, i) => sum + i.balanceDue, 0);
 

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { errorMessage } from '@/lib/api';
 import { formatINR, formatDateTime, formatDate } from '@/lib/utils';
+import { invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
 import {
   SERVICE_CATEGORIES,
   ServiceCategory,
@@ -213,7 +214,8 @@ export const DashboardPage: React.FC = () => {
           cat = 'Home Automations';
         }
       }
-      totals[cat] = (totals[cat] || 0) + (inv.grandTotal || 0);
+      // Step 3: net of credit notes; cancelled invoices bill nothing
+      totals[cat] = (totals[cat] || 0) + invoiceNetTotal(inv);
     });
 
     return SERVICE_CATEGORIES.map((c) => ({
@@ -238,7 +240,7 @@ export const DashboardPage: React.FC = () => {
     const dateMap = new Map<string, number>();
     sorted.forEach((inv) => {
       const key = inv.date;
-      dateMap.set(key, (dateMap.get(key) || 0) + inv.grandTotal);
+      dateMap.set(key, (dateMap.get(key) || 0) + invoiceNetTotal(inv));
     });
 
     const list: { date: string; displayDate: string; revenue: number }[] = [];
@@ -288,7 +290,7 @@ export const DashboardPage: React.FC = () => {
     }
     activityFeed.push({
       id: `inv-${inv.id}`,
-      title: `Invoice ${inv.invoiceNo} Raised`,
+      title: `Invoice ${inv.invoiceNo} ${isCancelledInvoice(inv) ? 'Cancelled' : 'Raised'}`,
       desc: `Total ${formatINR(inv.grandTotal)} • ${inv.paymentMode}`,
       time: inv.date + 'T12:00:00Z',
       type: 'invoice',

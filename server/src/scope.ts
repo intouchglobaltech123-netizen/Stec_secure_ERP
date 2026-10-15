@@ -63,6 +63,7 @@ function scopeRecordsFor(state: ErpState, user: User): ErpState {
     repairTickets: myTickets,
     invoices,
     payments: payments ? state.payments : state.payments.filter((p) => p.invoiceId && invoiceIds.has(p.invoiceId)),
+    creditNotes: billing || payments ? state.creditNotes : state.creditNotes.filter((c) => invoiceIds.has(c.invoiceId)),
     deliveryChallans: billing
       ? state.deliveryChallans
       : state.deliveryChallans.filter((dc) => dc.jobId && jobIds.has(dc.jobId)),

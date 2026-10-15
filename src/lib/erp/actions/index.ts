@@ -5,6 +5,7 @@ import * as inventory from './inventory';
 import * as crm from './crm';
 import * as repairs from './repairs';
 import * as admin from './admin';
+import * as corrections from './invoiceCorrections';
 
 export const ACTIONS = {
   createJob: jobs.createJob,
@@ -35,6 +36,9 @@ export const ACTIONS = {
   setQuotationStatus: billing.setQuotationStatus,
   convertQuotationToDeliveryChallan: billing.convertQuotationToDeliveryChallan,
   convertDeliveryChallanToInvoice: billing.convertDeliveryChallanToInvoice,
+  cancelInvoice: corrections.cancelInvoice,
+  createCreditNote: corrections.createCreditNote,
+  recordCreditNoteRefund: corrections.recordCreditNoteRefund,
 
   addProduct: inventory.addProduct,
   updateProduct: inventory.updateProduct,

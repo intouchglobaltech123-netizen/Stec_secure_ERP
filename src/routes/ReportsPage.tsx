@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { formatINR, formatDate, formatDateTime } from '@/lib/utils';
+import { invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
 import {
   ResponsiveContainer,
   BarChart,
@@ -98,10 +99,14 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       let collected = 0;
 
       catJobs.forEach((job) => {
-        const inv = invoices.find((i) => i.linkedJobId === job.id);
+        // Step 3: the job's live invoice, net of credit notes; a job whose invoice was cancelled bills nothing
+        const jobInvoices = invoices.filter((i) => i.linkedJobId === job.id);
+        const inv = jobInvoices.find((i) => !isCancelledInvoice(i));
         if (inv) {
-          billed += inv.grandTotal;
+          billed += invoiceNetTotal(inv);
           collected += inv.amountPaid;
+        } else if (jobInvoices.length) {
+          // only cancelled invoices
         } else if (job.serviceAmount) {
           billed += job.serviceAmount;
           if (job.status === 'CLOSED') {
@@ -191,7 +196,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       .map((cust) => {
         const custInvoices = invoices.filter((i) => i.customerNumber === cust.id);
         const unpaidInvoices = custInvoices.filter((i) => i.balanceDue > 0);
-        const totalBilled = custInvoices.reduce((sum, i) => sum + i.grandTotal, 0);
+        const totalBilled = custInvoices.reduce((sum, i) => sum + invoiceNetTotal(i), 0);
         const totalPaid = custInvoices.reduce((sum, i) => sum + i.amountPaid, 0);
         const balanceDue = custInvoices.reduce((sum, i) => sum + i.balanceDue, 0);
 

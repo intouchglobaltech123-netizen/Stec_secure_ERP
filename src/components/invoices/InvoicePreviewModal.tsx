@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
-import { Invoice, LineItem } from '@/lib/stecsecure-types';
+import { CreditNote, Invoice, LineItem } from '@/lib/stecsecure-types';
 import {
   X,
   Printer,
@@ -14,6 +14,8 @@ import {
   Trash2,
   FileText,
   Download,
+  Ban,
+  FileMinus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +24,12 @@ import { Modal } from '@/components/ui/modal';
 import { formatINR, formatDate } from '@/lib/utils';
 import { exportElementToPdfWithToast } from '@/lib/pdf-generator';
 import { TaxInvoiceDocument } from '@/components/invoices/TaxInvoiceDocument';
+import {
+  CancelInvoiceModal,
+  CreditNoteModal,
+  CreditNotePreviewModal,
+} from '@/components/invoices/InvoiceCorrectionModals';
+import { creditNoteReasonLabel, invoiceRefundDue, isCancelledInvoice } from '@/lib/invoice-status';
 import { customerStateCode, isInterState, splitLineTax, splitTax, taxTotals } from '@/lib/gst';
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/api';
@@ -41,7 +49,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   onClose,
   onInvoiceSaved,
 }) => {
-  const { getCustomer, updateInvoice, products, isManagement } = useStecSecure();
+  const { getCustomer, updateInvoice, products, isManagement, invoices, creditNotes } = useStecSecure();
 
   const [mode, setMode] = useState<'PREVIEW' | 'EDIT'>(initialMode);
   const [activeInvoice, setActiveInvoice] = useState<Invoice | null>(invoice);
@@ -54,6 +62,10 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [terms, setTerms] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  // Step 3: cancellation and credit notes
+  const [showCancel, setShowCancel] = useState(false);
+  const [showCreditNote, setShowCreditNote] = useState(false);
+  const [viewCreditNote, setViewCreditNote] = useState<CreditNote | null>(null);
 
   useEffect(() => {
     if (invoice) {
@@ -70,8 +82,13 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
   if (!isOpen || !activeInvoice) return null;
 
-  const customer = getCustomer(activeInvoice.customerNumber);
-  const isSettled = activeInvoice.balanceDue === 0;
+  // The latest copy from the server (payments, credit notes or cancellation by anyone since opening)
+  const current = invoices.find((i) => i.id === activeInvoice.id) ?? activeInvoice;
+  const customer = getCustomer(current.customerNumber);
+  const isSettled = current.balanceDue === 0;
+  const cancelled = isCancelledInvoice(current);
+  const invoiceCreditNotes = creditNotes.filter((c) => c.invoiceId === current.id);
+  const refundDue = invoiceRefundDue(current);
 
   // Step 3: an edit re-taxes for the customer's current state, as the server does on save
   // (CGST+SGST in Tamil Nadu, IGST elsewhere)
@@ -82,7 +99,7 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   };
 
   const handleShareWhatsApp = () => {
-    const msg = `Dear ${customer?.name || 'Customer'},\nHere is your official S Tec Secure Tax Invoice ${activeInvoice.invoiceNo} for ₹${activeInvoice.grandTotal.toLocaleString('en-IN')}.\nAmount Paid: ₹${activeInvoice.amountPaid.toLocaleString('en-IN')}\nBalance Due: ₹${activeInvoice.balanceDue.toLocaleString('en-IN')}\nThank you for choosing S Tec Secure.`;
+    const msg = `Dear ${customer?.name || 'Customer'},\nHere is your official S Tec Secure Tax Invoice ${current.invoiceNo} for ₹${current.grandTotal.toLocaleString('en-IN')}.\nAmount Paid: ₹${current.amountPaid.toLocaleString('en-IN')}\nBalance Due: ₹${current.balanceDue.toLocaleString('en-IN')}\nThank you for choosing S Tec Secure.`;
     const encoded = encodeURIComponent(msg);
     const phone = customer?.phone.replace(/\D/g, '') || '';
     toast.success('Opening WhatsApp to share invoice.');
@@ -178,17 +195,24 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       bodyClassName="p-0 flex flex-col overflow-hidden"
     >
       {/* Top Control Bar */}
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 shrink-0 bg-white">
-        <div className="flex items-center gap-2">
-          <Badge variant="orange" className="text-xs font-mono font-bold">
-            {activeInvoice.invoiceNo}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 border-b border-slate-200 shrink-0 bg-white">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="orange" className="text-xs font-mono font-bold whitespace-nowrap">
+            {current.invoiceNo}
           </Badge>
-          <Badge
-            variant={activeInvoice.balanceDue === 0 ? 'success' : 'warning'}
-            className="text-xs font-bold"
-          >
-            {activeInvoice.balanceDue === 0 ? 'PAID FULL' : 'PAYMENT DUE'}
-          </Badge>
+          {cancelled ? (
+            <Badge variant="danger" className="text-xs font-bold">
+              CANCELLED
+            </Badge>
+          ) : refundDue > 0 ? (
+            <Badge variant="warning" className="text-xs font-bold">
+              REFUND DUE {formatINR(refundDue)}
+            </Badge>
+          ) : (
+            <Badge variant={isSettled ? 'success' : 'warning'} className="text-xs font-bold">
+              {isSettled ? 'PAID FULL' : 'PAYMENT DUE'}
+            </Badge>
+          )}
           {activeInvoice.linkedJobId && (
             <span className="text-[11px] font-mono text-slate-500">
               Ref: {activeInvoice.linkedJobId}
@@ -201,11 +225,11 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {mode === 'PREVIEW' ? (
             <>
-              {/* Tax invoices are edited by management only */}
-              {isManagement && (
+              {/* Tax invoices are edited by management only; once credited, only further credit notes */}
+              {isManagement && !cancelled && !current.creditNoteTotal && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -213,6 +237,26 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   className="h-8 text-xs rounded-lg text-orange-700 border-orange-300 hover:bg-orange-50 font-semibold cursor-pointer"
                 >
                   <Edit className="w-3.5 h-3.5 mr-1 text-orange-600" /> Edit Invoice
+                </Button>
+              )}
+              {isManagement && !cancelled && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowCreditNote(true)}
+                  className="h-8 text-xs rounded-lg cursor-pointer"
+                >
+                  <FileMinus className="w-3.5 h-3.5 mr-1 text-slate-600" /> Credit Note
+                </Button>
+              )}
+              {isManagement && !cancelled && !current.creditNoteTotal && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowCancel(true)}
+                  className="h-8 text-xs rounded-lg text-rose-700 border-rose-300 hover:bg-rose-50 cursor-pointer"
+                >
+                  <Ban className="w-3.5 h-3.5 mr-1" /> Cancel
                 </Button>
               )}
               <Button size="sm" variant="secondary" onClick={handleShareWhatsApp} className="h-8 text-xs rounded-lg">
@@ -259,7 +303,28 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       <div className="flex-1 overflow-y-auto p-5 overscroll-contain">
         {mode === 'PREVIEW' ? (
           /* PREVIEW MODE: Authentic Paper Document */
-          <TaxInvoiceDocument invoice={activeInvoice} customer={customer} />
+          <div className="space-y-3">
+            {invoiceCreditNotes.length > 0 && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs space-y-1.5">
+                <div className="font-semibold text-slate-800">Credit notes against this invoice</div>
+                {invoiceCreditNotes.map((cn) => (
+                  <button
+                    key={cn.id}
+                    type="button"
+                    onClick={() => setViewCreditNote(cn)}
+                    className="w-full flex items-center justify-between gap-2 rounded-lg bg-white border border-slate-200 px-2.5 py-1.5 hover:border-orange-300 cursor-pointer text-left"
+                  >
+                    <span>
+                      <span className="font-mono font-bold text-orange-700">{cn.creditNoteNo}</span> ·{' '}
+                      {formatDate(cn.date)} · {creditNoteReasonLabel(cn.reason)}
+                    </span>
+                    <span className="font-mono font-semibold">− {formatINR(cn.grandTotal)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <TaxInvoiceDocument invoice={current} customer={customer} />
+          </div>
         ) : (
           /* EDIT MODE: Interactive In-Place Invoice Editor */
           <form onSubmit={handleSaveInvoiceChanges} className="space-y-4 text-xs">
@@ -478,6 +543,27 @@ export const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           </form>
         )}
       </div>
+      {isManagement && (
+        <>
+          <CancelInvoiceModal
+            isOpen={showCancel}
+            onClose={() => setShowCancel(false)}
+            invoice={current}
+            onDone={(result) => setActiveInvoice(result.replacement ?? result.cancelled)}
+          />
+          <CreditNoteModal
+            isOpen={showCreditNote}
+            onClose={() => setShowCreditNote(false)}
+            invoice={current}
+            onCreated={(cn) => setViewCreditNote(cn)}
+          />
+        </>
+      )}
+      <CreditNotePreviewModal
+        isOpen={Boolean(viewCreditNote)}
+        onClose={() => setViewCreditNote(null)}
+        creditNote={viewCreditNote}
+      />
     </Modal>
   );
 };

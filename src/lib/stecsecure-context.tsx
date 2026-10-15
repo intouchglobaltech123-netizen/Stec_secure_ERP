@@ -27,10 +27,17 @@ import {
   ConfigurableRole,
   UserRole,
   QuotationStatus,
+  CreditNote,
 } from './stecsecure-types';
 import { ErpState, normalizeSavedState, getJobQuotation as getJobQuotationIn } from './erp/core';
 import type { ActionName, ActionArgs, ActionReturn } from './erp/actions';
 import type { EditableJobFields } from './erp/actions/jobs';
+import type {
+  CancelInvoiceResult,
+  CreateCreditNoteArgs,
+  RecordCreditNoteRefundArgs,
+} from './erp/actions/invoiceCorrections';
+import { isCancelledInvoice } from './invoice-status';
 import { api, ApiError, errorMessage } from './api';
 
 export interface StecSecureContextType extends ErpState {
@@ -162,6 +169,14 @@ export interface StecSecureContextType extends ErpState {
   updateQuotation: (id: string, updates: Partial<Quotation>) => Promise<Quotation>;
   convertQuotationToInvoice: (quotationId: string) => Promise<Invoice>;
   updateInvoice: (id: string, updates: Partial<Invoice>) => Promise<Invoice>;
+  // Step 3: cancel an invoice (optionally re-issuing it under a new number), credit notes and refunds
+  cancelInvoice: (
+    invoiceId: string,
+    reason: string,
+    reissue?: { customerNumber?: string }
+  ) => Promise<CancelInvoiceResult>;
+  createCreditNote: (data: CreateCreditNoteArgs) => Promise<CreditNote>;
+  recordCreditNoteRefund: (data: RecordCreditNoteRefundArgs) => Promise<Payment>;
   addPayment: (payment: Omit<Payment, 'id'>) => Promise<Payment>;
   // Phase 22: advance against a quotation or job, applied automatically when it is invoiced
   recordAdvance: (data: {
@@ -545,6 +560,9 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         updateQuotation: (id, updates) => run('updateQuotation', { id, updates }),
         convertQuotationToInvoice: (quotationId) => run('convertQuotationToInvoice', { quotationId }),
         updateInvoice: (id, updates) => run('updateInvoice', { id, updates }),
+        cancelInvoice: (invoiceId, reason, reissue) => run('cancelInvoice', { invoiceId, reason, reissue }),
+        createCreditNote: (data) => run('createCreditNote', data),
+        recordCreditNoteRefund: (data) => run('recordCreditNoteRefund', data),
 
         // Customers & enquiries
         createEnquiry: (data) => run('createEnquiry', data),
@@ -584,7 +602,8 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         getJobWorkLogs: (jobId) => erpState.workLogs.filter((w) => w.jobId === jobId),
         getJobMaterials: (jobId) => erpState.materialUsages.filter((m) => m.jobId === jobId),
         getJobHold: (jobId) => erpState.holdEvents.find((h) => h.jobId === jobId && h.status === 'OPEN'),
-        getJobInvoice: (jobId) => erpState.invoices.find((i) => i.linkedJobId === jobId),
+        getJobInvoice: (jobId) =>
+          erpState.invoices.find((i) => i.linkedJobId === jobId && !isCancelledInvoice(i)),
         getJobQuotation: (job) => getJobQuotationIn(erpState, job),
         getJobOtp: (jobId) => erpState.otpVerifications.find((o) => o.jobId === jobId),
         getJobSerials: (jobId) => erpState.serialUnits.filter((s) => s.installedAtJobId === jobId),

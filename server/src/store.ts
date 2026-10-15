@@ -31,6 +31,7 @@ export const COLLECTIONS: CollectionName[] = [
   'jobProductUsages',
   'repairTickets',
   'notifications',
+  'creditNotes',
 ];
 
 export interface StateChanges {

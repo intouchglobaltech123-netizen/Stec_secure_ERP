@@ -90,6 +90,10 @@ const RULES: Record<ActionName, Check> = {
   convertQuotationToInvoice: managementOnly,
   convertQuotationToDeliveryChallan: managementOnly,
   convertDeliveryChallanToInvoice: managementOnly,
+  // Step 3: correcting issued invoices
+  cancelInvoice: managementOnly,
+  createCreditNote: managementOnly,
+  recordCreditNoteRefund: managementOnly,
 
   // Inventory — whoever has the Inventory page
   addProduct: section('inventory'),

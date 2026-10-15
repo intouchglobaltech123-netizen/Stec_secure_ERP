@@ -356,7 +356,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                       </div>
                       {invoice && (
                         <div className="text-[10px] text-emerald-700 font-semibold font-mono">
-                          {formatINR(invoice.grandTotal)} ({invoice.amountPaid >= invoice.grandTotal ? 'Paid' : 'Due'})
+                          {formatINR(invoice.grandTotal)} ({invoice.balanceDue === 0 ? 'Paid' : 'Due'})
                         </div>
                       )}
                     </div>

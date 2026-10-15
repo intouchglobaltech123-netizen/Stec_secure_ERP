@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { localDateISO } from '@/lib/numbering';
+import { invoiceNetTotal } from '@/lib/invoice-status';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import {
   Payment,
@@ -98,7 +99,9 @@ export const PaymentsPage: React.FC = () => {
   const [savingPayment, setSavingPayment] = useState(false);
 
   // TASK 1: Overview KPIs
-  const totalInvoiced = invoices.reduce((sum, inv) => sum + inv.grandTotal, 0);
+  // Step 3: billed = invoices net of credit notes; cancelled invoices bill nothing. Refunds are
+  // negative payments, so collections are net of them.
+  const totalInvoiced = invoices.reduce((sum, inv) => sum + invoiceNetTotal(inv), 0);
   const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
   const totalOutstanding = invoices.reduce((sum, inv) => sum + inv.balanceDue, 0);
 
@@ -150,7 +153,7 @@ export const PaymentsPage: React.FC = () => {
     .map((cust) => {
       const custInvoices = invoices.filter((i) => i.customerNumber === cust.id);
       const custPayments = payments.filter((p) => p.customerNumber === cust.id);
-      const custInvoiced = custInvoices.reduce((sum, i) => sum + i.grandTotal, 0);
+      const custInvoiced = custInvoices.reduce((sum, i) => sum + invoiceNetTotal(i), 0);
       const custCollected = custPayments.reduce((sum, p) => sum + p.amount, 0);
       const custBalance = custInvoices.reduce((sum, i) => sum + i.balanceDue, 0);
 
@@ -717,6 +720,7 @@ export const PaymentsPage: React.FC = () => {
                   <option value="FULL">FULL</option>
                   <option value="BALANCE">BALANCE</option>
                   <option value="ADVANCE">ADVANCE</option>
+                  <option value="REFUND">REFUND</option>
                 </select>
               </div>
             </div>
@@ -783,6 +787,8 @@ export const PaymentsPage: React.FC = () => {
                               className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${
                                 p.type === 'FULL'
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : p.type === 'REFUND'
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-200'
                                   : 'bg-amber-50 text-amber-800 border border-amber-200'
                               }`}
                             >
@@ -792,7 +798,11 @@ export const PaymentsPage: React.FC = () => {
                           <td className="p-3 text-slate-500 font-mono text-[11px]">
                             {formatDate(p.date)}
                           </td>
-                          <td className="p-3 text-right font-bold text-emerald-800 font-mono text-sm">
+                          <td
+                            className={`p-3 text-right font-bold font-mono text-sm ${
+                              p.amount < 0 ? 'text-rose-700' : 'text-emerald-800'
+                            }`}
+                          >
                             {formatINR(p.amount)}
                           </td>
                         </tr>
@@ -939,7 +949,11 @@ export const PaymentsPage: React.FC = () => {
                               </span>
                             </td>
                             <td className="p-2.5 font-mono text-slate-500">{formatDate(p.date)}</td>
-                            <td className="p-2.5 text-right font-bold text-emerald-800 font-mono">
+                            <td
+                              className={`p-2.5 text-right font-bold font-mono ${
+                                p.amount < 0 ? 'text-rose-700' : 'text-emerald-800'
+                              }`}
+                            >
                               {formatINR(p.amount)}
                             </td>
                           </tr>

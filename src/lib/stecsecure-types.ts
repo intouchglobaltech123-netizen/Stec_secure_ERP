@@ -274,6 +274,45 @@ export interface Invoice {
   raisedByUserId?: string; // technician who raised it at job completion
   beforePhotoUrl?: string;
   afterPhotoUrl?: string;
+  // Step 3: a cancelled invoice keeps its number (the series has no gaps) but bills nothing
+  status?: 'CANCELLED';
+  cancelledAt?: string;
+  cancelledByUserId?: string;
+  cancelReason?: string;
+  replacesInvoiceId?: string; // this invoice re-issues a cancelled one
+  replacedByInvoiceId?: string;
+  creditNoteTotal?: number; // Step 3: sum of credit notes against this invoice
+}
+
+// Step 3: GST credit note (Section 34) — reduces an issued invoice; each line credits one invoice line
+export type CreditNoteReason = 'GOODS_RETURNED' | 'PRICE_CORRECTION' | 'DISCOUNT' | 'SERVICE_DEFICIENCY' | 'OTHER';
+
+export interface CreditNoteLineItem extends LineItem {
+  sourceLine: number; // index of the invoice line being credited
+}
+
+export interface CreditNote {
+  id: string;
+  creditNoteNo: string; // CN-<FY>-###
+  invoiceId: string;
+  invoiceNo: string;
+  invoiceDate: string;
+  customerNumber: string;
+  date: string;
+  reason: CreditNoteReason;
+  reasonNote?: string;
+  lineItems: CreditNoteLineItem[];
+  totalAmount: number;
+  totalCgst: number;
+  totalSgst: number;
+  totalIgst: number;
+  roundOff: number;
+  grandTotal: number;
+  placeOfSupply: string;
+  billTo: { name: string; address: string; phone: string; gstin?: string; stateCode: string };
+  refundedAmount: number; // money paid back to the customer against this credit note
+  createdAt: string;
+  createdByUserId?: string;
 }
 
 export interface DeliveryChallanLineItem {
@@ -297,7 +336,8 @@ export interface DeliveryChallan {
 }
 
 export type PaymentMode = 'CASH' | 'UPI' | 'NEFT' | 'CHEQUE';
-export type PaymentType = 'ADVANCE' | 'BALANCE' | 'FULL';
+// Step 3: a REFUND is money paid back against a credit note; its amount is negative
+export type PaymentType = 'ADVANCE' | 'BALANCE' | 'FULL' | 'REFUND';
 
 export interface Payment {
   id: string;
@@ -311,8 +351,9 @@ export interface Payment {
   mode: PaymentMode;
   date: string;
   type: PaymentType;
-  receiptNo?: string; // RCPT-<FY>-### — sequential receipt number (older payments have none)
+  receiptNo?: string; // RCPT-<FY>-### — sequential receipt number (older payments have none); refunds RFD-<FY>-###
   referenceNo?: string; // UTR / cheque number given by the customer
+  creditNoteId?: string; // Step 3: the credit note a refund settles
 }
 
 export type OTPStatus = 'PENDING' | 'VERIFIED';

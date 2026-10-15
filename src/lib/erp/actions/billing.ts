@@ -30,7 +30,9 @@ import {
   applyChallanSerials,
   finalizeInvoiceTax,
   finalizeQuotationTax,
+  liveInvoices,
 } from '../core';
+import { invoiceBalanceDue, isCancelledInvoice } from '../../invoice-status';
 
 // Phase 22: tell management about money received (not the person who recorded it)
 const notifyPayment = (s: ErpState, env: ActionEnv, payment: Payment, what: string) => {
@@ -58,6 +60,7 @@ export interface RecordPaymentAfterOtpArgs {
 export const recordPaymentAfterOtp: Action<RecordPaymentAfterOtpArgs, Payment | null> = (s, env, data) => {
   const inv = s.invoices.find((i) => i.id === data.invoiceId);
   if (!inv) return done(s, null);
+  if (isCancelledInvoice(inv)) throw new Error(`Invoice ${inv.invoiceNo} is cancelled.`);
 
   // Payment collection is only allowed after the customer's OTP sign-off
   if (inv.linkedJobId) {
@@ -68,7 +71,7 @@ export const recordPaymentAfterOtp: Action<RecordPaymentAfterOtpArgs, Payment | 
 
   // Add to what was already paid (advances / earlier instalments) — never overwrite it
   const alreadyPaid = inv.amountPaid || 0;
-  const outstanding = Math.max(0, inv.grandTotal - alreadyPaid);
+  const outstanding = invoiceBalanceDue(inv);
   const pMode = data.paymentMode || 'UPI';
 
   let received = 0;
@@ -78,7 +81,7 @@ export const recordPaymentAfterOtp: Action<RecordPaymentAfterOtpArgs, Payment | 
     received = Math.min(outstanding, Math.max(0, data.amountReceived));
   }
   const newAmountPaid = alreadyPaid + received;
-  const newBalanceDue = Math.max(0, inv.grandTotal - newAmountPaid);
+  const newBalanceDue = invoiceBalanceDue(inv, newAmountPaid);
 
   const createdPayment: Payment | null =
     received > 0
@@ -122,12 +125,13 @@ export interface RecordManualPaymentArgs {
 export const recordManualPayment: Action<RecordManualPaymentArgs, Payment | null> = (s, env, data) => {
   const inv = s.invoices.find((i) => i.id === data.invoiceId);
   if (!inv) return done(s, null);
+  if (isCancelledInvoice(inv)) throw new Error(`Invoice ${inv.invoiceNo} is cancelled.`);
 
-  const paymentAmount = Math.min(inv.balanceDue, Math.max(0, data.amount));
+  const paymentAmount = Math.min(invoiceBalanceDue(inv), Math.max(0, data.amount));
   if (paymentAmount <= 0) return done(s, null);
 
   const newAmountPaid = inv.amountPaid + paymentAmount;
-  const newBalanceDue = Math.max(0, inv.grandTotal - newAmountPaid);
+  const newBalanceDue = invoiceBalanceDue(inv, newAmountPaid);
 
   const createdPayment: Payment = {
     id: env.newId('PAY'),
@@ -312,6 +316,10 @@ export const updateQuotation: Action<{ id: string; updates: Partial<Quotation> }
 export const updateInvoice: Action<{ id: string; updates: Partial<Invoice> }, Invoice> = (s, _env, { id, updates }) => {
   const existing = s.invoices.find((inv) => inv.id === id);
   if (!existing) throw new Error('Invoice not found');
+  if (isCancelledInvoice(existing)) throw new Error(`Invoice ${existing.invoiceNo} is cancelled and cannot be edited.`);
+  if (existing.creditNoteTotal) {
+    throw new Error(`Invoice ${existing.invoiceNo} has credit notes — correct it with another credit note.`);
+  }
   const updatedInv = finalizeInvoiceTax(s, {
     ...existing,
     date: updates.date ?? existing.date,
@@ -349,7 +357,7 @@ export const setQuotationStatus: Action<
 export const convertQuotationToInvoice: Action<{ quotationId: string }, Invoice> = (s, env, { quotationId }) => {
   const quot = s.quotations.find((q) => q.id === quotationId);
   if (!quot) throw new Error('Quotation not found');
-  const existing = s.invoices.find((i) => i.quotationId === quotationId);
+  const existing = liveInvoices(s).find((i) => i.quotationId === quotationId);
   if (existing) {
     throw new Error(`Quotation ${quot.quotationNo} is already invoiced as ${existing.invoiceNo}.`);
   }
@@ -430,12 +438,14 @@ export const convertQuotationToDeliveryChallan: Action<{ quotationId: string; jo
 export const convertDeliveryChallanToInvoice: Action<{ challanId: string }, Invoice> = (s, env, { challanId }) => {
   const dc = s.deliveryChallans.find((c) => c.id === challanId);
   if (!dc) throw new Error('Delivery Challan not found');
-  const existingForChallan = s.invoices.find((i) => i.deliveryChallanId === dc.id);
+  const existingForChallan = liveInvoices(s).find((i) => i.deliveryChallanId === dc.id);
   if (existingForChallan) {
     throw new Error(`Delivery Challan ${dc.challanNo} is already invoiced as ${existingForChallan.invoiceNo}.`);
   }
   // Services from the quotation are billed once, on the first invoice for that quotation
-  const quotationAlreadyInvoiced = dc.quotationId ? s.invoices.some((i) => i.quotationId === dc.quotationId) : false;
+  const quotationAlreadyInvoiced = dc.quotationId
+    ? liveInvoices(s).some((i) => i.quotationId === dc.quotationId)
+    : false;
 
   const sourceQuot = dc.quotationId ? s.quotations.find((q) => q.id === dc.quotationId) : undefined;
   // Only a job tied to this challan or its quotation — never "any job of the same customer"
@@ -489,7 +499,7 @@ export const convertDeliveryChallanToInvoice: Action<{ challanId: string }, Invo
     linkedJob &&
     linkedJob.serviceAmount &&
     linkedJob.serviceAmount > 0 &&
-    !s.invoices.some((i) => i.linkedJobId === linkedJob.id)
+    !liveInvoices(s).some((i) => i.linkedJobId === linkedJob.id)
   ) {
     invoiceLineItems.push(
       makeLineItem(

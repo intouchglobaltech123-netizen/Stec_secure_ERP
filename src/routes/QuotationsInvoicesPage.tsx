@@ -1,7 +1,7 @@
 import { quotationStatusMeta, QUOTATION_STATUS_META, MANUAL_QUOTATION_STATUSES } from '@/lib/quotation-status';
 import React, { useState, useMemo } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
-import { Quotation, QuotationStatus, Invoice, DeliveryChallan, Job, Enquiry, Customer } from '@/lib/stecsecure-types';
+import { Quotation, QuotationStatus, Invoice, DeliveryChallan, Job, Enquiry, Customer, CreditNote } from '@/lib/stecsecure-types';
 import {
   FileSpreadsheet,
   ReceiptText,
@@ -27,6 +27,7 @@ import {
   Briefcase,
   FolderGit2,
   Wallet,
+  FileMinus,
 } from 'lucide-react';
 import { RecordAdvanceModal } from '@/components/payments/RecordAdvanceModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +39,26 @@ import { QuotationBuilderModal } from '@/components/quotations/QuotationBuilderM
 import { QuotationPreviewModal } from '@/components/quotations/QuotationPreviewModal';
 import { DeliveryChallanModal } from '@/components/jobs/DeliveryChallanModal';
 import { InvoicePreviewModal } from '@/components/invoices/InvoicePreviewModal';
+import { CreditNotePreviewModal } from '@/components/invoices/InvoiceCorrectionModals';
+import {
+  creditNoteReasonLabel,
+  invoiceNetTotal,
+  invoiceRefundDue,
+  isCancelledInvoice,
+} from '@/lib/invoice-status';
+
+// Step 3: status label for an invoice — cancelled, refund owed after a credit note, paid or due
+const invoiceBadge = (inv: Invoice) =>
+  isCancelledInvoice(inv)
+    ? { variant: 'secondary' as const, label: 'CANCELLED' }
+    : invoiceRefundDue(inv) > 0
+    ? { variant: 'warning' as const, label: 'REFUND DUE' }
+    : inv.balanceDue === 0
+    ? { variant: 'success' as const, label: 'PAID' }
+    : { variant: 'danger' as const, label: 'DUE' };
+
+// The invoice that bills a project: the live one, not a cancelled predecessor
+const primaryOf = (list: Invoice[]) => list.find((i) => !isCancelledInvoice(i)) ?? list[0];
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/api';
 
@@ -74,12 +95,14 @@ export const QuotationsInvoicesPage: React.FC = () => {
     convertQuotationToInvoice,
     setQuotationStatus,
     isManagement,
+    creditNotes,
   } = useStecSecure();
 
   // Tab State: Default is 'PROJECT_GROUPS' (Part B Requirement)
-  const [activeTab, setActiveTab] = useState<'PROJECT_GROUPS' | 'QUOTATIONS' | 'INVOICES' | 'CHALLANS'>(() => {
+  const [activeTab, setActiveTab] = useState<'PROJECT_GROUPS' | 'QUOTATIONS' | 'INVOICES' | 'CHALLANS' | 'CREDIT_NOTES'>(() => {
     if (typeof window !== 'undefined') {
       const t = new URLSearchParams(window.location.search).get('tab');
+      if (t?.toLowerCase() === 'credit-notes') return 'CREDIT_NOTES';
       if (t?.toLowerCase() === 'invoices') return 'INVOICES';
       if (t?.toLowerCase() === 'quotations') return 'QUOTATIONS';
       if (t?.toLowerCase() === 'challans') return 'CHALLANS';
@@ -136,6 +159,8 @@ export const QuotationsInvoicesPage: React.FC = () => {
   });
   const [invoiceMode, setInvoiceMode] = useState<'PREVIEW' | 'EDIT'>('PREVIEW');
   const [converting, setConverting] = useState(false);
+  // Step 3: credit note being viewed
+  const [viewCreditNote, setViewCreditNote] = useState<CreditNote | null>(null);
 
   const toggleGroupExpand = (groupId: string) => {
     setExpandedGroups((prev) => {
@@ -202,7 +227,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
         deliveryChallans: matchedChallans,
         primaryChallan: matchedChallans[0],
         invoices: matchedInvoices,
-        primaryInvoice: matchedInvoices[0],
+        primaryInvoice: primaryOf(matchedInvoices),
         createdAt: job.createdAt,
       });
     }
@@ -243,7 +268,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
         deliveryChallans: matchedChallans,
         primaryChallan: matchedChallans[0],
         invoices: matchedInvoices,
-        primaryInvoice: matchedInvoices[0],
+        primaryInvoice: primaryOf(matchedInvoices),
         createdAt: enq.createdAt,
       });
     }
@@ -271,7 +296,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
         deliveryChallans: matchedChallans,
         primaryChallan: matchedChallans[0],
         invoices: matchedInvoices,
-        primaryInvoice: matchedInvoices[0],
+        primaryInvoice: primaryOf(matchedInvoices),
         createdAt: q.date,
       });
     }
@@ -323,7 +348,8 @@ export const QuotationsInvoicesPage: React.FC = () => {
       } else if (projectFilter === 'PENDING_PAYMENT') {
         matchesFilter = g.invoices.some((i) => i.balanceDue > 0);
       } else if (projectFilter === 'SETTLED') {
-        matchesFilter = g.invoices.length > 0 && g.invoices.every((i) => i.balanceDue === 0);
+        const live = g.invoices.filter((i) => !isCancelledInvoice(i));
+        matchesFilter = live.length > 0 && live.every((i) => i.balanceDue === 0);
       }
 
       return matchesSearch && matchesFilter;
@@ -562,6 +588,19 @@ export const QuotationsInvoicesPage: React.FC = () => {
         >
           <ReceiptText className="w-3.5 h-3.5" />
           <span>All Tax Invoices ({invoices.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('CREDIT_NOTES')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'CREDIT_NOTES'
+              ? 'bg-orange-600 text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 bg-white border border-slate-200'
+          }`}
+        >
+          <FileMinus className="w-3.5 h-3.5" />
+          <span>Credit Notes ({creditNotes.length})</span>
         </button>
       </div>
 
@@ -831,11 +870,8 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                       >
                                         {inv.invoiceNo}
                                       </span>
-                                      <Badge
-                                        variant={inv.balanceDue === 0 ? 'success' : 'danger'}
-                                        className="text-[9px] px-1 py-0"
-                                      >
-                                        {inv.balanceDue === 0 ? 'PAID' : 'DUE'}
+                                      <Badge variant={invoiceBadge(inv).variant} className="text-[9px] px-1 py-0">
+                                        {invoiceBadge(inv).label}
                                       </Badge>
                                     </div>
                                     <div className="flex items-center gap-2 text-[10px] font-mono">
@@ -1235,11 +1271,8 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                               Stage 3: Tax Invoice
                                             </span>
                                             {inv ? (
-                                              <Badge
-                                                variant={inv.balanceDue === 0 ? 'success' : 'danger'}
-                                                className="text-[9px]"
-                                              >
-                                                {inv.balanceDue === 0 ? 'SETTLED' : 'PAYMENT DUE'}
+                                              <Badge variant={invoiceBadge(inv).variant} className="text-[9px]">
+                                                {invoiceBadge(inv).label}
                                               </Badge>
                                             ) : (
                                               <Badge variant="secondary" className="text-[9px]">NOT INVOICED</Badge>
@@ -1525,6 +1558,59 @@ export const QuotationsInvoicesPage: React.FC = () => {
       )}
 
       {/* TAB 3: ALL DELIVERY CHALLANS (SECONDARY VIEW) */}
+      {/* Step 3: credit notes issued against invoices */}
+      {activeTab === 'CREDIT_NOTES' && (
+        <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+                  <tr>
+                    <th className="p-3">Credit Note</th>
+                    <th className="p-3">Against Invoice</th>
+                    <th className="p-3">Customer</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Reason</th>
+                    <th className="p-3 text-right">Value</th>
+                    <th className="p-3 text-right">Refunded</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {creditNotes.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-500 italic">
+                        No credit notes yet. Issue one from an invoice's preview (Credit Note button).
+                      </td>
+                    </tr>
+                  ) : (
+                    creditNotes.map((cn) => (
+                      <tr
+                        key={cn.id}
+                        className="hover:bg-slate-50 cursor-pointer transition-colors"
+                        onClick={() => setViewCreditNote(cn)}
+                      >
+                        <td className="p-3 font-mono font-bold text-orange-700">{cn.creditNoteNo}</td>
+                        <td className="p-3 font-mono">{cn.invoiceNo}</td>
+                        <td className="p-3 font-semibold text-slate-900">{cn.billTo.name}</td>
+                        <td className="p-3 text-slate-500 font-mono text-[11px]">{formatDate(cn.date)}</td>
+                        <td className="p-3 text-slate-600">
+                          {creditNoteReasonLabel(cn.reason)}
+                          {cn.reasonNote && <div className="text-[10px] text-slate-500">{cn.reasonNote}</div>}
+                        </td>
+                        <td className="p-3 text-right font-mono font-semibold">{formatINR(cn.grandTotal)}</td>
+                        <td className="p-3 text-right font-mono text-slate-600">
+                          {cn.refundedAmount ? formatINR(cn.refundedAmount) : '—'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {activeTab === 'CHALLANS' && (
         <div className="space-y-4">
           <div className="relative w-full sm:w-96">
@@ -1681,7 +1767,8 @@ export const QuotationsInvoicesPage: React.FC = () => {
                     ) : (
                       filteredInvoices.map((inv) => {
                         const customer = customers.find((c) => c.id === inv.customerNumber);
-                        const isSettled = inv.balanceDue === 0;
+                        const badge = invoiceBadge(inv);
+                        const cancelled = isCancelledInvoice(inv);
 
                         return (
                           <tr
@@ -1692,7 +1779,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               setInvoiceMode('PREVIEW');
                             }}
                           >
-                            <td className="p-3 font-mono font-bold text-emerald-700">
+                            <td className={`p-3 font-mono font-bold ${cancelled ? 'text-slate-400 line-through' : 'text-emerald-700'}`}>
                               {inv.invoiceNo}
                             </td>
                             <td className="p-3">
@@ -1708,6 +1795,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
                             </td>
                             <td className="p-3 text-right font-mono font-semibold text-slate-900">
                               {formatINR(inv.grandTotal)}
+                              {!cancelled && inv.creditNoteTotal ? (
+                                <div className="text-[10px] font-normal text-slate-500">
+                                  net {formatINR(invoiceNetTotal(inv))}
+                                </div>
+                              ) : null}
                             </td>
                             <td className="p-3 text-right font-mono text-emerald-700 font-medium">
                               {formatINR(inv.amountPaid)}
@@ -1718,8 +1810,8 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               </span>
                             </td>
                             <td className="p-3 text-center">
-                              <Badge variant={isSettled ? 'success' : 'danger'} className="text-[10px]">
-                                {isSettled ? 'PAID' : 'DUE'}
+                              <Badge variant={badge.variant} className="text-[10px]">
+                                {badge.label}
                               </Badge>
                             </td>
                             <td className="p-3 text-right space-x-1.5" onClick={(e) => e.stopPropagation()}>
@@ -1734,17 +1826,19 @@ export const QuotationsInvoicesPage: React.FC = () => {
                               >
                                 Preview PDF
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-[11px] px-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                                onClick={() => {
-                                  setPreviewInvoice(inv);
-                                  setInvoiceMode('EDIT');
-                                }}
-                              >
-                                <Edit className="w-3 h-3 mr-1" /> Edit
-                              </Button>
+                              {isManagement && !cancelled && !inv.creditNoteTotal && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-[11px] px-2 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                                  onClick={() => {
+                                    setPreviewInvoice(inv);
+                                    setInvoiceMode('EDIT');
+                                  }}
+                                >
+                                  <Edit className="w-3 h-3 mr-1" /> Edit
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         );
@@ -1809,6 +1903,12 @@ export const QuotationsInvoicesPage: React.FC = () => {
           setPreviewInvoice(newInv);
           setInvoiceMode('PREVIEW');
         }}
+      />
+
+      <CreditNotePreviewModal
+        isOpen={Boolean(viewCreditNote)}
+        onClose={() => setViewCreditNote(null)}
+        creditNote={viewCreditNote}
       />
 
       {/* Invoice Preview Modal */}

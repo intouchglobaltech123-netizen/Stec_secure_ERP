@@ -1024,7 +1024,8 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
 
                   let paymentStatus: 'PAID' | 'PARTIAL' | 'PENDING' = 'PENDING';
                   if (invoice) {
-                    if (invoice.amountPaid >= invoice.grandTotal || totalPaid >= invoice.grandTotal) {
+                    // balanceDue is net of credit notes (Step 3)
+                    if (invoice.balanceDue === 0) {
                       paymentStatus = 'PAID';
                     } else if (invoice.amountPaid > 0 || totalPaid > 0) {
                       paymentStatus = 'PARTIAL';

@@ -26,6 +26,7 @@ import {
   managementIds,
   jobSection,
   finalizeInvoiceTax,
+  liveInvoices,
 } from '../core';
 
 export type CreateJobArgs = Omit<Job, 'id' | 'createdAt' | 'jobNumber'> & {
@@ -414,7 +415,7 @@ export const completeJob: Action<CompleteJobArgs, Invoice | undefined> = (s, env
   const targetJob = s.jobs.find((j) => j.id === jobId);
   if (!targetJob) return done(s, undefined);
   if (targetJob.status === 'AWAITING_OTP' || targetJob.status === 'CLOSED' || targetJob.status === 'COMPLETED') {
-    return done(s, s.invoices.find((i) => i.linkedJobId === jobId));
+    return done(s, liveInvoices(s).find((i) => i.linkedJobId === jobId));
   }
   const alreadyInvoiced = findInvoiceForJob(s, targetJob);
   const finalDuration = elapsedSeconds(targetJob, env);
@@ -639,7 +640,8 @@ export const raiseJobInvoice: Action<RaiseJobInvoiceArgs, Invoice> = (s, env, in
   }
 
   const totals = invoiceTotals(lineItems);
-  const amountPaid = Math.min(totals.grandTotal, Math.max(0, invoiceData.amountPaid ?? 0));
+  // Step 3: money received comes only from recorded payments and advances, never from this form
+  const amountPaid = 0;
 
   const newInvoice: Invoice = finalizeInvoiceTax(s, {
     id: env.newId('INV'),

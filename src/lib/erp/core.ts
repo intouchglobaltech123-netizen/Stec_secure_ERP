@@ -22,6 +22,7 @@ import {
   LineItem,
   AppNotification,
   AccessControl,
+  CreditNote,
   DEFAULT_ACCESS_CONTROL,
 } from '../stecsecure-types';
 import {
@@ -46,6 +47,7 @@ import {
 } from '../seed-data';
 import { financialYearStart, localDateISO } from '../numbering';
 import { customerStateCode, isInterState, splitTax, taxTotals } from '../gst';
+import { invoiceBalanceDue, isCancelledInvoice } from '../invoice-status';
 
 export interface ErpState {
   users: User[];
@@ -66,6 +68,7 @@ export interface ErpState {
   jobProductUsages: JobProductUsage[];
   repairTickets: RepairTicket[];
   notifications: AppNotification[];
+  creditNotes: CreditNote[]; // Step 3
   accessControl: AccessControl;
 }
 
@@ -133,9 +136,13 @@ export function finalizeInvoiceTax(s: ErpState, inv: Invoice): Invoice {
         }
       : inv.billTo,
     amountPaid,
-    balanceDue: Math.max(0, totals.grandTotal - amountPaid),
+    balanceDue: invoiceBalanceDue({ ...inv, grandTotal: totals.grandTotal }, amountPaid),
   };
 }
+
+// Step 3: invoices that still bill something. Cancelled ones stay in the list (and in the number
+// series) but never count as "already invoiced", in totals, or for payments.
+export const liveInvoices = (s: Pick<ErpState, 'invoices'>) => s.invoices.filter((i) => !isCancelledInvoice(i));
 
 export function finalizeQuotationTax(s: ErpState, q: Quotation): Quotation {
   const customer = s.customers.find((c) => c.id === q.customerNumber);
@@ -181,7 +188,7 @@ export const getJobQuotation = (s: ErpState, job: Job) => {
 // One job is billed by one tax invoice — whichever path (completion, quotation, challan) raises it first
 export const findInvoiceForJob = (s: ErpState, job: Job) => {
   const quotationId = resolveQuotationId(s, job.quotationId);
-  return s.invoices.find(
+  return liveInvoices(s).find(
     (i) => i.linkedJobId === job.id || (quotationId !== undefined && i.quotationId === quotationId)
   );
 };
@@ -288,10 +295,10 @@ export const jobSection = (job: { type: string }) => (job.type === 'INSTALLATION
 
 // Phase 22: the invoice that bills this quotation — directly, via a challan, or via a job raised from it
 export const findInvoiceForQuotation = (s: ErpState, quotationId: string) =>
-  s.invoices.find((i) => i.quotationId === quotationId) ??
+  liveInvoices(s).find((i) => i.quotationId === quotationId) ??
   s.jobs
     .filter((j) => resolveQuotationId(s, j.quotationId) === quotationId)
-    .map((j) => s.invoices.find((i) => i.linkedJobId === j.id))
+    .map((j) => liveInvoices(s).find((i) => i.linkedJobId === j.id))
     .find(Boolean);
 
 // Phase 22: advances taken against a quotation or job that are not yet on an invoice
@@ -313,11 +320,14 @@ export function applyAdvancesToInvoice(s: ErpState, invoiceId: string): ErpState
   const amountPaid = Math.min(inv.grandTotal, (inv.amountPaid || 0) + total);
   return {
     ...s,
-    payments: s.payments.map((p) => (advanceIds.has(p.id) ? { ...p, invoiceId } : p)),
+    // A re-issued invoice may bill a different customer — the advance follows the invoice
+    payments: s.payments.map((p) =>
+      advanceIds.has(p.id) ? { ...p, invoiceId, customerNumber: inv.customerNumber } : p
+    ),
     invoices: updateById(s.invoices, invoiceId, (i) => ({
       ...i,
       amountPaid,
-      balanceDue: Math.max(0, i.grandTotal - amountPaid),
+      balanceDue: invoiceBalanceDue(i, amountPaid),
       paymentMode: advances[0].mode,
     })),
   };
@@ -381,6 +391,7 @@ export function getSeedState(): ErpState {
     jobProductUsages: SEED_JOB_PRODUCT_USAGES,
     repairTickets: SEED_REPAIR_TICKETS,
     notifications: [],
+    creditNotes: [],
     accessControl: DEFAULT_ACCESS_CONTROL,
   };
 }
@@ -446,6 +457,7 @@ export function normalizeSavedState(parsed: any, { browserLegacyFixes = true } =
     jobProductUsages: list<JobProductUsage>(parsed.jobProductUsages),
     repairTickets: list<RepairTicket>(parsed.repairTickets),
     notifications: list<AppNotification>(parsed.notifications),
+    creditNotes: list<CreditNote>(parsed.creditNotes),
     accessControl: { ...DEFAULT_ACCESS_CONTROL, ...(parsed.accessControl || {}) },
   };
 }
