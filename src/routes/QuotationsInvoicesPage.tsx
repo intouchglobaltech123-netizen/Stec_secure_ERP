@@ -25,7 +25,9 @@ import {
   Phone,
   Briefcase,
   FolderGit2,
+  Wallet,
 } from 'lucide-react';
+import { RecordAdvanceModal } from '@/components/payments/RecordAdvanceModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -103,6 +105,8 @@ export const QuotationsInvoicesPage: React.FC = () => {
   const [builderEnquiryId, setBuilderEnquiryId] = useState<string | undefined>(undefined);
 
   const [previewQuotation, setPreviewQuotation] = useState<Quotation | null>(null);
+  // Phase 22: quotation an advance is being recorded against
+  const [advanceQuotation, setAdvanceQuotation] = useState<Quotation | null>(null);
   const [previewChallan, setPreviewChallan] = useState<DeliveryChallan | null>(null);
   const [challanMode, setChallanMode] = useState<'CREATE' | 'PREVIEW' | 'EDIT'>('PREVIEW');
   const [isChallanModalOpen, setIsChallanModalOpen] = useState(false);
@@ -1474,6 +1478,17 @@ export const QuotationsInvoicesPage: React.FC = () => {
                                   <Edit className="w-3 h-3 mr-1" /> Edit
                                 </Button>
                               )}
+                              {isManagement && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-[11px] px-2"
+                                  onClick={() => setAdvanceQuotation(q)}
+                                  title="Record an advance received against this quotation"
+                                >
+                                  <Wallet className="w-3 h-3 mr-1" /> Advance
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -1794,6 +1809,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
         onInvoiceSaved={(inv) => {
           setPreviewInvoice(inv);
         }}
+      />
+      <RecordAdvanceModal
+        isOpen={Boolean(advanceQuotation)}
+        quotation={advanceQuotation}
+        onClose={() => setAdvanceQuotation(null)}
       />
     </div>
   );

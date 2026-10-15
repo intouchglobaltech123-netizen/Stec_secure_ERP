@@ -75,6 +75,7 @@ const RULES: Record<ActionName, Check> = {
   recordPaymentAfterOtp: jobLead(invoiceJob),
   recordManualPayment: all(managementOnly, section('payments')),
   addPayment: all(managementOnly, section('payments')),
+  recordAdvance: managementOnly,
 
   // Commercial documents — management
   createQuotation: managementOnly,

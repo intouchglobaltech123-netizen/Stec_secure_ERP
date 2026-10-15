@@ -153,6 +153,15 @@ export interface StecSecureContextType extends ErpState {
   convertQuotationToInvoice: (quotationId: string) => Promise<Invoice>;
   updateInvoice: (id: string, updates: Partial<Invoice>) => Promise<Invoice>;
   addPayment: (payment: Omit<Payment, 'id'>) => Promise<Payment>;
+  // Phase 22: advance against a quotation or job, applied automatically when it is invoiced
+  recordAdvance: (data: {
+    quotationId?: string;
+    jobId?: string;
+    amount: number;
+    paymentMode: PaymentMode;
+    referenceNo?: string;
+    date?: string;
+  }) => Promise<Payment>;
 
   // Phase 17 & 17.5: Repair & RMA Ticket Actions
   createRepairTicket: (data: {
@@ -511,6 +520,7 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         recordPaymentAfterOtp: (data) => run('recordPaymentAfterOtp', data),
         recordManualPayment: (data) => run('recordManualPayment', data),
         addPayment: (payment) => run('addPayment', payment),
+        recordAdvance: (data) => run('recordAdvance', data),
         createDeliveryChallan: (data) => run('createDeliveryChallan', data),
         updateDeliveryChallan: (id, updates) => run('updateDeliveryChallan', { id, updates }),
         convertQuotationToDeliveryChallan: (quotationId, jobId) =>

@@ -277,12 +277,17 @@ export type PaymentType = 'ADVANCE' | 'BALANCE' | 'FULL';
 export interface Payment {
   id: string;
   customerNumber: string;
-  invoiceId: string;
+  // Phase 22: an advance taken before invoicing has no invoice yet; it is linked to its quotation or
+  // job and applied to the invoice automatically when that invoice is raised
+  invoiceId?: string;
+  quotationId?: string;
+  jobId?: string;
   amount: number;
   mode: PaymentMode;
   date: string;
   type: PaymentType;
-  referenceNo?: string;
+  receiptNo?: string; // RCPT-<FY>-### — sequential receipt number (older payments have none)
+  referenceNo?: string; // UTR / cheque number given by the customer
 }
 
 export type OTPStatus = 'PENDING' | 'VERIFIED';

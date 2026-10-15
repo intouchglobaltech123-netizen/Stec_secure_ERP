@@ -11,6 +11,8 @@ import { SEED_BANK_DETAILS } from '../../seed-data';
 import { nextDocNumber } from '../../numbering';
 import {
   Action,
+  ActionEnv,
+  ErpState,
   done,
   updateById,
   invoiceTotals,
@@ -18,9 +20,13 @@ import {
   resolveQuotationId,
   findInvoiceForJob,
   isPhysicalLineItem,
+  applyAdvancesToInvoice,
+  unappliedAdvances,
 } from '../core';
 
-const receiptRef = () => `RCPT-${Math.floor(1000 + Math.random() * 9000)}`;
+// Sequential receipt number for every payment, restarting each financial year
+const nextReceiptNo = (s: ErpState, env: ActionEnv) =>
+  nextDocNumber(`RCPT-${env.fy}-`, s.payments.map((p) => p.receiptNo));
 
 export interface RecordPaymentAfterOtpArgs {
   invoiceId: string;
@@ -66,7 +72,8 @@ export const recordPaymentAfterOtp: Action<RecordPaymentAfterOtpArgs, Payment | 
           mode: pMode,
           date: env.today,
           type: newBalanceDue > 0 ? 'ADVANCE' : alreadyPaid > 0 ? 'BALANCE' : 'FULL',
-          referenceNo: data.referenceNo || receiptRef(),
+          receiptNo: nextReceiptNo(s, env),
+          referenceNo: data.referenceNo || undefined,
         }
       : null;
 
@@ -111,7 +118,8 @@ export const recordManualPayment: Action<RecordManualPaymentArgs, Payment | null
     mode: data.paymentMode,
     date: data.date || env.today,
     type: newBalanceDue === 0 ? 'BALANCE' : 'ADVANCE',
-    referenceNo: data.referenceNo || receiptRef(),
+    receiptNo: nextReceiptNo(s, env),
+    referenceNo: data.referenceNo || undefined,
   };
 
   return done(
@@ -130,8 +138,61 @@ export const recordManualPayment: Action<RecordManualPaymentArgs, Payment | null
 };
 
 export const addPayment: Action<Omit<Payment, 'id'>, Payment> = (s, env, payment) => {
-  const newPayment: Payment = { ...payment, id: env.newId('PAY') };
+  const newPayment: Payment = { ...payment, id: env.newId('PAY'), receiptNo: nextReceiptNo(s, env) };
   return done({ ...s, payments: [newPayment, ...s.payments] }, newPayment);
+};
+
+// Phase 22: money taken before work / invoicing (e.g. "50% advance with order"), against a quotation
+// or a job. It is applied to the invoice automatically when that invoice is raised.
+export interface RecordAdvanceArgs {
+  quotationId?: string;
+  jobId?: string;
+  amount: number;
+  paymentMode: PaymentMode;
+  referenceNo?: string;
+  date?: string;
+}
+
+export const recordAdvance: Action<RecordAdvanceArgs, Payment> = (s, env, data) => {
+  const quot = data.quotationId ? s.quotations.find((q) => q.id === data.quotationId) : undefined;
+  const job = data.jobId ? s.jobs.find((j) => j.id === data.jobId) : undefined;
+  if (!quot && !job) throw new Error('Choose the quotation or job this advance is for.');
+  if (!(data.amount > 0)) throw new Error('Enter the advance amount.');
+
+  // Once invoiced, money is recorded as a payment against the invoice instead
+  const invoice = quot
+    ? s.invoices.find((i) => i.quotationId === quot.id) ??
+      s.jobs
+        .filter((j) => resolveQuotationId(s, j.quotationId) === quot.id)
+        .map((j) => findInvoiceForJob(s, j))
+        .find(Boolean)
+    : findInvoiceForJob(s, job!);
+  if (invoice) {
+    throw new Error(`Already invoiced as ${invoice.invoiceNo} — record this as a payment against that invoice.`);
+  }
+
+  if (quot) {
+    const taken = unappliedAdvances(s, { quotationId: quot.id }).reduce((sum, p) => sum + p.amount, 0);
+    if (taken + data.amount > quot.grandTotal) {
+      throw new Error(
+        `Advances would exceed the quotation total of ₹${quot.grandTotal} (₹${taken} already received).`
+      );
+    }
+  }
+
+  const advance: Payment = {
+    id: env.newId('PAY'),
+    customerNumber: quot?.customerNumber ?? job!.customerNumber,
+    quotationId: quot?.id ?? resolveQuotationId(s, job?.quotationId),
+    jobId: job?.id,
+    amount: data.amount,
+    mode: data.paymentMode,
+    date: data.date || env.today,
+    type: 'ADVANCE',
+    receiptNo: nextReceiptNo(s, env),
+    referenceNo: data.referenceNo || undefined,
+  };
+  return done({ ...s, payments: [advance, ...s.payments] }, advance);
 };
 
 export interface CreateDeliveryChallanArgs {
@@ -252,14 +313,15 @@ export const convertQuotationToInvoice: Action<{ quotationId: string }, Invoice>
     raisedByUserId: env.actor?.id,
   };
 
-  return done(
+  const next = applyAdvancesToInvoice(
     {
       ...s,
       quotations: updateById(s.quotations, quotationId, (q) => ({ ...q, status: 'CONVERTED' as const })),
       invoices: [newInvoice, ...s.invoices],
     },
-    newInvoice
+    newInvoice.id
   );
+  return done(next, next.invoices.find((i) => i.id === newInvoice.id)!);
 };
 
 export const convertQuotationToDeliveryChallan: Action<{ quotationId: string; jobId?: string }, DeliveryChallan> = (
@@ -396,5 +458,6 @@ export const convertDeliveryChallanToInvoice: Action<{ challanId: string }, Invo
     raisedByUserId: env.actor?.id,
   };
 
-  return done({ ...s, invoices: [newInvoice, ...s.invoices] }, newInvoice);
+  const next = applyAdvancesToInvoice({ ...s, invoices: [newInvoice, ...s.invoices] }, newInvoice.id);
+  return done(next, next.invoices.find((i) => i.id === newInvoice.id)!);
 };

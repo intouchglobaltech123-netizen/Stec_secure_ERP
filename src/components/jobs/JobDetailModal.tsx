@@ -27,6 +27,7 @@ import {
   Edit,
   RotateCcw,
 } from 'lucide-react';
+import { RecordAdvanceModal } from '@/components/payments/RecordAdvanceModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
@@ -70,9 +71,11 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
     convertQuotationToDeliveryChallan,
     visibleRepairTickets,
     isManagement,
+    payments,
   } = useStecSecure();
 
   const [isSiteLocationModalOpen, setIsSiteLocationModalOpen] = React.useState(false);
+  const [isAdvanceOpen, setIsAdvanceOpen] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   // Phase 15: Document chain modals
@@ -356,6 +359,35 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
                     </div>
                   </div>
                 </div>
+
+                {/* Phase 22: advances received before invoicing (deducted from the invoice automatically) */}
+                {(() => {
+                  const advances = payments.filter(
+                    (p) =>
+                      !p.invoiceId &&
+                      (p.jobId === job.id || (linkedQuotation !== undefined && p.quotationId === linkedQuotation.id))
+                  );
+                  const advanceTotal = advances.reduce((sum, p) => sum + p.amount, 0);
+                  if (!advanceTotal && (!isManagement || invoice)) return null;
+                  return (
+                    <div className="flex items-center justify-between gap-2 text-[11px] pt-1">
+                      <span className="text-slate-600">
+                        Advance received:{' '}
+                        <strong className="font-mono text-slate-900">{formatINR(advanceTotal)}</strong>
+                        {advances.length > 0 && ` (${advances.map((p) => p.receiptNo || p.referenceNo).join(', ')})`}
+                      </span>
+                      {isManagement && !invoice && (
+                        <button
+                          type="button"
+                          onClick={() => setIsAdvanceOpen(true)}
+                          className="text-[11px] font-semibold text-orange-600 hover:underline cursor-pointer shrink-0"
+                        >
+                          + Record Advance
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })()}
@@ -890,6 +922,9 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
           onClose={() => setIsSiteLocationModalOpen(false)}
         />
       )}
+
+      {/* Phase 22: advance against this job */}
+      <RecordAdvanceModal isOpen={isAdvanceOpen} job={job} onClose={() => setIsAdvanceOpen(false)} />
 
       {/* Phase 15: Delivery Challan Modal for Job */}
       <DeliveryChallanModal

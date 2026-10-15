@@ -7,6 +7,8 @@ import {
   PaymentType,
   Invoice,
   Customer,
+  Quotation,
+  Job,
 } from '@/lib/stecsecure-types';
 import {
   CreditCard,
@@ -41,12 +43,28 @@ import { formatINR, formatDate, formatDateTime } from '@/lib/utils';
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/api';
 
+// Phase 22: an advance not yet on an invoice shows what it was taken against
+const AdvanceLabel: React.FC<{ payment: Payment; quotations: Quotation[]; jobs: Job[] }> = ({
+  payment,
+  quotations,
+  jobs,
+}) => {
+  const quote = quotations.find((q) => q.id === payment.quotationId);
+  const job = jobs.find((j) => j.id === payment.jobId);
+  return (
+    <span className="text-amber-700">
+      Advance · {quote ? `Quote ${quote.quotationNo}` : job ? job.jobNumber : 'not yet invoiced'}
+    </span>
+  );
+};
+
 export const PaymentsPage: React.FC = () => {
   const {
     payments,
     customers,
     invoices,
     jobs,
+    quotations,
     currentUser,
     isManagement,
     recordManualPayment,
@@ -116,9 +134,10 @@ export const PaymentsPage: React.FC = () => {
     const matchesSearch =
       !searchQuery.trim() ||
       p.referenceNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.receiptNo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       cust?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.invoiceId.toLowerCase().includes(searchQuery.toLowerCase());
+      p.invoiceId?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesMode = modeFilter === 'ALL' || p.mode === modeFilter;
     const matchesType = typeFilter === 'ALL' || p.type === typeFilter;
@@ -729,7 +748,7 @@ export const PaymentsPage: React.FC = () => {
                     filteredPayments.map((p, idx) => {
                       const cust = customers.find((c) => c.id === p.customerNumber);
                       const inv = invoices.find((i) => i.id === p.invoiceId);
-                      const job = jobs.find((j) => j.id === inv?.linkedJobId);
+                      const job = jobs.find((j) => j.id === (inv?.linkedJobId ?? p.jobId));
 
                       return (
                         <tr
@@ -739,14 +758,17 @@ export const PaymentsPage: React.FC = () => {
                           }`}
                         >
                           <td className="p-3 font-mono font-bold text-orange-600">
-                            {p.referenceNo || p.id}
+                            {p.receiptNo || p.referenceNo || p.id}
+                            {p.receiptNo && p.referenceNo && (
+                              <div className="text-[10px] font-normal text-slate-500">Ref {p.referenceNo}</div>
+                            )}
                           </td>
                           <td className="p-3">
                             <div className="font-semibold text-slate-900">{cust?.name}</div>
                             <div className="text-[10px] text-slate-500">{cust?.phone}</div>
                           </td>
                           <td className="p-3 font-mono text-slate-700 font-medium">
-                            {inv?.invoiceNo || p.invoiceId}
+                            {inv?.invoiceNo || <AdvanceLabel payment={p} quotations={quotations} jobs={jobs} />}
                           </td>
                           <td className="p-3 font-mono text-slate-500">
                             {job?.jobNumber || '-'}
@@ -899,10 +921,12 @@ export const PaymentsPage: React.FC = () => {
                         .map((p) => (
                           <tr key={p.id} className="hover:bg-slate-50">
                             <td className="p-2.5 font-mono text-orange-600 font-semibold">
-                              {p.referenceNo || p.id}
+                              {p.receiptNo || p.referenceNo || p.id}
                             </td>
                             <td className="p-2.5 font-mono text-slate-600">
-                              {invoices.find((i) => i.id === p.invoiceId)?.invoiceNo || p.invoiceId}
+                              {invoices.find((i) => i.id === p.invoiceId)?.invoiceNo || (
+                                <AdvanceLabel payment={p} quotations={quotations} jobs={jobs} />
+                              )}
                             </td>
                             <td className="p-2.5">
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">

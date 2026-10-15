@@ -23,6 +23,7 @@ export const ACTIONS = {
   recordPaymentAfterOtp: billing.recordPaymentAfterOtp,
   recordManualPayment: billing.recordManualPayment,
   addPayment: billing.addPayment,
+  recordAdvance: billing.recordAdvance,
   createDeliveryChallan: billing.createDeliveryChallan,
   updateDeliveryChallan: billing.updateDeliveryChallan,
   createQuotation: billing.createQuotation,

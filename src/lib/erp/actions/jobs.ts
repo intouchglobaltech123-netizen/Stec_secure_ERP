@@ -21,6 +21,7 @@ import {
   makeLineItem,
   getJobQuotation,
   findInvoiceForJob,
+  applyAdvancesToInvoice,
 } from '../core';
 
 export type CreateJobArgs = Omit<Job, 'id' | 'createdAt' | 'jobNumber'> & {
@@ -411,8 +412,7 @@ export const completeJob: Action<CompleteJobArgs, Invoice | undefined> = (s, env
   const loc = completionData.installedLocation || 'Customer Site';
   const allUsageSerialIds = jobProducts.flatMap((u) => u.serialUnitIds || []);
 
-  return done(
-    {
+  const completed: ErpState = {
       ...s,
       jobs: updateById(s.jobs, jobId, (j) => ({
         ...j,
@@ -450,9 +450,11 @@ export const completeJob: Action<CompleteJobArgs, Invoice | undefined> = (s, env
         }
         return su;
       }),
-    },
-    alreadyInvoiced ? { ...alreadyInvoiced, linkedJobId: jobId } : newInvoice
-  );
+  };
+  if (alreadyInvoiced) return done(completed, { ...alreadyInvoiced, linkedJobId: jobId });
+  // Phase 22: advances taken against this job or its quotation count towards the new invoice
+  const next = applyAdvancesToInvoice(completed, newInvoice!.id);
+  return done(next, next.invoices.find((i) => i.id === newInvoice!.id));
 };
 
 export interface RaiseJobInvoiceArgs {
@@ -506,15 +508,16 @@ export const raiseJobInvoice: Action<RaiseJobInvoiceArgs, Invoice> = (s, env, in
     status: 'PENDING',
   };
 
-  return done(
+  const next = applyAdvancesToInvoice(
     {
       ...s,
       invoices: [newInvoice, ...s.invoices],
       otpVerifications: [newOtp, ...s.otpVerifications.filter((o) => o.jobId !== jobId)],
       jobs: updateById(s.jobs, jobId, (j) => ({ ...j, status: 'AWAITING_OTP' as const })),
     },
-    newInvoice
+    newInvoice.id
   );
+  return done(next, next.invoices.find((i) => i.id === newInvoice.id)!);
 };
 
 export const verifyJobOtp: Action<{ jobId: string; enteredCode: string }, boolean> = (

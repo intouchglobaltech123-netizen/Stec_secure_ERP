@@ -160,6 +160,35 @@ export const findInvoiceForJob = (s: ErpState, job: Job) => {
   );
 };
 
+// Phase 22: advances taken against a quotation or job that are not yet on an invoice
+export const unappliedAdvances = (s: ErpState, ref: { quotationId?: string; jobId?: string }) =>
+  s.payments.filter(
+    (p) =>
+      !p.invoiceId &&
+      ((ref.quotationId && p.quotationId === ref.quotationId) || (ref.jobId && p.jobId === ref.jobId))
+  );
+
+// Moves matching advances onto a newly raised invoice: links the payments and counts them as paid
+export function applyAdvancesToInvoice(s: ErpState, invoiceId: string): ErpState {
+  const inv = s.invoices.find((i) => i.id === invoiceId);
+  if (!inv) return s;
+  const advances = unappliedAdvances(s, { quotationId: inv.quotationId, jobId: inv.linkedJobId });
+  if (!advances.length) return s;
+  const advanceIds = new Set(advances.map((p) => p.id));
+  const total = advances.reduce((sum, p) => sum + p.amount, 0);
+  const amountPaid = Math.min(inv.grandTotal, (inv.amountPaid || 0) + total);
+  return {
+    ...s,
+    payments: s.payments.map((p) => (advanceIds.has(p.id) ? { ...p, invoiceId } : p)),
+    invoices: updateById(s.invoices, invoiceId, (i) => ({
+      ...i,
+      amountPaid,
+      balanceDue: Math.max(0, i.grandTotal - amountPaid),
+      paymentMode: advances[0].mode,
+    })),
+  };
+}
+
 // Rule: a line is a physical good (goes on a delivery challan) unless it is a labour/service charge.
 // Services are identified by SAC codes starting with '99', or by service terms when not a catalog product.
 const SERVICE_KEYWORDS = [
