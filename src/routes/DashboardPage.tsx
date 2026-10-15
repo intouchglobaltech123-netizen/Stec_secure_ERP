@@ -160,6 +160,7 @@ export const DashboardPage: React.FC = () => {
       AWAITING_OTP: 0,
       COMPLETED: 0,
       CLOSED: 0,
+      CANCELLED: 0,
     };
 
     targetJobs.forEach((j) => {
@@ -175,6 +176,7 @@ export const DashboardPage: React.FC = () => {
       { status: 'AWAITING_OTP', label: 'Awaiting OTP', color: '#d97706' },
       { status: 'COMPLETED', label: 'Completed', color: '#10b981' },
       { status: 'CLOSED', label: 'Closed', color: '#059669' },
+      { status: 'CANCELLED', label: 'Cancelled', color: '#94a3b8' },
     ];
 
     return STATUS_CONFIG.map((cfg) => ({

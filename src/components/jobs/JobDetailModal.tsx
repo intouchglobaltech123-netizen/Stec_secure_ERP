@@ -27,6 +27,7 @@ import {
   Edit,
   RotateCcw,
 } from 'lucide-react';
+import { EditJobModal, CancelJobModal } from '@/components/jobs/EditJobModal';
 import { RecordAdvanceModal } from '@/components/payments/RecordAdvanceModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -76,6 +77,8 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
 
   const [isSiteLocationModalOpen, setIsSiteLocationModalOpen] = React.useState(false);
   const [isAdvanceOpen, setIsAdvanceOpen] = React.useState(false);
+  const [isEditOpen, setIsEditOpen] = React.useState(false);
+  const [isCancelOpen, setIsCancelOpen] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   // Phase 15: Document chain modals
@@ -391,6 +394,39 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
               </div>
             );
           })()}
+          {/* Phase 22: schedule, site contact, cancellation */}
+          {(job.scheduledFor || job.siteContactName || job.siteContactPhone || job.status === 'CANCELLED') && (
+            <div
+              className={`p-3 rounded-xl border text-xs flex flex-wrap gap-x-5 gap-y-1 ${
+                job.status === 'CANCELLED' ? 'bg-slate-100 border-slate-300' : 'bg-blue-50/60 border-blue-200'
+              }`}
+            >
+              {job.status === 'CANCELLED' && (
+                <span className="text-slate-700">
+                  <strong>Cancelled</strong>
+                  {job.cancelledAt && ` on ${formatDateTime(job.cancelledAt)}`}
+                  {job.cancelledByUserId && ` by ${users.find((u) => u.id === job.cancelledByUserId)?.name || 'management'}`}
+                  {job.cancelledReason && ` — ${job.cancelledReason}`}
+                </span>
+              )}
+              {job.scheduledFor && (
+                <span className="text-slate-700">
+                  Scheduled visit: <strong>{formatDateTime(job.scheduledFor)}</strong>
+                </span>
+              )}
+              {(job.siteContactName || job.siteContactPhone) && (
+                <span className="text-slate-700">
+                  Site contact: <strong>{job.siteContactName || ''}</strong>{' '}
+                  {job.siteContactPhone && (
+                    <a href={`tel:${job.siteContactPhone}`} className="font-mono text-blue-700 hover:underline">
+                      {job.siteContactPhone}
+                    </a>
+                  )}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Customer & Product Information */}
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -838,7 +874,33 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
 
         {/* Pinned Action Buttons Footer */}
         <div className="flex items-center justify-between p-3 sm:p-4 border-t border-slate-200 bg-slate-50/80 shrink-0">
-          <div>
+          <div className="flex items-center gap-2">
+            {/* Phase 22: management edits or cancels an open job */}
+            {isManagement && job.status !== 'CLOSED' && job.status !== 'CANCELLED' && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="text-xs rounded-xl font-semibold flex items-center gap-1 cursor-pointer"
+                  onClick={() => setIsEditOpen(true)}
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  Edit Job
+                </Button>
+                {!invoice && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="md"
+                    className="text-xs text-rose-600 hover:bg-rose-50 border-rose-300 rounded-xl font-semibold cursor-pointer"
+                    onClick={() => setIsCancelOpen(true)}
+                  >
+                    Cancel Job
+                  </Button>
+                )}
+              </>
+            )}
             {currentUser?.role === 'CEO' && (
               <Button
                 type="button"
@@ -922,6 +984,10 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, job, onC
           onClose={() => setIsSiteLocationModalOpen(false)}
         />
       )}
+
+      {/* Phase 22: edit / cancel */}
+      <EditJobModal isOpen={isEditOpen} job={job} onClose={() => setIsEditOpen(false)} />
+      <CancelJobModal isOpen={isCancelOpen} job={job} onClose={() => setIsCancelOpen(false)} />
 
       {/* Phase 22: advance against this job */}
       <RecordAdvanceModal isOpen={isAdvanceOpen} job={job} onClose={() => setIsAdvanceOpen(false)} />

@@ -132,6 +132,42 @@ export const markSerialReturned: Action<{ serialId: string; reason?: string }, v
     undefined
   );
 
+// Phase 22: undo a product wrongly added to a job (before completion); its units go back to stock
+export const removeJobProductUsage: Action<{ usageId: string }, void> = (s, env, { usageId }) => {
+  const usage = s.jobProductUsages.find((u) => u.id === usageId);
+  if (!usage) throw new Error('That product entry no longer exists.');
+  const job = s.jobs.find((j) => j.id === usage.jobId);
+  if (job && !['ASSIGNED', 'IN_PROGRESS', 'ON_HOLD'].includes(job.status)) {
+    throw new Error(`Job ${job.jobNumber} is already completed — products can no longer be removed.`);
+  }
+  const ids = new Set(usage.serialUnitIds || []);
+  const released = s.serialUnits.filter(
+    (su) => (ids.has(su.id) || ids.has(su.serialNumber)) && su.status === 'ALLOCATED' && su.installedAtJobId === usage.jobId
+  );
+  const releasedIds = new Set(released.map((su) => su.id));
+  const prod = s.products.find((p) => p.id === usage.productId);
+  const note = {
+    timestamp: env.nowIso,
+    note: `[PRODUCT REMOVED] ${prod?.name || 'Equipment'} x${usage.quantity}${
+      released.length ? ` (S/N back to stock: ${released.map((su) => su.serialNumber).join(', ')})` : ''
+    }`,
+  };
+  const log = s.workLogs.find((w) => w.jobId === usage.jobId);
+  return done(
+    {
+      ...s,
+      jobProductUsages: s.jobProductUsages.filter((u) => u.id !== usageId),
+      serialUnits: s.serialUnits.map((su) =>
+        releasedIds.has(su.id) ? { ...su, status: 'IN_STOCK' as const, installedAtJobId: undefined } : su
+      ),
+      workLogs: log
+        ? s.workLogs.map((w) => (w.id === log.id ? { ...w, notesLog: [note, ...(w.notesLog || [])] } : w))
+        : s.workLogs,
+    },
+    undefined
+  );
+};
+
 // Phase 8: Flexible Product Usage (Quantity-based, addable anytime)
 export interface AddJobProductUsageArgs {
   jobId: string;

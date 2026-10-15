@@ -47,6 +47,7 @@ import { JobCreateModal } from '@/components/jobs/JobCreateModal';
 import { JobInvoiceModal } from '@/components/jobs/JobInvoiceModal';
 import { JobShareOtpModal } from '@/components/jobs/JobShareOtpModal';
 import { InvoicePreviewModal } from '@/components/invoices/InvoicePreviewModal';
+import { EditJobModal, CancelJobModal } from '@/components/jobs/EditJobModal';
 import { RaiseHoldModal } from '@/components/jobs/RaiseHoldModal';
 import { DeliveryChallanModal } from '@/components/jobs/DeliveryChallanModal';
 import { JobPhotoUpload } from '@/components/jobs/JobPhotoUpload';
@@ -146,6 +147,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
     getJobInvoice,
     getJobQuotation,
     getJobProductUsages,
+    removeJobProductUsage,
     serialUnits,
     products,
     allocateSerialToJob,
@@ -226,6 +228,23 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
 
   // Busy flags while a server action is in flight (prevents double submission)
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [removingUsageId, setRemovingUsageId] = useState<string | null>(null);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [cancellingJob, setCancellingJob] = useState<Job | null>(null);
+
+  // Phase 22: undo a product added by mistake — its serial units go back to stock
+  const handleRemoveUsage = async (usageId: string, productName: string) => {
+    if (!window.confirm(`Remove ${productName} from this job? Its serial units go back to stock.`)) return;
+    setRemovingUsageId(usageId);
+    try {
+      await removeJobProductUsage(usageId);
+      toast.success(`${productName} removed from the job.`);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setRemovingUsageId(null);
+    }
+  };
   const [isCompletingSaving, setIsCompletingSaving] = useState(false);
   const [isDeletingSaving, setIsDeletingSaving] = useState(false);
 
@@ -442,6 +461,29 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Phase 22: management edits or cancels an open job */}
+            {isManagement && job.status !== 'CLOSED' && job.status !== 'CANCELLED' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs px-2.5 rounded-md font-semibold"
+                  onClick={() => setEditingJob(job)}
+                >
+                  Edit Job
+                </Button>
+                {!invoice && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs px-2.5 rounded-md font-semibold text-rose-600 border-rose-300 hover:bg-rose-50"
+                    onClick={() => setCancellingJob(job)}
+                  >
+                    Cancel Job
+                  </Button>
+                )}
+              </>
+            )}
             <LiveJobTimer
               status={job.status}
               timerStartedAt={job.timerStartedAt}
@@ -450,6 +492,38 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
             />
           </div>
         </div>
+
+        {/* Phase 22: schedule, site contact, cancellation */}
+        {(job.scheduledFor || job.siteContactName || job.siteContactPhone || job.status === 'CANCELLED') && (
+          <div
+            className={`p-2.5 rounded-md border flex flex-wrap gap-x-5 gap-y-1 ${
+              job.status === 'CANCELLED' ? 'bg-slate-100 border-slate-300' : 'bg-blue-50/60 border-blue-200'
+            }`}
+          >
+            {job.status === 'CANCELLED' && (
+              <span className="text-slate-700">
+                <strong>Cancelled</strong>
+                {job.cancelledAt && ` on ${formatDateTime(job.cancelledAt)}`}
+                {job.cancelledReason && ` — ${job.cancelledReason}`}
+              </span>
+            )}
+            {job.scheduledFor && (
+              <span className="text-slate-700">
+                Scheduled visit: <strong>{formatDateTime(job.scheduledFor)}</strong>
+              </span>
+            )}
+            {(job.siteContactName || job.siteContactPhone) && (
+              <span className="text-slate-700">
+                Site contact: <strong>{job.siteContactName || ''}</strong>{' '}
+                {job.siteContactPhone && (
+                  <a href={`tel:${job.siteContactPhone}`} className="font-mono text-blue-700 hover:underline">
+                    {job.siteContactPhone}
+                  </a>
+                )}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* 3-Column Execution Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -519,6 +593,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                 {job.status === 'COMPLETED' && 'Work Complete (Ready for Invoice)'}
                 {job.status === 'AWAITING_OTP' && 'Awaiting Customer OTP Sign-off'}
                 {job.status === 'CLOSED' && 'Job Verified & Closed'}
+                {job.status === 'CANCELLED' && `Cancelled — ${job.cancelledReason || 'no reason given'}`}
               </div>
             </div>
 
@@ -696,9 +771,22 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                         </div>
                       )}
                     </div>
-                    <span className="font-mono font-bold text-orange-600 text-xs px-2 py-0.5 rounded bg-orange-50 border border-orange-200 shrink-0">
-                      Qty: {usage.quantity} {prod?.unit || 'Nos'}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="font-mono font-bold text-orange-600 text-xs px-2 py-0.5 rounded bg-orange-50 border border-orange-200">
+                        Qty: {usage.quantity} {prod?.unit || 'Nos'}
+                      </span>
+                      {canAddProducts && (
+                        <button
+                          type="button"
+                          disabled={removingUsageId === usage.id}
+                          onClick={() => void handleRemoveUsage(usage.id, prod?.name || 'Equipment')}
+                          className="text-[11px] font-semibold text-rose-600 hover:text-rose-700 cursor-pointer disabled:opacity-50"
+                          title="Remove this product (added by mistake)"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })
@@ -838,6 +926,11 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
             id: 'CLOSED',
             label: 'Closed',
             count: deptJobs.filter((j) => j.status === 'CLOSED').length,
+          },
+          {
+            id: 'CANCELLED',
+            label: 'Cancelled',
+            count: deptJobs.filter((j) => j.status === 'CANCELLED').length,
           },
         ].map((tab) => {
           const isActive = activeFilter === tab.id;
@@ -1046,6 +1139,15 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-500">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-700"></span>
                               Closed
+                            </span>
+                          )}
+                          {job.status === 'CANCELLED' && (
+                            <span
+                              title={job.cancelledReason}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-300 line-through decoration-slate-400"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                              Cancelled
                             </span>
                           )}
                         </td>
@@ -1366,6 +1468,22 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
           setActiveCreatedInvoice(null);
         }}
       />
+
+      {/* Phase 22: edit / cancel (always the latest copy of the job) */}
+      {editingJob && (
+        <EditJobModal
+          isOpen
+          job={visibleJobs.find((j) => j.id === editingJob.id) ?? editingJob}
+          onClose={() => setEditingJob(null)}
+        />
+      )}
+      {cancellingJob && (
+        <CancelJobModal
+          isOpen
+          job={visibleJobs.find((j) => j.id === cancellingJob.id) ?? cancellingJob}
+          onClose={() => setCancellingJob(null)}
+        />
+      )}
 
       {/* MODAL: Delete Job Confirmation (CEO Only) (Part C) */}
       {deletingJob && (

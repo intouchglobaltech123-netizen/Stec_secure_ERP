@@ -11,6 +11,8 @@ export const ACTIONS = {
   deleteJob: jobs.deleteJob,
   updateJobStatus: jobs.updateJobStatus,
   updateJob: jobs.updateJob,
+  editJob: jobs.editJob,
+  cancelJob: jobs.cancelJob,
   startJob: jobs.startJob,
   addWorkLogNote: jobs.addWorkLogNote,
   addMaterialUsage: jobs.addMaterialUsage,
@@ -44,6 +46,7 @@ export const ACTIONS = {
   installJobSerials: inventory.installJobSerials,
   markSerialReturned: inventory.markSerialReturned,
   addJobProductUsage: inventory.addJobProductUsage,
+  removeJobProductUsage: inventory.removeJobProductUsage,
 
   addCustomer: crm.addCustomer,
   updateCustomer: crm.updateCustomer,

@@ -53,6 +53,8 @@ const RULES: Record<ActionName, Check> = {
   createJob: managementOnly,
   deleteJob: ceoOnly,
   updateJob: managementOnly,
+  editJob: managementOnly,
+  cancelJob: managementOnly,
   updateJobStatus: managementOnly,
   startJob: jobLead(),
   completeJob: jobLead(),
@@ -62,6 +64,7 @@ const RULES: Record<ActionName, Check> = {
   addMaterialUsage: jobMember,
   raiseHold: jobMember,
   addJobProductUsage: jobMember,
+  removeJobProductUsage: jobLead((args, state) => state.jobProductUsages.find((u) => u.id === args.usageId)?.jobId),
   allocateSerialToJob: jobMember,
   resolveHoldEvent: ({ state, user, args }) => {
     if (isManagementRole(user)) return null;

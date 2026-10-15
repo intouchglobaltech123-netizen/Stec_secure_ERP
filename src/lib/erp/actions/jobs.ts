@@ -255,6 +255,108 @@ export const resolveHoldEvent: Action<{ holdId: string }, void> = (s, env, { hol
   );
 };
 
+// Phase 22: management edits a job's details, team and schedule (not once it is closed or cancelled)
+export type EditableJobFields = Partial<
+  Pick<
+    Job,
+    | 'category'
+    | 'problemReported'
+    | 'customerStatus'
+    | 'productModel'
+    | 'serialNo'
+    | 'assignedTeam'
+    | 'teamLeadUserId'
+    | 'scheduledFor'
+    | 'siteContactName'
+    | 'siteContactPhone'
+  >
+>;
+
+export const editJob: Action<{ jobId: string; updates: EditableJobFields }, Job> = (s, env, { jobId, updates }) => {
+  const job = s.jobs.find((j) => j.id === jobId);
+  if (!job) throw new Error('Job not found.');
+  if (job.status === 'CLOSED' || job.status === 'CANCELLED') {
+    throw new Error(`Job ${job.jobNumber} is ${job.status.toLowerCase()} and can no longer be edited.`);
+  }
+  // Only these fields can change here; status, billing and timer fields have their own actions
+  const allowed: (keyof EditableJobFields)[] = [
+    'category',
+    'problemReported',
+    'customerStatus',
+    'productModel',
+    'serialNo',
+    'assignedTeam',
+    'teamLeadUserId',
+    'scheduledFor',
+    'siteContactName',
+    'siteContactPhone',
+  ];
+  const clean: EditableJobFields = {};
+  for (const key of allowed) {
+    if (updates[key] !== undefined) (clean as any)[key] = updates[key];
+  }
+
+  const team = clean.assignedTeam ?? job.assignedTeam;
+  if (!team.length) throw new Error('A job needs at least one technician.');
+  const lead = clean.teamLeadUserId ?? job.teamLeadUserId ?? team[0];
+  if (!team.includes(lead)) throw new Error('The team lead must be one of the assigned technicians.');
+  if (clean.problemReported !== undefined && !clean.problemReported.trim()) {
+    throw new Error('The scope / problem description cannot be empty.');
+  }
+
+  const updated: Job = { ...job, ...clean, assignedTeam: team, teamLeadUserId: lead };
+  const userName = (id: string) => s.users.find((u) => u.id === id)?.name || id;
+  const teamChanged = team.join() !== job.assignedTeam.join() || lead !== job.teamLeadUserId;
+  const note = teamChanged
+    ? `[JOB UPDATED] Team: ${team.map(userName).join(', ')} (lead ${userName(lead)})`
+    : '[JOB UPDATED] Job details updated';
+
+  const withJob = { ...s, jobs: updateById(s.jobs, jobId, () => updated) };
+  return done(withWorkLogNote(withJob, env, jobId, note), updated);
+};
+
+// Phase 22: cancel instead of delete — the record stays, allocated stock goes back to the shelf
+export const cancelJob: Action<{ jobId: string; reason: string }, void> = (s, env, { jobId, reason }) => {
+  const job = s.jobs.find((j) => j.id === jobId);
+  if (!job) throw new Error('Job not found.');
+  if (!reason.trim()) throw new Error('Please give a reason for cancelling.');
+  if (job.status === 'CANCELLED') return done(s, undefined);
+  const invoice = findInvoiceForJob(s, job);
+  if (invoice) throw new Error(`Job ${job.jobNumber} is already invoiced as ${invoice.invoiceNo} and cannot be cancelled.`);
+
+  const elapsed = elapsedSeconds(job, env);
+  return done(
+    {
+      ...s,
+      jobs: updateById(s.jobs, jobId, (j) => ({
+        ...j,
+        status: 'CANCELLED' as const,
+        cancelledAt: env.nowIso,
+        cancelledByUserId: env.actor?.id,
+        cancelledReason: reason.trim(),
+        timerStartedAt: undefined,
+        timerElapsedSeconds: elapsed,
+      })),
+      // Close the job's open holds and work logs
+      holdEvents: s.holdEvents.map((h) =>
+        h.jobId === jobId && h.status === 'OPEN'
+          ? { ...h, status: 'RESOLVED' as const, resolvedAt: env.nowIso, resolvedByUserId: env.actor?.id }
+          : h
+      ),
+      workLogs: withWorkLogNote(s, env, jobId, `[JOB CANCELLED] ${reason.trim()}`).workLogs.map((w) =>
+        w.jobId === jobId && !w.outTime ? { ...w, outTime: env.nowIso } : w
+      ),
+      // Units allocated to this job go back to stock
+      serialUnits: s.serialUnits.map((su) =>
+        su.installedAtJobId === jobId && su.status === 'ALLOCATED'
+          ? { ...su, status: 'IN_STOCK' as const, installedAtJobId: undefined }
+          : su
+      ),
+    },
+    undefined
+  );
+};
+
 export interface CompleteJobArgs {
   jobId: string;
   afterPhotoUrl?: string;

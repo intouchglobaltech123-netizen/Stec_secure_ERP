@@ -29,6 +29,7 @@ import {
 } from './stecsecure-types';
 import { ErpState, normalizeSavedState, getJobQuotation as getJobQuotationIn } from './erp/core';
 import type { ActionName, ActionArgs, ActionReturn } from './erp/actions';
+import type { EditableJobFields } from './erp/actions/jobs';
 import { api, ApiError, errorMessage } from './api';
 
 export interface StecSecureContextType extends ErpState {
@@ -63,6 +64,10 @@ export interface StecSecureContextType extends ErpState {
   deleteJob: (jobId: string) => Promise<void>;
   updateJobStatus: (id: string, status: JobStatus) => Promise<void>;
   updateJob: (id: string, updates: Partial<Job>) => Promise<void>;
+  // Phase 22: edit details / team / schedule, cancel with a reason, undo a product added by mistake
+  editJob: (jobId: string, updates: EditableJobFields) => Promise<Job>;
+  cancelJob: (jobId: string, reason: string) => Promise<void>;
+  removeJobProductUsage: (usageId: string) => Promise<void>;
   startJob: (jobId: string, beforePhotoUrl?: string) => Promise<void>;
   addWorkLogNote: (jobId: string, note: string) => Promise<void>;
   addMaterialUsage: (jobId: string, materialName: string, deliveredQty: number, returnedQty: number) => Promise<void>;
@@ -506,6 +511,9 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         deleteJob: (jobId) => run('deleteJob', { jobId }),
         updateJobStatus: (id, status) => run('updateJobStatus', { id, status }),
         updateJob: (id, updates) => run('updateJob', { id, updates }),
+        editJob: (jobId, updates) => run('editJob', { jobId, updates }),
+        cancelJob: (jobId, reason) => run('cancelJob', { jobId, reason }),
+        removeJobProductUsage: (usageId) => run('removeJobProductUsage', { usageId }),
         startJob: (jobId, beforePhotoUrl) => run('startJob', { jobId, beforePhotoUrl }),
         addWorkLogNote: (jobId, note) => run('addWorkLogNote', { jobId, note }),
         addMaterialUsage: (jobId, materialName, deliveredQty, returnedQty) =>

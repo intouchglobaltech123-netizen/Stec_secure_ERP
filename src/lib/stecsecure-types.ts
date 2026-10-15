@@ -87,7 +87,8 @@ export type JobStatus =
   | 'ON_HOLD'
   | 'COMPLETED'
   | 'AWAITING_OTP'
-  | 'CLOSED';
+  | 'CLOSED'
+  | 'CANCELLED'; // Phase 22: cancelled by management, with a reason
 
 export type CustomerStatus = 'WARRANTY' | 'AMC' | 'SERVICE_CALL' | 'OTHERS';
 
@@ -119,6 +120,13 @@ export interface Job {
   createdByUserId?: string; // Phase 13: CEO / Manager who created the job
   createdAt: string;
   completedAt?: string;
+  // Phase 22: scheduling, site contact and cancellation
+  scheduledFor?: string; // planned visit, local 'YYYY-MM-DDTHH:mm'
+  siteContactName?: string;
+  siteContactPhone?: string;
+  cancelledAt?: string;
+  cancelledByUserId?: string;
+  cancelledReason?: string;
 }
 
 export interface WorkLogEntry {

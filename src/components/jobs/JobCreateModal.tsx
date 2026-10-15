@@ -79,7 +79,11 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
 
   const [jobType, setJobType] = useState<JobType>(initialType);
   const [category, setCategory] = useState<ServiceCategory>('CCTV');
-  const [customerStatus, setCustomerStatus] = useState<CustomerStatus>('AMC');
+  const [customerStatus, setCustomerStatus] = useState<CustomerStatus>('OTHERS');
+  // Phase 22: planned visit and the person to call at site
+  const [scheduledFor, setScheduledFor] = useState('');
+  const [siteContactName, setSiteContactName] = useState('');
+  const [siteContactPhone, setSiteContactPhone] = useState('');
   const [problemReported, setProblemReported] = useState('');
   const [siteLocationInput, setSiteLocationInput] = useState('');
 
@@ -418,7 +422,13 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
         serviceAmount: 0,
         taxable: true,
         status: 'ASSIGNED',
+        scheduledFor: scheduledFor || undefined,
+        siteContactName: siteContactName.trim() || undefined,
+        siteContactPhone: siteContactPhone.replace(/\D/g, '').slice(-10) || undefined,
       });
+      setScheduledFor('');
+      setSiteContactName('');
+      setSiteContactPhone('');
 
       try {
         localStorage.removeItem(JOB_FORM_DRAFT_KEY);
@@ -740,6 +750,38 @@ export const JobCreateModal: React.FC<JobCreateModalProps> = ({
                 onChange={(e) => setProblemReported(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 leading-relaxed shadow-2xs transition-colors"
               />
+            </div>
+
+            {/* Phase 22: schedule & site contact (optional) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700 leading-normal">Scheduled visit</label>
+                <input
+                  type="datetime-local"
+                  value={scheduledFor}
+                  onChange={(e) => setScheduledFor(e.target.value)}
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700 leading-normal">Site contact name</label>
+                <input
+                  value={siteContactName}
+                  onChange={(e) => setSiteContactName(e.target.value)}
+                  placeholder="Person to meet at site"
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700 leading-normal">Site contact mobile</label>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  value={siteContactPhone}
+                  onChange={(e) => setSiteContactPhone(e.target.value)}
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs font-mono text-slate-900 focus:outline-none focus:border-orange-500 shadow-2xs"
+                />
+              </div>
             </div>
 
             {/* 5. Team Assignment + Team Lead Designation (Consistent Width & Style) */}
