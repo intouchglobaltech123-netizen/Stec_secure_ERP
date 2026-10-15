@@ -233,7 +233,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
       maxWidth="2xl"
       footer={
         <div className="flex items-center justify-between w-full">
-          <div className="text-xs text-slate-500">
+          <div className="hidden sm:block text-xs text-slate-500">
             Logged by: <strong className="text-slate-800">{currentUser?.name}</strong> ({humanize(currentUser?.role)})
           </div>
           <div className="flex items-center gap-2">
@@ -277,7 +277,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
           <div className="flex items-center justify-between">
             <label className="text-[13px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-orange-600" />
-              1. Customer Details <span className="text-rose-500">*</span>
+              1. Customer <span className="text-rose-500">*</span>
             </label>
             {!initialJobId && (
               <button
@@ -286,14 +286,14 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
                 className="text-[13px] font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                {showQuickAddCustomer ? 'Select Existing Customer' : '+ Quick Add Walk-In'}
+                {showQuickAddCustomer ? 'Choose existing customer' : 'New customer'}
               </button>
             )}
           </div>
 
           {showQuickAddCustomer ? (
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-              <div className="text-[13px] font-bold text-slate-800">Quick-Add New Customer</div>
+              <div className="text-[13px] font-bold text-slate-800">New customer</div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
                   placeholder="Full Name *"
@@ -354,7 +354,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
                     <Input
-                      placeholder="Search customer by name, phone or location..."
+                      placeholder="Search name, phone or place"
                       value={customerSearch}
                       onChange={(e) => setCustomerSearch(e.target.value)}
                       className="pl-9 text-[13px] bg-white"
@@ -363,7 +363,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
                   <div className="max-h-36 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100 bg-white shadow-2xs">
                     {filteredCustomers.length === 0 ? (
                       <div className="p-3 text-[13px] text-slate-400 text-center">
-                        No matching customers found. Use &quot;+ Quick Add Walk-In&quot; above.
+                        No match. Use &quot;+ New customer&quot; above.
                       </div>
                     ) : (
                       filteredCustomers.map((c) => (
@@ -394,10 +394,10 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
 
         {/* Section 2: Unit Selection */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-[13px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="text-[13px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5 whitespace-nowrap">
               <Cpu className="w-3.5 h-3.5 text-orange-600" />
-              2. Hardware Unit <span className="text-rose-500">*</span>
+              2. Faulty unit <span className="text-rose-500">*</span>
             </label>
 
             {/* Mode switch */}
@@ -411,7 +411,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                From Inventory / Serial Unit
+                From our stock
               </button>
               <button
                 type="button"
@@ -422,7 +422,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Uncatalogued / Walk-In
+                Not from our stock
               </button>
             </div>
           </div>
@@ -476,7 +476,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400" />
                     <Input
-                      placeholder="Search by serial number (e.g. 1VU-...), product name..."
+                      placeholder="Search serial number or product"
                       value={serialSearch}
                       onChange={(e) => setSerialSearch(e.target.value)}
                       className="pl-9 text-[13px] bg-white"
@@ -485,7 +485,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
                   <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100 bg-white shadow-2xs">
                     {availableSerials.length === 0 ? (
                       <div className="p-3 text-[13px] text-slate-400 text-center">
-                        No matching serial units found. Switch to &quot;Uncatalogued / Walk-In&quot; above to type custom details.
+                        No match. Choose &quot;Not from our stock&quot; above and type the details.
                       </div>
                     ) : (
                       availableSerials.map((s) => {
@@ -530,14 +530,11 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
           ) : (
             <div className="space-y-1">
               <Input
-                placeholder="e.g. CP PLUS 4CH DVR (Model CP-UVR-0401E1-S, S/N: CPH23091102)"
+                placeholder="Make, model and serial number"
                 value={customUnitDescription}
                 onChange={(e) => setCustomUnitDescription(e.target.value)}
                 className="text-[13px] bg-white font-mono"
               />
-              <p className="text-xs text-slate-500">
-                Provide unit make, model, and chassis serial printed on the sticker for triage records.
-              </p>
             </div>
           )}
         </div>
@@ -546,12 +543,12 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
         <div className="space-y-1.5">
           <label className="text-[13px] font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
             <FileText className="w-3.5 h-3.5 text-orange-600" />
-            3. Fault Symptoms / Reported Defect <span className="text-rose-500">*</span>
+            3. Fault <span className="text-rose-500">*</span>
           </label>
           <textarea
             rows={3}
             required
-            placeholder="Describe symptoms in detail (e.g. unit does not power on after storm, IR night vision cut out, motor sweep calibration failure)..."
+            placeholder="What is wrong? e.g. no picture at night"
             value={faultDescription}
             onChange={(e) => setFaultDescription(e.target.value)}
             className="w-full rounded-lg border border-slate-300 p-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
@@ -563,10 +560,7 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
           <label className="text-[13px] font-bold uppercase tracking-wider text-slate-800 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <HardHat className="w-3.5 h-3.5 text-orange-600" />
-              4. Assign Technician <span className="text-rose-500">*</span>
-            </span>
-            <span className="text-[11px] text-slate-500 font-normal lowercase tracking-normal">
-              required for physical handling
+              4. Technician <span className="text-rose-500">*</span>
             </span>
           </label>
           <select
@@ -575,25 +569,22 @@ export const CreateRepairTicketModal: React.FC<CreateRepairTicketModalProps> = (
             className="w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 font-medium"
             required
           >
-            <option value="" disabled>-- Select Responsible Technician --</option>
+            <option value="" disabled>Who collects and reinstalls it?</option>
             {technicians.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name} (Technician &bull; {t.phone})
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-600">
-            Responsible for physical handling: collecting unit from customer premises, lab handover, and final site reinstallation.
-          </p>
         </div>
 
         {/* Section 5: Initial Triage Note (Optional) */}
         <div className="space-y-1">
           <label className="text-[13px] font-semibold text-slate-700">
-            5. Initial Intake / Inspection Note (Optional)
+            5. Note (optional)
           </label>
           <Input
-            placeholder="e.g. Front bezel scratched, customer brought without adapter."
+            placeholder="e.g. scratched, no adapter"
             value={initialNote}
             onChange={(e) => setInitialNote(e.target.value)}
             className="text-[13px] bg-white"

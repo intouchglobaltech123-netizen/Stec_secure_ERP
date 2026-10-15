@@ -11,5 +11,5 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["src", "../src/lib/erp", "../src/lib/stecsecure-types.ts", "../src/lib/seed-data.ts", "../src/lib/numbering.ts", "../src/lib/demo-accounts.ts", "../src/lib/gst.ts", "../src/lib/invoice-status.ts"]
+  "include": ["src", "../src/lib/erp", "../src/lib/stecsecure-types.ts", "../src/lib/seed-data.ts", "../src/lib/numbering.ts", "../src/lib/demo-accounts.ts", "../src/lib/gst.ts", "../src/lib/invoice-status.ts", "../src/lib/staff-code.ts", "../src/lib/excel-book.ts", "../src/lib/backup-sheets.ts", "../src/lib/utils.ts", "../src/lib/quotation-status.ts"]
 }

@@ -71,7 +71,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 bg-black/45 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 md:p-6 bg-black/45 backdrop-blur-xs erp-backdrop"
       role="dialog"
       aria-modal="true"
     >
@@ -84,7 +84,7 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Modal Dialog Card */}
       <div
-        className={`relative w-full ${maxWidthClass} max-h-[94dvh] sm:max-h-[92vh] flex flex-col rounded-t-2xl rounded-b-none sm:rounded-2xl bg-white border border-slate-200 shadow-2xl text-slate-900 overflow-hidden sm:my-auto animate-in zoom-in-95 duration-150 ${className}`}
+        className={`relative w-full ${maxWidthClass} max-h-[94dvh] sm:max-h-[92vh] flex flex-col rounded-t-2xl rounded-b-none sm:rounded-2xl bg-white border border-slate-200 shadow-2xl text-slate-900 overflow-hidden sm:my-auto erp-modal ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Optional Structured Header */}

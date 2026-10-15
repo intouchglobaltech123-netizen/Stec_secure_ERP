@@ -48,8 +48,9 @@ Optional extra: Railway PostgreSQL → **Backups** tab → scheduled daily / wee
 
 ### Restoring a downloaded backup
 
-The restore script loads a backup file into a database. It refuses a database that already has data unless
-`--replace` is given.
+The backup download is a ZIP: the backup itself (`.json`) and a readable Excel copy (`-readable.xlsx`). The
+restore script loads the ZIP (or the `.json` taken out of it) into a database. It refuses a database that already
+has data unless `--replace` is given.
 
 1. **Stop the app service** (Railway → app service → **⋮ → Remove** the active deployment, or `railway down`).
    The running server keeps the data in memory and would not see the restore.
@@ -57,7 +58,7 @@ The restore script loads a backup file into a database. It refuses a database th
 3. Point the script at the database — copy `DATABASE_PUBLIC_URL` from Railway PostgreSQL → **Variables**:
 
    ```bash
-   DATABASE_URL="<DATABASE_PUBLIC_URL>" PGSSL=true INITIAL_CEO_PIN=<new 4-digit PIN> npm run restore -- stecsecure-backup-2026-10-15-1121.json --replace
+   DATABASE_URL="<DATABASE_PUBLIC_URL>" PGSSL=true INITIAL_CEO_PIN=<new 4-digit PIN> npm run restore -- stecsecure-backup-2026-10-15-1121.zip --replace
    ```
 
    `INITIAL_CEO_PIN` is only used when the CEO has no PIN on that database (a brand-new database). Staff whose

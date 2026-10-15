@@ -1,14 +1,19 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { AppNotification, AppSection } from '@/lib/stecsecure-types';
 import { formatDateTime } from '@/lib/utils';
+import { useDismiss } from '@/lib/use-dismiss';
 
 // Phase 22: in-app notifications — unread count, list, and a pop-up when something new arrives
 export const NotificationBell: React.FC<{ onNavigate: (section: AppSection) => void }> = ({ onNavigate }) => {
   const { notifications, currentUser, markNotificationsRead, canAccessSection } = useStecSecure();
   const [open, setOpen] = useState(false);
+  // Closes on a tap/click outside the panel or Escape
+  const panelRef = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(panelRef, open, close);
   const me = currentUser?.id ?? '';
   const isUnread = (n: AppNotification) => !n.readBy.includes(me);
   const unreadCount = notifications.filter(isUnread).length;
@@ -34,7 +39,7 @@ export const NotificationBell: React.FC<{ onNavigate: (section: AppSection) => v
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={panelRef}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -50,7 +55,7 @@ export const NotificationBell: React.FC<{ onNavigate: (section: AppSection) => v
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl bg-white border border-slate-200 shadow-xl z-50">
+        <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl bg-white border border-slate-200 shadow-xl z-50 erp-dropdown">
           <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
             <span className="text-[13px] font-bold text-slate-800">Notifications</span>
             {unreadCount > 0 && (

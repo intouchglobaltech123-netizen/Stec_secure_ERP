@@ -4,6 +4,7 @@ import { Database } from './db';
 import { Store, hashPin, normalizePhone } from './store';
 import { isValidPin } from './auth';
 import { User, UserRole } from '../../src/lib/stecsecure-types';
+import { withStaffCodes } from '../../src/lib/staff-code';
 
 const ROLES: UserRole[] = ['CEO', 'MANAGER', 'TECHNICIAN'];
 
@@ -80,8 +81,14 @@ export function createUsersRouter(db: Database, store: Store) {
       email: email ? String(email).trim() : undefined,
     };
     const pinHash = await hashPin(pin);
+    // The new person gets the next staff number for their role (TECH-004 …)
+    let created = user;
     await store.commit(
-      (s) => ({ ...s, users: [...s.users, user] }),
+      (s) => {
+        const users = withStaffCodes([...s.users, user]);
+        created = users[users.length - 1];
+        return { ...s, users };
+      },
       async (tx) => {
         await tx.query('INSERT INTO credentials (user_id, phone, pin_hash) VALUES ($1, $2, $3)', [
           user.id,
@@ -90,7 +97,7 @@ export function createUsersRouter(db: Database, store: Store) {
         ]);
       }
     );
-    res.status(201).json({ user });
+    res.status(201).json({ user: created });
   });
 
   router.patch('/:id', async (req, res) => {
@@ -118,8 +125,14 @@ export function createUsersRouter(db: Database, store: Store) {
       phone: phone ?? existing.phone,
       email: email !== undefined ? String(email).trim() || undefined : existing.email,
     };
+    // A change of role gives the next staff number for the new role
+    let saved = updated;
     await store.commit(
-      (s) => ({ ...s, users: s.users.map((u) => (u.id === id ? updated : u)) }),
+      (s) => {
+        const users = withStaffCodes(s.users.map((u) => (u.id === id ? updated : u)));
+        saved = users.find((u) => u.id === id) ?? updated;
+        return { ...s, users };
+      },
       async (tx) => {
         await tx.query(
           'UPDATE credentials SET phone = COALESCE($2, phone), active = $3, updated_at = now() WHERE user_id = $1',
@@ -129,7 +142,7 @@ export function createUsersRouter(db: Database, store: Store) {
         if (!nextActive) await tx.query('DELETE FROM sessions WHERE user_id = $1', [id]);
       }
     );
-    res.json({ user: updated, active: nextActive });
+    res.json({ user: saved, active: nextActive });
   });
 
   router.post('/:id/reset-pin', async (req, res) => {

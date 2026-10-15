@@ -111,7 +111,7 @@ export const StaffAccountsCard: React.FC = () => {
               <Users className="w-4 h-4 text-orange-600" />
               Staff Accounts
             </CardTitle>
-            <CardDescription className="text-slate-500">
+            <CardDescription className="hidden sm:block text-slate-500">
               Staff log in with their mobile number and a 4-digit PIN. Five wrong PINs lock an account for 15
               minutes.
             </CardDescription>

@@ -1,10 +1,15 @@
-// Step 3: backups (CEO only). A downloadable copy of every business record, the settings and the job
-// photos — everything except PINs and login sessions (4-digit PIN hashes are easy to crack, so they
-// never leave the server). `restore.ts` loads such a file into a database.
-import express, { Response } from 'express';
+// Step 3: backups (CEO only). One ZIP with a readable Excel copy and the full backup (JSON): every
+// business record, the settings and the job photos — everything except PINs and login sessions (4-digit
+// PIN hashes are easy to crack, so they never leave the server). `restore.ts` loads the ZIP (or the
+// JSON inside it) into a database.
+import express from 'express';
+import ExcelJS from 'exceljs';
+import { Zip, ZipDeflate, ZipPassThrough, strToU8 } from 'fflate';
 import { Database } from './db';
 import { Store } from './store';
 import { User } from '../../src/lib/stecsecure-types';
+import { buildWorkbook } from '../../src/lib/excel-book';
+import { backupSheets } from '../../src/lib/backup-sheets';
 
 export const BACKUP_FORMAT = 'stecsecure-erp-backup';
 export const BACKUP_FORMAT_VERSION = 1;
@@ -59,7 +64,7 @@ function stamp(d: Date) {
 }
 
 // Photos a few at a time, so a large photo store never sits in memory at once. Returns how many.
-async function writePhotos(db: Database, res: Response): Promise<number> {
+async function writePhotos(db: Database, write: (text: string) => void): Promise<number> {
   let count = 0;
   let after = '';
   for (;;) {
@@ -79,7 +84,7 @@ async function writePhotos(db: Database, res: Response): Promise<number> {
         createdAt: new Date(p.created_at).toISOString(),
         data: Buffer.from(p.data).toString('base64'),
       };
-      res.write(`${count ? ',' : ''}${JSON.stringify(photo)}`);
+      write(`${count ? ',' : ''}${JSON.stringify(photo)}`);
       count++;
     }
     after = rows[rows.length - 1].id;
@@ -132,7 +137,7 @@ export function createBackupRouter(db: Database, store: Store) {
         'SELECT collection, id, data, version::text AS version, sort_key::text AS sort_key, deleted FROM records ORDER BY collection, sort_key'
       );
       const { rows: meta } = await db.query<{ key: string; value: unknown }>('SELECT key, value FROM meta');
-      return { records, meta, dataVersion: store.version };
+      return { records, meta, dataVersion: store.version, state: store.state };
     });
     const records: BackupRecord[] = snapshot.records.map((r) => ({
       collection: r.collection,
@@ -143,12 +148,35 @@ export function createBackupRouter(db: Database, store: Store) {
       deleted: r.deleted,
     }));
 
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="stecsecure-backup-${stamp(now)}.json"`);
+    // The Excel copy is made before anything is sent, so a problem there is a clean error
+    const xlsx = new Uint8Array(await buildWorkbook(ExcelJS, backupSheets(snapshot.state)).xlsx.writeBuffer());
+
+    const baseName = `stecsecure-backup-${stamp(now)}`;
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${baseName}.zip"`);
     res.setHeader('Cache-Control', 'no-store');
 
     let photoCount = 0;
     try {
+      const zip = new Zip((err, chunk, final) => {
+        if (err) {
+          console.error('[backup] could not build the ZIP', err);
+          res.destroy(err);
+          return;
+        }
+        res.write(chunk);
+        if (final) res.end();
+      });
+
+      // 1. The readable copy (an .xlsx is already compressed)
+      const excel = new ZipPassThrough(`${baseName}-readable.xlsx`);
+      zip.add(excel);
+      excel.push(xlsx, true);
+
+      // 2. The full backup, streamed into the ZIP
+      const json = new ZipDeflate(`${baseName}.json`, { level: 6 });
+      zip.add(json);
+      const write = (text: string) => json.push(strToU8(text));
       const header = {
         format: BACKUP_FORMAT,
         formatVersion: BACKUP_FORMAT_VERSION,
@@ -157,12 +185,13 @@ export function createBackupRouter(db: Database, store: Store) {
         dataVersion: snapshot.dataVersion,
         includesPhotos: includePhotos,
       };
-      res.write(JSON.stringify(header).slice(0, -1));
-      res.write(`,"records":${JSON.stringify(records)}`);
-      res.write(`,"meta":${JSON.stringify(snapshot.meta.map((m) => ({ key: m.key, value: asJson(m.value) })))}`);
-      res.write(',"photos":[');
-      if (includePhotos) photoCount = await writePhotos(db, res);
-      res.end(']}');
+      write(JSON.stringify(header).slice(0, -1));
+      write(`,"records":${JSON.stringify(records)}`);
+      write(`,"meta":${JSON.stringify(snapshot.meta.map((m) => ({ key: m.key, value: asJson(m.value) })))}`);
+      write(',"photos":[');
+      if (includePhotos) photoCount = await writePhotos(db, write);
+      json.push(strToU8(']}'), true);
+      zip.end();
     } catch (err) {
       // Headers are already sent — abort, so a partial file is never mistaken for a backup
       console.error('[backup] failed while sending', err);

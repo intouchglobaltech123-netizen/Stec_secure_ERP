@@ -1,6 +1,8 @@
-// Step 3: loads a backup file (Settings → Backups → Download backup) into a database.
+// Step 3: loads a backup (Settings → Backups → Download backup) into a database.
 //
-//   npm run build && npm run restore -- <backup.json> [--replace]
+//   npm run build && npm run restore -- <backup.zip | backup.json> [--replace]
+//
+// The downloaded ZIP holds the backup (.json) and a readable Excel copy; the JSON is what gets loaded.
 //
 // Uses DATABASE_URL like the server (the embedded database when it is not set). By default it only
 // restores into an empty database; --replace first removes the current records, settings and photos.
@@ -9,6 +11,7 @@
 // Stop the app service before restoring and start it again afterwards — the running server keeps the
 // data in memory and would not see the restore.
 import fs from 'node:fs';
+import { strFromU8, unzipSync } from 'fflate';
 import { connectDatabase } from './db';
 import { migrate } from './migrate';
 import { hashPin, normalizePhone } from './store';
@@ -16,16 +19,27 @@ import { config } from './config';
 import { BACKUP_FORMAT, BACKUP_FORMAT_VERSION, BackupFile } from './backup';
 import type { User } from '../../src/lib/stecsecure-types';
 
+// The backup JSON, from the downloaded ZIP or from the JSON file itself
+function readBackup(file: string): BackupFile {
+  const bytes = fs.readFileSync(file);
+  const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b; // "PK"
+  if (!isZip) return JSON.parse(bytes.toString('utf8')) as BackupFile;
+  const files = unzipSync(new Uint8Array(bytes), { filter: (f) => f.name.toLowerCase().endsWith('.json') });
+  const entry = Object.values(files)[0];
+  if (!entry) throw new Error('This ZIP has no backup (.json) file inside.');
+  return JSON.parse(strFromU8(entry)) as BackupFile;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const file = args.find((a) => !a.startsWith('--'));
   const replace = args.includes('--replace');
   if (!file) {
-    console.error('Usage: npm run restore -- <backup.json> [--replace]');
+    console.error('Usage: npm run restore -- <backup.zip | backup.json> [--replace]');
     process.exit(1);
   }
 
-  const backup = JSON.parse(fs.readFileSync(file, 'utf8')) as BackupFile;
+  const backup = readBackup(file);
   if (backup.format !== BACKUP_FORMAT || !Array.isArray(backup.records)) {
     throw new Error('This is not an S Tec Secure ERP backup file.');
   }

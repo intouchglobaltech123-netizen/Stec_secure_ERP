@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { SERVICE_CATEGORIES, ServiceCategory, Job, Customer, User } from '@/lib/stecsecure-types';
 import {
@@ -22,7 +21,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { formatINR, formatDate, formatDateTime, humanize } from '@/lib/utils';
+import { formatINR, formatDate, humanize } from '@/lib/utils';
+import { DateRange, inRange, presetRange, rangeFileTag, rangeLabel } from '@/lib/date-range';
+import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { StatTile } from '@/components/ui/stat-tile';
+import { downloadExcel } from '@/lib/excel-download';
+import type { SheetSpec } from '@/lib/excel-book';
+import { stateName } from '@/lib/gst';
+import { errorMessage } from '@/lib/api';
 import { invoiceCategory, invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
 import {
   ResponsiveContainer,
@@ -46,26 +52,17 @@ interface ReportsPageProps {
   onNavigateToJob?: (jobId: string, type: 'SERVICE' | 'INSTALLATION') => void;
 }
 
-// Helper for client-side CSV download
-function exportToCSV(filename: string, headers: string[], rows: (string | number | undefined | null)[][]) {
-  const csvContent = [
-    headers.map((h) => `"${h.replace(/"/g, '""')}"`).join(','),
-    ...rows.map((row) =>
-      row.map((val) => `"${String(val ?? '').replace(/"/g, '""')}"`).join(',')
-    ),
-  ].join('\r\n');
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}_${localDateISO()}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-  toast.success(`Exported ${filename}.csv`);
+// Report downloads are Excel files; the library loads only when someone downloads
+async function exportExcel(fileBase: string, sheets: SheetSpec[]) {
+  try {
+    const name = await downloadExcel(fileBase, sheets);
+    toast.success(`Downloaded ${name}`);
+  } catch (err) {
+    toast.error(errorMessage(err));
+  }
 }
+
+const DEPT_LABEL = { ALL: 'All', SERVICE: 'Service', INSTALLATION: 'Installation' } as const;
 
 // Short category names so the chart's labels fit on a phone
 const SHORT_CATEGORY: Record<string, string> = {
@@ -81,6 +78,11 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
   const [activeReport, setActiveReport] = useState<ReportTab>('REVENUE');
   const [inspectedJob, setInspectedJob] = useState<Job | null>(null);
 
+  // Report period for Revenue, Dues and Technicians (AMC looks ahead by renewal date; Ongoing is "right now")
+  const [range, setRange] = useState<DateRange>(() => presetRange('FY'));
+  const periodLabel = rangeLabel(range);
+  const usesPeriod = activeReport === 'REVENUE' || activeReport === 'OUTSTANDING' || activeReport === 'TECHNICIAN';
+
   // Filters for AMC Renewal Report
   const [amcDaysFilter, setAmcDaysFilter] = useState<'30' | '60' | '90' | 'ALL'>('60');
 
@@ -91,63 +93,142 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
   const [ongoingDeptFilter, setOngoingDeptFilter] = useState<'ALL' | 'SERVICE' | 'INSTALLATION'>('ALL');
 
   const nowMs = new Date().getTime();
+  const DAY_MS = 1000 * 60 * 60 * 24;
+  const jobById = useMemo(() => new Map(allJobs.map((j) => [j.id, j])), [allJobs]);
+  const customerById = useMemo(() => new Map(customers.map((c) => [c.id, c])), [customers]);
+  const periodJobs = useMemo(() => jobs.filter((j) => inRange(j.createdAt, range)), [jobs, range]);
+
+  // Live invoices dated in the period (a technician's report covers only their own jobs)
+  const periodInvoices = useMemo(() => {
+    const visibleIds = new Set(jobs.map((j) => j.id));
+    return invoices.filter(
+      (inv) =>
+        !isCancelledInvoice(inv) &&
+        inRange(inv.date, range) &&
+        (currentUser?.role !== 'TECHNICIAN' || (inv.linkedJobId !== undefined && visibleIds.has(inv.linkedJobId)))
+    );
+  }, [invoices, jobs, range, currentUser]);
 
   // ==========================================
   // 1. REVENUE REPORT COMPUTATIONS
   // ==========================================
   // Step 3: revenue comes from the invoices themselves (net of credit notes, cancelled ones excluded),
   // so it matches the Dashboard and Payments. Invoices raised straight from a quotation or challan have
-  // no job and count under Installation Projects.
-  const revenueByCategory = useMemo(() => {
-    const jobById = new Map(allJobs.map((j) => [j.id, j]));
-    const visibleIds = new Set(jobs.map((j) => j.id));
-    const liveInvoices = invoices.filter(
-      (inv) =>
-        !isCancelledInvoice(inv) &&
-        // a technician's report covers only their own jobs
-        (currentUser?.role !== 'TECHNICIAN' || (inv.linkedJobId !== undefined && visibleIds.has(inv.linkedJobId)))
-    );
-    const department = (inv: (typeof invoices)[number]) =>
-      (inv.linkedJobId && jobById.get(inv.linkedJobId)?.type) || 'INSTALLATION';
+  // no job and count under Installation.
+  const department = (inv: (typeof invoices)[number]) =>
+    (inv.linkedJobId && jobById.get(inv.linkedJobId)?.type) || 'INSTALLATION';
+  const revenueInvoices = periodInvoices.filter(
+    (inv) => revenueTypeFilter === 'ALL' || department(inv) === revenueTypeFilter
+  );
 
-    return SERVICE_CATEGORIES.map((cat) => {
-      const catJobs = jobs.filter(
-        (j) => j.category === cat && (revenueTypeFilter === 'ALL' || j.type === revenueTypeFilter)
-      );
-      const catInvoices = liveInvoices.filter(
-        (inv) =>
-          invoiceCategory(inv, allJobs) === cat && (revenueTypeFilter === 'ALL' || department(inv) === revenueTypeFilter)
-      );
-      const billed = catInvoices.reduce((sum, inv) => sum + invoiceNetTotal(inv), 0);
-      const collected = catInvoices.reduce((sum, inv) => sum + Math.min(inv.amountPaid || 0, invoiceNetTotal(inv)), 0);
-      return {
-        category: cat,
-        jobsCount: catJobs.length,
-        billed,
-        collected,
-        outstanding: catInvoices.reduce((sum, inv) => sum + inv.balanceDue, 0),
-      };
-    });
-  }, [allJobs, jobs, invoices, revenueTypeFilter, currentUser]);
+  const revenueByCategory = SERVICE_CATEGORIES.map((cat) => {
+    const catJobs = periodJobs.filter(
+      (j) => j.category === cat && (revenueTypeFilter === 'ALL' || j.type === revenueTypeFilter)
+    );
+    const catInvoices = revenueInvoices.filter((inv) => invoiceCategory(inv, allJobs) === cat);
+    const billed = catInvoices.reduce((sum, inv) => sum + invoiceNetTotal(inv), 0);
+    const collected = catInvoices.reduce((sum, inv) => sum + Math.min(inv.amountPaid || 0, invoiceNetTotal(inv)), 0);
+    return {
+      category: cat,
+      jobsCount: catJobs.length,
+      invoicesCount: catInvoices.length,
+      billed,
+      collected,
+      outstanding: catInvoices.reduce((sum, inv) => sum + inv.balanceDue, 0),
+    };
+  });
 
   const totalRevenueBilled = revenueByCategory.reduce((sum, c) => sum + c.billed, 0);
   const totalRevenueCollected = revenueByCategory.reduce((sum, c) => sum + c.collected, 0);
+  const totalRevenueJobs = revenueByCategory.reduce((sum, c) => sum + c.jobsCount, 0);
 
-  const handleDownloadRevenueCSV = () => {
-    const headers = ['Category', 'Jobs Count', 'Billed Revenue (INR)', 'Collected Revenue (INR)', 'Outstanding (INR)'];
-    const rows = revenueByCategory.map((r) => [
-      r.category,
-      r.jobsCount,
-      r.billed.toFixed(2),
-      r.collected.toFixed(2),
-      r.outstanding.toFixed(2),
+  const handleDownloadRevenue = () => {
+    const rows = [...revenueInvoices]
+      .sort((a, b) => a.date.localeCompare(b.date) || a.invoiceNo.localeCompare(b.invoiceNo))
+      .map((inv) => {
+        const cust = customerById.get(inv.customerNumber);
+        const invPayments = payments.filter((p) => p.invoiceId === inv.id);
+        const received = invPayments.filter((p) => p.amount > 0);
+        return {
+          invoiceNo: inv.invoiceNo,
+          date: inv.date,
+          customer: inv.billTo?.name || cust?.name || inv.customerNumber,
+          phone: inv.billTo?.phone || cust?.phone || '',
+          email: cust?.email || '',
+          address: inv.billTo?.address || cust?.address || '',
+          gstin: inv.billTo?.gstin || cust?.gstin || 'Unregistered',
+          state: stateName(inv.placeOfSupply),
+          job: inv.linkedJobId ? jobById.get(inv.linkedJobId)?.jobNumber || '' : '',
+          category: invoiceCategory(inv, allJobs),
+          department: DEPT_LABEL[department(inv)],
+          taxable: inv.totalAmount,
+          cgst: inv.totalCgst,
+          sgst: inv.totalSgst,
+          igst: inv.totalIgst || 0,
+          total: inv.grandTotal,
+          credit: inv.creditNoteTotal || 0,
+          net: invoiceNetTotal(inv),
+          paid: inv.amountPaid,
+          balance: inv.balanceDue,
+          lastPayment: received.map((p) => p.date).sort().pop() || '',
+          modes: [...new Set(received.map((p) => p.mode))].join(', '),
+          status: inv.balanceDue <= 0 ? 'Paid' : inv.amountPaid > 0 ? 'Part paid' : 'Unpaid',
+        };
+      });
+    const dept = revenueTypeFilter === 'ALL' ? '' : ` · ${DEPT_LABEL[revenueTypeFilter]}`;
+    void exportExcel(`stec_revenue_${rangeFileTag(range)}`, [
+      {
+        name: 'Invoices',
+        title: `Revenue — invoices dated ${periodLabel}${dept}`,
+        columns: [
+          { header: 'Invoice', key: 'invoiceNo' },
+          { header: 'Invoice date', key: 'date', type: 'date' },
+          { header: 'Customer', key: 'customer' },
+          { header: 'Mobile', key: 'phone' },
+          { header: 'Email', key: 'email' },
+          { header: 'Address', key: 'address', width: 40 },
+          { header: 'GSTIN', key: 'gstin' },
+          { header: 'State', key: 'state' },
+          { header: 'Job', key: 'job' },
+          { header: 'Category', key: 'category' },
+          { header: 'Department', key: 'department' },
+          { header: 'Taxable (₹)', key: 'taxable', type: 'money' },
+          { header: 'CGST (₹)', key: 'cgst', type: 'money' },
+          { header: 'SGST (₹)', key: 'sgst', type: 'money' },
+          { header: 'IGST (₹)', key: 'igst', type: 'money' },
+          { header: 'Invoice total (₹)', key: 'total', type: 'money' },
+          { header: 'Credit notes (₹)', key: 'credit', type: 'money' },
+          { header: 'Net billed (₹)', key: 'net', type: 'money' },
+          { header: 'Paid (₹)', key: 'paid', type: 'money' },
+          { header: 'Balance (₹)', key: 'balance', type: 'money' },
+          { header: 'Last payment', key: 'lastPayment', type: 'date' },
+          { header: 'Payment mode', key: 'modes' },
+          { header: 'Status', key: 'status' },
+        ],
+        rows,
+        totalKeys: ['taxable', 'cgst', 'sgst', 'igst', 'total', 'credit', 'net', 'paid', 'balance'],
+      },
+      {
+        name: 'By category',
+        title: `Revenue by category — ${periodLabel}${dept}`,
+        columns: [
+          { header: 'Category', key: 'category' },
+          { header: 'Jobs created', key: 'jobsCount', type: 'number' },
+          { header: 'Invoices', key: 'invoicesCount', type: 'number' },
+          { header: 'Billed (₹)', key: 'billed', type: 'money' },
+          { header: 'Collected (₹)', key: 'collected', type: 'money' },
+          { header: 'Balance (₹)', key: 'outstanding', type: 'money' },
+        ],
+        rows: revenueByCategory,
+        totalKeys: ['jobsCount', 'invoicesCount', 'billed', 'collected', 'outstanding'],
+      },
     ]);
-    exportToCSV('stec_revenue_report', headers, rows);
   };
 
   // ==========================================
   // 2. AMC RENEWAL REPORT COMPUTATIONS
   // ==========================================
+  // AMC customers by nearest renewal date; customers with no renewal date are listed last so one gets set
   const amcCustomers = useMemo(() => {
     return customers
       .filter((c) => {
@@ -155,73 +236,88 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         return c.amcActive || Boolean(c.amcRenewalDate) || hasAmcJob;
       })
       .map((c) => {
-        let renewalDate = c.amcRenewalDate || '2026-10-30';
-        const renewalMs = new Date(renewalDate).getTime();
-        const diffDays = Math.ceil((renewalMs - nowMs) / (1000 * 60 * 60 * 24));
+        const renewalDate = c.amcRenewalDate || '';
+        const daysRemaining = renewalDate ? Math.ceil((new Date(renewalDate).getTime() - nowMs) / DAY_MS) : null;
         const amcJobs = jobs.filter((j) => j.customerNumber === c.id && j.customerStatus === 'AMC');
         const latestJob = amcJobs[amcJobs.length - 1];
-
         return {
           customer: c,
           renewalDate,
-          daysRemaining: diffDays,
-          status: diffDays < 0 ? 'EXPIRED' : diffDays <= 30 ? 'CRITICAL_30D' : diffDays <= 60 ? 'UPCOMING_60D' : 'ACTIVE',
-          latestCategory: latestJob?.category || 'CCTV',
+          daysRemaining,
+          status:
+            daysRemaining === null
+              ? 'No renewal date'
+              : daysRemaining < 0
+              ? 'Expired'
+              : daysRemaining <= 30
+              ? 'Within 30 days'
+              : 'Upcoming',
+          latestCategory: latestJob?.category || '',
           amcJobsCount: amcJobs.length,
         };
       })
-      .filter((item) => {
-        if (amcDaysFilter === '30') return item.daysRemaining <= 30;
-        if (amcDaysFilter === '60') return item.daysRemaining <= 60;
-        if (amcDaysFilter === '90') return item.daysRemaining <= 90;
-        return true;
-      })
-      .sort((a, b) => a.daysRemaining - b.daysRemaining);
+      .filter(
+        (item) => item.daysRemaining === null || amcDaysFilter === 'ALL' || item.daysRemaining <= Number(amcDaysFilter)
+      )
+      .sort((a, b) => (a.daysRemaining ?? Infinity) - (b.daysRemaining ?? Infinity));
   }, [customers, jobs, amcDaysFilter, nowMs]);
 
-  const handleDownloadAmcCSV = () => {
-    const headers = ['Customer Name', 'Phone', 'Contact Person', 'Renewal Date', 'Days Remaining', 'AMC Status', 'Primary Category'];
-    const rows = amcCustomers.map((a) => [
-      a.customer.name,
-      a.customer.phone,
-      a.customer.contactPerson || '-',
-      a.renewalDate,
-      a.daysRemaining,
-      a.status,
-      a.latestCategory,
+  const handleDownloadAmc = () => {
+    void exportExcel(`stec_amc_renewals_${amcDaysFilter === 'ALL' ? 'all' : `${amcDaysFilter}-days`}`, [
+      {
+        name: 'AMC renewals',
+        title: `AMC renewals — ${amcDaysFilter === 'ALL' ? 'all AMC customers' : `renewing within ${amcDaysFilter} days`}`,
+        columns: [
+          { header: 'Customer', key: 'name' },
+          { header: 'Mobile', key: 'phone' },
+          { header: 'Contact person', key: 'contact' },
+          { header: 'Email', key: 'email' },
+          { header: 'Address', key: 'address', width: 40 },
+          { header: 'Renewal date', key: 'renewal', type: 'date' },
+          { header: 'Days left', key: 'days', type: 'number' },
+          { header: 'Status', key: 'status' },
+          { header: 'Main category', key: 'category' },
+          { header: 'AMC jobs', key: 'jobs', type: 'number' },
+        ],
+        rows: amcCustomers.map((a) => ({
+          name: a.customer.name,
+          phone: a.customer.phone,
+          contact: a.customer.contactPerson || '',
+          email: a.customer.email || '',
+          address: a.customer.address,
+          renewal: a.renewalDate,
+          days: a.daysRemaining,
+          status: a.status,
+          category: a.latestCategory,
+          jobs: a.amcJobsCount,
+        })),
+      },
     ]);
-    exportToCSV('stec_amc_renewal_report', headers, rows);
   };
 
   // ==========================================
   // 3. OUTSTANDING DUES & COLLECTIONS REPORT
   // ==========================================
+  // Dues as of today on invoices dated in the period
   const outstandingReport = useMemo(() => {
     return customers
       .map((cust) => {
-        const custInvoices = invoices.filter((i) => i.customerNumber === cust.id);
+        const custInvoices = periodInvoices.filter((i) => i.customerNumber === cust.id);
         const unpaidInvoices = custInvoices.filter((i) => i.balanceDue > 0);
         const totalBilled = custInvoices.reduce((sum, i) => sum + invoiceNetTotal(i), 0);
         const totalPaid = custInvoices.reduce((sum, i) => sum + i.amountPaid, 0);
         const balanceDue = custInvoices.reduce((sum, i) => sum + i.balanceDue, 0);
 
-        let oldestUnpaidDate = '-';
+        let oldestUnpaidDate = '';
         let maxOverdueDays = 0;
-
         if (unpaidInvoices.length > 0) {
-          const sortedInvs = [...unpaidInvoices].sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-          );
-          oldestUnpaidDate = sortedInvs[0].date;
-          maxOverdueDays = Math.max(
-            0,
-            Math.floor((nowMs - new Date(oldestUnpaidDate).getTime()) / (1000 * 60 * 60 * 24))
-          );
+          oldestUnpaidDate = [...unpaidInvoices].sort((a, b) => a.date.localeCompare(b.date))[0].date;
+          maxOverdueDays = Math.max(0, Math.floor((nowMs - new Date(oldestUnpaidDate).getTime()) / DAY_MS));
         }
 
         return {
           customer: cust,
-          invoicesCount: custInvoices.length,
+          unpaidInvoices,
           unpaidInvoicesCount: unpaidInvoices.length,
           totalBilled,
           totalPaid,
@@ -229,75 +325,104 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           oldestUnpaidDate,
           maxOverdueDays,
           overdueCategory:
-            maxOverdueDays > 30 ? '> 30 Days' : maxOverdueDays > 15 ? '15 - 30 Days' : maxOverdueDays > 0 ? '< 15 Days' : 'Current',
+            maxOverdueDays > 30 ? 'Over 30 days' : maxOverdueDays > 15 ? '15–30 days' : maxOverdueDays > 0 ? 'Under 15 days' : 'Current',
         };
       })
       .filter((entry) => entry.balanceDue > 0)
       .sort((a, b) => b.balanceDue - a.balanceDue);
-  }, [customers, invoices, nowMs]);
+  }, [customers, periodInvoices, nowMs]);
 
   const totalOutstandingReportDue = outstandingReport.reduce((sum, o) => sum + o.balanceDue, 0);
+  const overdueAccounts = outstandingReport.filter((o) => o.maxOverdueDays > 15);
+  const overdueAmount = overdueAccounts.reduce((sum, o) => sum + o.balanceDue, 0);
 
-  const handleDownloadOutstandingCSV = () => {
-    const headers = [
-      'Customer Name',
-      'Phone',
-      'Pending Invoices',
-      'Total Billed (INR)',
-      'Total Paid (INR)',
-      'Balance Due (INR)',
-      'Oldest Unpaid Invoice Date',
-      'Days Overdue',
-      'Overdue Category',
-    ];
-    const rows = outstandingReport.map((o) => [
-      o.customer.name,
-      o.customer.phone,
-      o.unpaidInvoicesCount,
-      o.totalBilled.toFixed(2),
-      o.totalPaid.toFixed(2),
-      o.balanceDue.toFixed(2),
-      o.oldestUnpaidDate,
-      o.maxOverdueDays,
-      o.overdueCategory,
+  const handleDownloadOutstanding = () => {
+    const invoiceRows = outstandingReport
+      .flatMap((o) =>
+        o.unpaidInvoices.map((inv) => ({
+          invoiceNo: inv.invoiceNo,
+          date: inv.date,
+          customer: o.customer.name,
+          phone: o.customer.phone,
+          net: invoiceNetTotal(inv),
+          paid: inv.amountPaid,
+          balance: inv.balanceDue,
+          days: Math.max(0, Math.floor((nowMs - new Date(inv.date).getTime()) / DAY_MS)),
+        }))
+      )
+      .sort((a, b) => b.days - a.days);
+    void exportExcel(`stec_dues_${rangeFileTag(range)}`, [
+      {
+        name: 'Dues by customer',
+        title: `Dues as of today on invoices dated ${periodLabel}`,
+        columns: [
+          { header: 'Customer', key: 'name' },
+          { header: 'Mobile', key: 'phone' },
+          { header: 'Contact person', key: 'contact' },
+          { header: 'GSTIN', key: 'gstin' },
+          { header: 'Unpaid invoices', key: 'unpaid', type: 'number' },
+          { header: 'Billed (₹)', key: 'billed', type: 'money' },
+          { header: 'Paid (₹)', key: 'paid', type: 'money' },
+          { header: 'Balance (₹)', key: 'balance', type: 'money' },
+          { header: 'Oldest unpaid', key: 'oldest', type: 'date' },
+          { header: 'Days overdue', key: 'days', type: 'number' },
+          { header: 'Overdue', key: 'bracket' },
+        ],
+        rows: outstandingReport.map((o) => ({
+          name: o.customer.name,
+          phone: o.customer.phone,
+          contact: o.customer.contactPerson || '',
+          gstin: o.customer.gstin || 'Unregistered',
+          unpaid: o.unpaidInvoicesCount,
+          billed: o.totalBilled,
+          paid: o.totalPaid,
+          balance: o.balanceDue,
+          oldest: o.oldestUnpaidDate,
+          days: o.maxOverdueDays,
+          bracket: o.overdueCategory,
+        })),
+        totalKeys: ['unpaid', 'billed', 'paid', 'balance'],
+      },
+      {
+        name: 'Unpaid invoices',
+        title: `Unpaid invoices dated ${periodLabel}`,
+        columns: [
+          { header: 'Invoice', key: 'invoiceNo' },
+          { header: 'Invoice date', key: 'date', type: 'date' },
+          { header: 'Customer', key: 'customer' },
+          { header: 'Mobile', key: 'phone' },
+          { header: 'Net billed (₹)', key: 'net', type: 'money' },
+          { header: 'Paid (₹)', key: 'paid', type: 'money' },
+          { header: 'Balance (₹)', key: 'balance', type: 'money' },
+          { header: 'Days since invoice', key: 'days', type: 'number' },
+        ],
+        rows: invoiceRows,
+        totalKeys: ['net', 'paid', 'balance'],
+      },
     ]);
-    exportToCSV('stec_outstanding_dues_report', headers, rows);
   };
 
   // ==========================================
   // 4. TECHNICIAN PERFORMANCE REPORT
   // ==========================================
+  // Jobs created in the period; average time comes only from jobs with a recorded work timer
   const technicianStats = useMemo(() => {
     const techs = users.filter((u) => u.role === 'TECHNICIAN');
 
     return techs.map((tech) => {
-      const assignedJobs = jobs.filter(
+      const assignedJobs = periodJobs.filter(
         (j) => j.teamLeadUserId === tech.id || j.assignedTeam?.includes(tech.id)
       );
       const completedJobs = assignedJobs.filter((j) => j.status === 'COMPLETED' || j.status === 'CLOSED');
-      const activeJobs = assignedJobs.filter((j) => j.status === 'IN_PROGRESS' || j.status === 'ASSIGNED');
-      const techHolds = holdEvents.filter((h) => h.raisedByUserId === tech.id);
-
-      // Average completion time in hours mock/calc
-      const avgCompletionHours =
-        completedJobs.length > 0
-          ? Math.round(
-              completedJobs.reduce((sum, j) => {
-                if (j.totalDurationSeconds) {
-                  return sum + Math.max(1, j.totalDurationSeconds / 3600);
-                }
-                const start = new Date(j.timerStartedAt || j.createdAt).getTime();
-                const end = new Date(j.completedAt || j.createdAt).getTime();
-                const hours = Math.max(1.5, (end - start) / (1000 * 60 * 60));
-                return sum + hours;
-              }, 0) / completedJobs.length
-            )
-          : 0;
-
-      const completionRate =
-        assignedJobs.length > 0
-          ? Math.round((completedJobs.length / assignedJobs.length) * 100)
-          : 0;
+      const activeJobs = assignedJobs.filter(
+        (j) => j.status === 'IN_PROGRESS' || j.status === 'ASSIGNED' || j.status === 'ON_HOLD' || j.status === 'AWAITING_OTP'
+      );
+      const techHolds = holdEvents.filter((h) => h.raisedByUserId === tech.id && inRange(h.raisedAt, range));
+      const timed = completedJobs.filter((j) => (j.totalDurationSeconds || 0) > 0);
+      const avgCompletionHours = timed.length
+        ? Math.round((timed.reduce((sum, j) => sum + (j.totalDurationSeconds || 0), 0) / timed.length / 3600) * 10) / 10
+        : null;
+      const completionRate = assignedJobs.length > 0 ? completedJobs.length / assignedJobs.length : 0;
 
       return {
         tech,
@@ -309,30 +434,38 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         completionRate,
       };
     });
-  }, [users, jobs, holdEvents]);
+  }, [users, periodJobs, holdEvents, range]);
 
-  const handleDownloadTechnicianCSV = () => {
-    const headers = [
-      'Technician Name',
-      'Phone',
-      'Total Assigned Jobs',
-      'Completed Jobs',
-      'Active In-Progress',
-      'Holds Raised',
-      'Avg Completion (Hours)',
-      'Completion Rate (%)',
-    ];
-    const rows = technicianStats.map((t) => [
-      t.tech.name,
-      t.tech.phone,
-      t.totalAssigned,
-      t.completed,
-      t.active,
-      t.holdsRaised,
-      t.avgCompletionHours,
-      `${t.completionRate}%`,
+  const handleDownloadTechnicians = () => {
+    void exportExcel(`stec_technicians_${rangeFileTag(range)}`, [
+      {
+        name: 'Technicians',
+        title: `Technician performance — jobs created ${periodLabel}`,
+        columns: [
+          { header: 'Staff no.', key: 'code' },
+          { header: 'Technician', key: 'name' },
+          { header: 'Mobile', key: 'phone' },
+          { header: 'Jobs assigned', key: 'assigned', type: 'number' },
+          { header: 'Completed', key: 'completed', type: 'number' },
+          { header: 'Still open', key: 'active', type: 'number' },
+          { header: 'Holds raised', key: 'holds', type: 'number' },
+          { header: 'Avg hours per job', key: 'avg', type: 'number' },
+          { header: 'Completion rate', key: 'rate', type: 'percent' },
+        ],
+        rows: technicianStats.map((t) => ({
+          code: t.tech.staffCode || '',
+          name: t.tech.name,
+          phone: t.tech.phone,
+          assigned: t.totalAssigned,
+          completed: t.completed,
+          active: t.active,
+          holds: t.holdsRaised,
+          avg: t.avgCompletionHours,
+          rate: t.completionRate,
+        })),
+        totalKeys: ['assigned', 'completed', 'active', 'holds'],
+      },
     ]);
-    exportToCSV('stec_technician_performance_report', headers, rows);
   };
 
   // ==========================================
@@ -346,10 +479,10 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         return matchesStatus && matchesDept;
       })
       .map((j) => {
-        const cust = customers.find((c) => c.id === j.customerNumber);
+        const cust = customerById.get(j.customerNumber);
         const lead = users.find((u) => u.id === j.teamLeadUserId);
         const startMs = new Date(j.timerStartedAt || j.createdAt).getTime();
-        const daysElapsed = Math.max(1, Math.floor((nowMs - startMs) / (1000 * 60 * 60 * 24)));
+        const daysElapsed = Math.max(1, Math.floor((nowMs - startMs) / DAY_MS));
 
         return {
           job: j,
@@ -360,35 +493,66 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         };
       })
       .sort((a, b) => b.daysElapsed - a.daysElapsed);
-  }, [jobs, customers, users, ongoingDeptFilter, nowMs]);
+  }, [jobs, customerById, users, ongoingDeptFilter, nowMs]);
 
-  const handleDownloadOngoingCSV = () => {
-    const headers = [
-      'Job Number',
-      'Job Type',
-      'Customer Name',
-      'Category',
-      'Product Model',
-      'Team Lead',
-      'Started Date',
-      'Days Elapsed',
-      'Status Stage',
-      'Scope / Problem',
-    ];
-    const rows = ongoingProjects.map((p) => [
-      p.job.jobNumber,
-      p.job.type,
-      p.customerName,
-      p.job.category,
-      p.job.productModel,
-      p.leadName,
-      formatDate(p.job.timerStartedAt || p.job.createdAt),
-      p.daysElapsed,
-      humanize(p.job.status),
-      p.job.problemReported,
+  const handleDownloadOngoing = () => {
+    void exportExcel(`stec_ongoing_jobs_${new Date(nowMs).toISOString().slice(0, 10)}`, [
+      {
+        name: 'Ongoing jobs',
+        title: `Jobs in progress, on hold or awaiting sign-off${ongoingDeptFilter === 'ALL' ? '' : ` · ${DEPT_LABEL[ongoingDeptFilter]}`}`,
+        columns: [
+          { header: 'Job', key: 'job' },
+          { header: 'Type', key: 'type' },
+          { header: 'Customer', key: 'customer' },
+          { header: 'Mobile', key: 'phone' },
+          { header: 'Category', key: 'category' },
+          { header: 'Product', key: 'product' },
+          { header: 'Team lead', key: 'lead' },
+          { header: 'Started', key: 'started', type: 'date' },
+          { header: 'Days open', key: 'days', type: 'number' },
+          { header: 'Stage', key: 'stage' },
+          { header: 'Problem / scope', key: 'problem', width: 50 },
+        ],
+        rows: ongoingProjects.map((p) => ({
+          job: p.job.jobNumber,
+          type: humanize(p.job.type),
+          customer: p.customerName,
+          phone: p.customerPhone,
+          category: p.job.category,
+          product: p.job.productModel,
+          lead: p.leadName,
+          started: p.job.timerStartedAt || p.job.createdAt,
+          days: p.daysElapsed,
+          stage: humanize(p.job.status),
+          problem: p.job.problemReported,
+        })),
+      },
     ]);
-    exportToCSV('stec_ongoing_projects_report', headers, rows);
   };
+
+  const excelButton = (onClick: () => void) => (
+    <Button variant="outline" size="sm" onClick={onClick} className="text-[13px] font-semibold cursor-pointer shrink-0">
+      <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+      Download Excel
+    </Button>
+  );
+
+  const deptButtons = (value: 'ALL' | 'SERVICE' | 'INSTALLATION', onPick: (v: 'ALL' | 'SERVICE' | 'INSTALLATION') => void) => (
+    <div className="flex items-center gap-1.5">
+      {(['ALL', 'SERVICE', 'INSTALLATION'] as const).map((mode) => (
+        <button
+          key={mode}
+          type="button"
+          onClick={() => onPick(mode)}
+          className={`px-2.5 py-1 rounded-lg text-[13px] font-medium cursor-pointer transition-colors whitespace-nowrap ${
+            value === mode ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          {DEPT_LABEL[mode]}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="w-full space-y-6">
@@ -398,10 +562,11 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
             Reports
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Revenue, AMC renewals, dues, technician performance and ongoing projects
+          <p className="hidden sm:block text-sm text-slate-500 mt-0.5">
+            Revenue, AMC renewals, dues, technician performance and ongoing jobs
           </p>
         </div>
+        {usesPeriod && <DateRangeFilter value={range} onChange={setRange} />}
       </div>
 
       {/* 5 Dedicated Report Navigation Tabs */}
@@ -501,65 +666,31 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       {activeReport === 'REVENUE' && (
         <div className="space-y-6">
           {/* Top Controls & KPI Summary */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
             <div className="flex items-center gap-3">
-              <span className="text-[13px] font-semibold text-slate-700">Filter Department:</span>
-              <div className="flex items-center gap-1.5">
-                {(['ALL', 'SERVICE', 'INSTALLATION'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setRevenueTypeFilter(mode)}
-                    className={`px-2.5 py-1 rounded-lg text-[13px] font-medium cursor-pointer transition-colors ${
-                      revenueTypeFilter === mode
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {mode === 'ALL' ? 'All Departments' : mode === 'SERVICE' ? 'Service Jobs' : 'Installation Projects'}
-                  </button>
-                ))}
-              </div>
+              <span className="hidden sm:inline text-[13px] font-semibold text-slate-700">Department:</span>
+              {deptButtons(revenueTypeFilter, setRevenueTypeFilter)}
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadRevenueCSV}
-              className="text-[13px] font-semibold cursor-pointer shrink-0"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
-              Download CSV
-            </Button>
+            {excelButton(handleDownloadRevenue)}
           </div>
 
           {/* Revenue KPI Summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="border-slate-200 bg-white shadow-sm">
-              <CardContent className="p-4 space-y-1">
-                <div className="text-[11px] uppercase font-bold text-slate-500">Total Billed Revenue</div>
-                <div className="text-2xl font-bold text-slate-900 font-mono">{formatINR(totalRevenueBilled)}</div>
-                <p className="text-xs text-slate-500">Across 6 service categories</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-orange-200 bg-orange-50/70 shadow-sm">
-              <CardContent className="p-4 space-y-1">
-                <div className="text-[11px] uppercase font-bold text-orange-900">Total Realized (Collected)</div>
-                <div className="text-2xl font-bold text-orange-900 font-mono">{formatINR(totalRevenueCollected)}</div>
-                <p className="text-xs text-orange-700">Actual collections received</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-amber-200 bg-amber-50/70 shadow-sm">
-              <CardContent className="p-4 space-y-1">
-                <div className="text-[11px] uppercase font-bold text-amber-900">Outstanding Balance</div>
-                <div className="text-2xl font-bold text-amber-900 font-mono">
-                  {formatINR(Math.max(0, totalRevenueBilled - totalRevenueCollected))}
-                </div>
-                <p className="text-xs text-amber-700">Unsettled work & invoices</p>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <StatTile
+              label="Billed"
+              icon={FileSpreadsheet}
+              value={formatINR(totalRevenueBilled)}
+              note={`${revenueInvoices.length} invoices · ${totalRevenueJobs} jobs`}
+            />
+            <StatTile label="Collected" icon={CheckCircle2} tone="emerald" value={formatINR(totalRevenueCollected)} note="Received against them" />
+            <StatTile
+              label="Balance"
+              icon={Clock}
+              tone="amber"
+              value={formatINR(Math.max(0, totalRevenueBilled - totalRevenueCollected))}
+              note="Still to collect"
+              className="col-span-2 sm:col-span-1"
+            />
           </div>
 
           {/* Chart & Table */}
@@ -567,7 +698,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
             <Card className="border-slate-200 bg-white shadow-sm lg:col-span-2">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-bold text-slate-900">
-                  Revenue Comparison by Category (Billed vs Collected)
+                  Billed vs collected by category
                 </CardTitle>
               </CardHeader>
               <CardContent className="h-72">
@@ -597,7 +728,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
 
             <Card className="border-slate-200 bg-white shadow-sm">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-bold text-slate-900">Job Count Distribution</CardTitle>
+                <CardTitle className="text-sm font-bold text-slate-900">Jobs by category</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {revenueByCategory.map((item) => (
@@ -610,7 +741,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                       <div
                         className="h-full bg-orange-500 rounded-full"
                         style={{
-                          width: `${Math.max(8, Math.round((item.jobsCount / Math.max(jobs.length, 1)) * 100))}%`,
+                          width: `${Math.max(8, Math.round((item.jobsCount / Math.max(totalRevenueJobs, 1)) * 100))}%`,
                         }}
                       />
                     </div>
@@ -624,7 +755,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
             <CardHeader className="pb-3 border-b border-slate-100">
               <CardTitle className="text-sm font-bold text-slate-900">
-                Detailed Revenue Breakdown by Vertical
+                By category
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -667,67 +798,56 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       {activeReport === 'AMC_RENEWAL' && (
         <div className="space-y-6">
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
             <div className="flex items-center gap-3">
-              <span className="text-[13px] font-semibold text-slate-700">Filter Expiry Window:</span>
+              <span className="hidden sm:inline text-[13px] font-semibold text-slate-700">Renewing within:</span>
               <div className="flex items-center gap-1.5">
                 {(['30', '60', '90', 'ALL'] as const).map((window) => (
                   <button
                     key={window}
                     type="button"
                     onClick={() => setAmcDaysFilter(window)}
-                    className={`px-3 py-1 rounded-lg text-[13px] font-medium cursor-pointer transition-colors ${
-                      amcDaysFilter === window
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    className={`px-3 py-1 rounded-lg text-[13px] font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                      amcDaysFilter === window ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
-                    {window === 'ALL' ? 'All AMC Accounts' : `Expiring in ${window} Days`}
+                    {window === 'ALL' ? 'All' : `${window} days`}
                   </button>
                 ))}
               </div>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadAmcCSV}
-              className="text-[13px] font-semibold cursor-pointer shrink-0"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
-              Download CSV
-            </Button>
+            {excelButton(handleDownloadAmc)}
           </div>
 
-          <div className="p-4 rounded-xl bg-orange-50/60 border border-orange-200 text-[13px] text-orange-900">
-            <strong>CEO Action Dashboard:</strong> Showing AMC contract accounts sorted by nearest renewal date. Call these clients before their maintenance contracts expire to secure renewals.
+          <div className="hidden sm:block p-3 rounded-xl bg-orange-50/60 border border-orange-200 text-[13px] text-orange-900">
+            Nearest renewal first — call these customers before their AMC ends.
           </div>
 
           {/* AMC Accounts Table */}
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
             <CardHeader className="pb-3 border-b border-slate-100">
               <CardTitle className="text-sm font-bold text-slate-900 flex items-center justify-between">
-                <span>Contract Accounts ({amcCustomers.length} Records)</span>
+                <span>AMC customers ({amcCustomers.length})</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
-                    <th className="p-3">Customer Name</th>
+                    <th className="p-3">Customer</th>
                     <th className="p-3">Contact Person</th>
                     <th className="p-3">Phone</th>
-                    <th className="p-3">Primary Equipment</th>
+                    <th className="p-3">Category</th>
                     <th className="p-3">Renewal Date</th>
-                    <th className="p-3 text-center">Days Remaining</th>
-                    <th className="p-3 text-center">Urgency</th>
+                    <th className="p-3 text-center">Days Left</th>
+                    <th className="p-3 text-center">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {amcCustomers.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-slate-400">
-                        No AMC contracts expiring within the selected timeframe.
+                        No AMC customers renew in this window.
                       </td>
                     </tr>
                   ) : (
@@ -740,34 +860,41 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                         <td className="p-3 text-slate-700">{item.customer.contactPerson || '-'}</td>
                         <td className="p-3 font-mono text-slate-600">{item.customer.phone}</td>
                         <td className="p-3">
-                          <Badge variant="outline" className="text-[11px]">
-                            {item.latestCategory}
-                          </Badge>
+                          {item.latestCategory ? (
+                            <Badge variant="outline" className="text-[11px]">
+                              {item.latestCategory}
+                            </Badge>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
                         </td>
-                        <td className="p-3 font-mono font-semibold text-slate-900">
-                          {formatDate(item.renewalDate)}
+                        <td className="p-3 font-mono font-semibold text-slate-900 whitespace-nowrap">
+                          {item.renewalDate ? formatDate(item.renewalDate) : <span className="text-slate-400 font-sans font-normal">Not set</span>}
                         </td>
-                        <td className="p-3 text-center font-mono font-bold text-slate-900">
-                          {item.daysRemaining < 0 ? (
+                        <td className="p-3 text-center font-mono font-bold text-slate-900 whitespace-nowrap">
+                          {item.daysRemaining === null ? (
+                            <span className="text-slate-400">—</span>
+                          ) : item.daysRemaining < 0 ? (
                             <span className="text-rose-600">Expired {Math.abs(item.daysRemaining)}d ago</span>
                           ) : (
                             <span>{item.daysRemaining} days</span>
                           )}
                         </td>
                         <td className="p-3 text-center">
-                          {item.daysRemaining < 0 ? (
-                            <Badge variant="danger" className="text-[11px]">
-                              EXPIRED
-                            </Badge>
-                          ) : item.daysRemaining <= 30 ? (
-                            <Badge variant="warning" className="text-[11px]">
-                              URGENT (&le;30D)
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-[11px]">
-                              UPCOMING
-                            </Badge>
-                          )}
+                          <Badge
+                            variant={
+                              item.daysRemaining === null
+                                ? 'outline'
+                                : item.daysRemaining < 0
+                                ? 'danger'
+                                : item.daysRemaining <= 30
+                                ? 'warning'
+                                : 'secondary'
+                            }
+                            className="text-[11px]"
+                          >
+                            {item.daysRemaining === null ? 'Set a renewal date' : item.status}
+                          </Badge>
                         </td>
                       </tr>
                     ))
@@ -784,66 +911,51 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       {/* ========================================================================= */}
       {activeReport === 'OUTSTANDING' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
             <div>
-              <h2 className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">
-                Accounts Receivable Aging & Debtor Audit
-              </h2>
-              <p className="text-xs text-slate-500">
-                Sorted by highest outstanding balance and overdue aging
+              <h2 className="text-sm font-bold text-slate-900">Dues by customer</h2>
+              <p className="hidden sm:block text-xs text-slate-500">
+                Balance today on invoices dated {periodLabel} · highest first
               </p>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadOutstandingCSV}
-              className="text-[13px] font-semibold cursor-pointer shrink-0"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
-              Download CSV
-            </Button>
+            {excelButton(handleDownloadOutstanding)}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card className="border-rose-200 bg-rose-50/60 shadow-sm">
-              <CardContent className="p-4 space-y-1">
-                <div className="text-[11px] uppercase font-bold text-rose-800">Total Uncollected Balance</div>
-                <div className="text-2xl font-bold text-rose-800 font-mono">
-                  {formatINR(totalOutstandingReportDue)}
-                </div>
-                <p className="text-xs text-rose-700">Across {outstandingReport.length} clients</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200 bg-white shadow-sm">
-              <CardContent className="p-4 space-y-1">
-                <div className="text-[11px] uppercase font-bold text-slate-500">Overdue Recovery Strategy</div>
-                <div className="text-[13px] text-slate-600 pt-1">
-                  Clients past 15 days require direct management follow-up before initiating further job dispatches or parts warranty allocations.
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-2 gap-3">
+            <StatTile
+              label="Balance due"
+              icon={AlertTriangle}
+              tone="rose"
+              value={formatINR(totalOutstandingReportDue)}
+              note={`${outstandingReport.length} customers`}
+            />
+            <StatTile
+              label="Overdue 15+ days"
+              icon={Clock}
+              tone="amber"
+              value={formatINR(overdueAmount)}
+              note={`${overdueAccounts.length} customers to follow up`}
+            />
           </div>
 
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
             <CardHeader className="pb-3 border-b border-slate-100">
               <CardTitle className="text-sm font-bold text-slate-900">
-                Debtor Ledger ({outstandingReport.length} Accounts)
+                Customers with dues ({outstandingReport.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
-                    <th className="p-3">Customer Name</th>
+                    <th className="p-3">Customer</th>
                     <th className="p-3">Phone</th>
                     <th className="p-3 text-center">Unpaid Invoices</th>
                     <th className="p-3 text-right">Total Invoiced</th>
                     <th className="p-3 text-right">Collected</th>
                     <th className="p-3 text-right font-bold text-slate-900">Balance Due (INR)</th>
                     <th className="p-3 text-center">Oldest Unpaid</th>
-                    <th className="p-3 text-center">Aging Bracket</th>
+                    <th className="p-3 text-center">Overdue</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -867,7 +979,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                         {formatINR(row.balanceDue)}
                       </td>
                       <td className="p-3 text-center font-mono text-xs text-slate-500">
-                        {row.oldestUnpaidDate !== '-' ? formatDate(row.oldestUnpaidDate) : '-'}
+                        {row.oldestUnpaidDate ? formatDate(row.oldestUnpaidDate) : '-'}
                       </td>
                       <td className="p-3 text-center">
                         <Badge
@@ -897,25 +1009,12 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       {/* ========================================================================= */}
       {activeReport === 'TECHNICIAN' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
             <div>
-              <h2 className="text-[13px] font-bold text-slate-900 uppercase tracking-wide">
-                Field Technician Performance & Dispatch Efficiency
-              </h2>
-              <p className="text-xs text-slate-500">
-                Comparative metrics across job completion times, active workloads, and obstacles encountered
-              </p>
+              <h2 className="text-sm font-bold text-slate-900">Technician performance</h2>
+              <p className="hidden sm:block text-xs text-slate-500">Jobs created {periodLabel}</p>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadTechnicianCSV}
-              className="text-[13px] font-semibold cursor-pointer shrink-0"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
-              Download CSV
-            </Button>
+            {excelButton(handleDownloadTechnicians)}
           </div>
 
           {/* Comparative Cards */}
@@ -929,7 +1028,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                       <div className="text-[11px] text-slate-500">{t.tech.phone}</div>
                     </div>
                     <Badge variant="orange" className="text-[11px]">
-                      {t.completionRate}% Done
+                      {Math.round(t.completionRate * 100)}% done
                     </Badge>
                   </div>
 
@@ -945,8 +1044,8 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                   </div>
 
                   <div className="text-xs text-slate-600 flex justify-between pt-1">
-                    <span>Avg Completion: <strong className="text-slate-900">{t.avgCompletionHours} hrs</strong></span>
-                    <span>Holds Raised: <strong className="text-amber-800">{t.holdsRaised}</strong></span>
+                    <span>Avg per job: <strong className="text-slate-900">{t.avgCompletionHours === null ? '—' : `${t.avgCompletionHours} hrs`}</strong></span>
+                    <span>Holds: <strong className="text-amber-800">{t.holdsRaised}</strong></span>
                   </div>
                 </CardContent>
               </Card>
@@ -957,7 +1056,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
             <CardHeader className="pb-3 border-b border-slate-100">
               <CardTitle className="text-sm font-bold text-slate-900">
-                Comparative Engineer Roster
+                All technicians
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -966,11 +1065,11 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                   <tr>
                     <th className="p-3">Technician</th>
                     <th className="p-3">Phone</th>
-                    <th className="p-3 text-center">Total Assigned</th>
+                    <th className="p-3 text-center">Assigned</th>
                     <th className="p-3 text-center">Completed</th>
-                    <th className="p-3 text-center">Active Now</th>
-                    <th className="p-3 text-center">Holds Raised</th>
-                    <th className="p-3 text-center">Avg Turnaround</th>
+                    <th className="p-3 text-center">Still Open</th>
+                    <th className="p-3 text-center">Holds</th>
+                    <th className="p-3 text-center">Avg per Job</th>
                     <th className="p-3 text-right">Completion Rate</th>
                   </tr>
                 </thead>
@@ -985,9 +1084,11 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                       </td>
                       <td className="p-3 text-center font-mono font-medium text-slate-700">{row.active}</td>
                       <td className="p-3 text-center font-mono text-amber-800">{row.holdsRaised}</td>
-                      <td className="p-3 text-center font-mono">{row.avgCompletionHours} hrs</td>
+                      <td className="p-3 text-center font-mono whitespace-nowrap">
+                        {row.avgCompletionHours === null ? '—' : `${row.avgCompletionHours} hrs`}
+                      </td>
                       <td className="p-3 text-right font-mono font-bold text-slate-900">
-                        {row.completionRate}%
+                        {Math.round(row.completionRate * 100)}%
                       </td>
                     </tr>
                   ))}
@@ -1003,42 +1104,18 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       {/* ========================================================================= */}
       {activeReport === 'ONGOING' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
             <div className="flex items-center gap-3">
-              <span className="text-[13px] font-semibold text-slate-700">Filter Department:</span>
-              <div className="flex items-center gap-1.5">
-                {(['ALL', 'SERVICE', 'INSTALLATION'] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    onClick={() => setOngoingDeptFilter(mode)}
-                    className={`px-2.5 py-1 rounded-lg text-[13px] font-medium cursor-pointer transition-colors ${
-                      ongoingDeptFilter === mode
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {mode === 'ALL' ? 'All Operations' : mode === 'SERVICE' ? 'Service Jobs' : 'Installation Projects'}
-                  </button>
-                ))}
-              </div>
+              <span className="hidden sm:inline text-[13px] font-semibold text-slate-700">Department:</span>
+              {deptButtons(ongoingDeptFilter, setOngoingDeptFilter)}
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadOngoingCSV}
-              className="text-[13px] font-semibold cursor-pointer shrink-0"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5 text-orange-600" />
-              Download CSV
-            </Button>
+            {excelButton(handleDownloadOngoing)}
           </div>
 
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
             <CardHeader className="pb-3 border-b border-slate-100">
               <CardTitle className="text-sm font-bold text-slate-900">
-                Live Active Operations ({ongoingProjects.length} Tasks in Progress / Hold)
+                Open jobs ({ongoingProjects.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -1048,7 +1125,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                     <th className="p-3">Job ID</th>
                     <th className="p-3">Department</th>
                     <th className="p-3">Customer</th>
-                    <th className="p-3">Category & Hardware</th>
+                    <th className="p-3">Category & Product</th>
                     <th className="p-3">Team Lead</th>
                     <th className="p-3 text-center">Started Date</th>
                     <th className="p-3 text-center">Days Active</th>
@@ -1059,7 +1136,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                   {ongoingProjects.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="p-8 text-center text-slate-400">
-                        No ongoing projects currently active in the selected department.
+                        No jobs in progress, on hold or awaiting sign-off.
                       </td>
                     </tr>
                   ) : (
@@ -1081,7 +1158,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                         </td>
                         <td className="p-3">
                           <Badge variant={item.job.type === 'SERVICE' ? 'default' : 'secondary'} className="text-[11px] rounded">
-                            {item.job.type}
+                            {humanize(item.job.type)}
                           </Badge>
                         </td>
                         <td className="p-3">

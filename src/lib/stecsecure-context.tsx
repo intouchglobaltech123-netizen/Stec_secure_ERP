@@ -38,6 +38,7 @@ import type {
   RecordCreditNoteRefundArgs,
 } from './erp/actions/invoiceCorrections';
 import { isCancelledInvoice } from './invoice-status';
+import { DateRange, inRange, rangeBounds } from './date-range';
 import { api, ApiError, errorMessage } from './api';
 
 export interface StecSecureContextType extends ErpState {
@@ -229,13 +230,13 @@ export interface StecSecureContextType extends ErpState {
   getJobOtp: (jobId: string) => OTPVerification | undefined;
   getJobSerials: (jobId: string) => SerialUnit[];
   getJobProductUsages: (jobId: string) => JobProductUsage[];
-  getTechnicianStats: (userId: string) => {
+  getTechnicianStats: (userId: string, range?: DateRange) => {
     totalJobs: number;
     activeJobs: number;
     completedJobs: number;
     holdsRaised: number;
     totalHoursLogged: number;
-    avgDurationHours: number;
+    avgDurationHours: number | null; // null when no finished job has a recorded duration
   };
 }
 
@@ -449,32 +450,42 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return isManagement || isLead || isRaiser;
   };
 
-  const getTechnicianStats = (userId: string) => {
-    const userJobs = erpState.jobs.filter((j) => j.assignedTeam.includes(userId));
+  // Real figures only: jobs created in the period, hours from the work log (the part inside the
+  // period), and the average over finished jobs that have a recorded duration
+  const getTechnicianStats = (userId: string, range?: DateRange) => {
+    const inPeriod = (value?: string) => !range || inRange(value, range);
+    const userJobs = erpState.jobs.filter(
+      (j) => (j.assignedTeam.includes(userId) || j.teamLeadUserId === userId) && inPeriod(j.createdAt)
+    );
     const activeJobs = userJobs.filter(
-      (j) => j.status === 'IN_PROGRESS' || j.status === 'ASSIGNED' || j.status === 'AWAITING_OTP'
+      (j) => j.status === 'IN_PROGRESS' || j.status === 'ASSIGNED' || j.status === 'ON_HOLD' || j.status === 'AWAITING_OTP'
     ).length;
-    const completedJobs = userJobs.filter((j) => j.status === 'COMPLETED' || j.status === 'CLOSED').length;
-    const holdsRaised = erpState.holdEvents.filter((h) => h.raisedByUserId === userId).length;
+    const finished = userJobs.filter((j) => j.status === 'COMPLETED' || j.status === 'CLOSED');
+    const holdsRaised = erpState.holdEvents.filter((h) => h.raisedByUserId === userId && inPeriod(h.raisedAt)).length;
 
-    const userLogs = erpState.workLogs.filter((w) => w.userId === userId);
-    let totalHours = 0;
-    userLogs.forEach((wl) => {
-      if (wl.outTime && wl.inTime) {
-        const diffHours = (new Date(wl.outTime).getTime() - new Date(wl.inTime).getTime()) / (1000 * 60 * 60);
-        if (diffHours > 0) totalHours += diffHours;
-      } else if (wl.inTime) {
-        const diffHours = (Date.now() - new Date(wl.inTime).getTime()) / (1000 * 60 * 60);
-        if (diffHours > 0 && diffHours < 12) totalHours += diffHours;
-      }
-    });
+    const { start, end } = range ? rangeBounds(range) : { start: -Infinity, end: Infinity };
+    let totalMs = 0;
+    erpState.workLogs
+      .filter((w) => w.userId === userId && w.inTime)
+      .forEach((wl) => {
+        const inMs = new Date(wl.inTime).getTime();
+        // A session still open counts up to now, unless it was left running for over 12 hours
+        const outMs = wl.outTime
+          ? new Date(wl.outTime).getTime()
+          : Date.now() - inMs < 12 * 3_600_000
+          ? Date.now()
+          : inMs;
+        const from = Math.max(inMs, start);
+        const to = Math.min(outMs, end);
+        if (to > from) totalMs += to - from;
+      });
 
-    if (totalHours < completedJobs * 2) {
-      totalHours = completedJobs * 3.5 + 2.0;
-    }
-
-    const roundedHours = Number(totalHours.toFixed(1));
-    const avgDurationHours = completedJobs > 0 ? Number((roundedHours / completedJobs).toFixed(1)) : 2.5;
+    const roundedHours = Math.round((totalMs / 3_600_000) * 10) / 10;
+    const timed = finished.filter((j) => (j.totalDurationSeconds || 0) > 0);
+    const avgDurationHours = timed.length
+      ? Math.round((timed.reduce((sum, j) => sum + (j.totalDurationSeconds || 0), 0) / timed.length / 3600) * 10) / 10
+      : null;
+    const completedJobs = finished.length;
 
     return {
       totalJobs: userJobs.length,

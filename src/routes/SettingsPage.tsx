@@ -45,7 +45,7 @@ export const SettingsPage: React.FC = () => {
         <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
           Settings
         </h1>
-        <p className="text-sm text-slate-500 mt-0.5">Staff accounts, backups and which pages each role can open</p>
+        <p className="hidden sm:block text-sm text-slate-500 mt-0.5">Staff accounts, backups and which pages each role can open</p>
       </div>
 
       {isCeo && <StaffAccountsCard />}
@@ -60,8 +60,10 @@ export const SettingsPage: React.FC = () => {
               Access Control
             </CardTitle>
             <CardDescription className="text-slate-500">
-              Choose which pages each role can open. Technicians still only see the jobs and repair tickets
-              assigned to them. Changes apply immediately, for everyone.
+              Tick the pages each role can open.
+              <span className="hidden sm:inline">
+                {' '}Technicians still see only their own jobs and repair tickets. Changes apply immediately.
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -104,7 +106,7 @@ export const SettingsPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-slate-500 mt-3">
+            <p className="hidden sm:block text-xs text-slate-500 mt-3">
               The CEO always has access to every page. Access Control and Staff Accounts are visible only to the CEO.
             </p>
           </CardContent>
@@ -117,7 +119,7 @@ export const SettingsPage: React.FC = () => {
             <Database className="w-4 h-4 text-orange-600" />
             Data
           </CardTitle>
-          <CardDescription className="text-slate-500">
+          <CardDescription className="hidden sm:block text-slate-500">
             Stored on the S Tec Secure server and shared by every device. Records you can see:
           </CardDescription>
         </CardHeader>

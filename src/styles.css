@@ -124,6 +124,43 @@
   }
 }
 
+/* Pop-ups and the phone menu: the dimmed page fades in and the sheet slides up from the bottom on
+   phones; on larger screens pop-ups fade and grow in slightly */
+@keyframes erp-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes erp-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes erp-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes erp-slide-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+@keyframes erp-pop-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+.erp-backdrop { animation: erp-fade-in 0.18s ease-out; }
+.erp-backdrop-out { animation: erp-fade-out 0.2s ease-in forwards; }
+.erp-sheet { animation: erp-slide-up 0.26s cubic-bezier(0.32, 0.72, 0, 1); }
+.erp-sheet-out { animation: erp-slide-down 0.2s ease-in forwards; }
+.erp-dropdown { animation: erp-pop-in 0.12s ease-out; transform-origin: top right; }
+@media (min-width: 640px) {
+  .erp-modal { animation: erp-pop-in 0.16s ease-out; }
+}
+@media (max-width: 639px) {
+  .erp-modal { animation: erp-slide-up 0.26s cubic-bezier(0.32, 0.72, 0, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .erp-backdrop, .erp-backdrop-out, .erp-sheet, .erp-sheet-out, .erp-dropdown, .erp-modal { animation: none; }
+}
+
 /* Phones and tablets: list tables become stacked cards, one per row; each cell shows its column
    heading (data-label is filled in by labelTablesForPhones in main.tsx) */
 @media (max-width: 1023px) {

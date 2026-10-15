@@ -10,7 +10,11 @@ export interface User {
   pin?: string; // 4-digit PIN — demo/offline mode only; the server keeps hashed PINs separately and never sends them
   photo?: string;
   email?: string;
+  staffCode?: string; // readable staff number by role: TECH-001, MGR-001, CEO-001 (given by the server)
 }
+
+// Staff number prefix for each role
+export const STAFF_CODE_PREFIX: Record<UserRole, string> = { TECHNICIAN: 'TECH-', MANAGER: 'MGR-', CEO: 'CEO-' };
 
 export interface Customer {
   id: string;

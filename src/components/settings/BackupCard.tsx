@@ -47,8 +47,8 @@ export const BackupCard: React.FC = () => {
           <DatabaseBackup className="w-5 h-5 text-orange-600" /> Backups
         </CardTitle>
         <CardDescription className="text-slate-500">
-          Download a copy of all business data — customers, jobs, quotations, invoices, payments, stock and photos —
-          and keep it somewhere safe outside this server (your laptop or Google Drive). Staff PINs are not included.
+          One ZIP file with all business data: an Excel copy to read, and the full backup for restoring.
+          <span className="hidden sm:inline"> Keep it on your laptop and in Google Drive. Staff PINs are not included.</span>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 text-[13px]">
@@ -90,8 +90,7 @@ export const BackupCard: React.FC = () => {
           )}
         </div>
         <p className="text-slate-500">
-          Recommended: download one every week (more often during busy periods). Restoring a backup is done by the
-          developer with the restore script — see docs/DEPLOY-RAILWAY.md.
+          Download one every week.<span className="hidden sm:inline"> To restore a backup, contact your ERP administrator.</span>
         </p>
       </CardContent>
     </Card>

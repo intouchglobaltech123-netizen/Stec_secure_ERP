@@ -7,7 +7,11 @@ import {
   SERVICE_CATEGORIES,
   ServiceCategory,
   JobStatus,
+  Job,
 } from '@/lib/stecsecure-types';
+import { DateRange, inRange, presetRange, previousRange, rangeDays } from '@/lib/date-range';
+import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { StatTile } from '@/components/ui/stat-tile';
 import {
   Wrench,
   AlertTriangle,
@@ -60,12 +64,11 @@ export const DashboardPage: React.FC = () => {
     visibleJobs,
     jobs,
     holdEvents,
-    serialUnits,
     invoices,
+    payments,
     workLogs,
     enquiries,
     resolveHoldEvent,
-    canResolveHold,
     canResumeHold,
     isManagement,
   } = useStecSecure();
@@ -73,12 +76,23 @@ export const DashboardPage: React.FC = () => {
   // Hold being resumed on the server (disables its button meanwhile)
   const [resumingHoldId, setResumingHoldId] = useState<string | null>(null);
 
-  const serviceJobs = visibleJobs.filter((j) => j.type === 'SERVICE');
-  const installationJobs = visibleJobs.filter((j) => j.type === 'INSTALLATION');
+  // Date filter for the numbers and charts (opens on this financial year)
+  const [range, setRange] = useState<DateRange>(() => presetRange('FY'));
 
-  const followUpEnquiriesCount = enquiries.filter((e) => e.status === 'FOLLOW_UP').length;
-  const approvedEnquiriesCount = enquiries.filter((e) => e.status === 'APPROVED').length;
-  const cancelledEnquiriesCount = enquiries.filter((e) => e.status === 'CANCELLED').length;
+  // Jobs and enquiries count in the period they were created; money in the period it was billed / received
+  const periodJobs = useMemo(() => visibleJobs.filter((j) => inRange(j.createdAt, range)), [visibleJobs, range]);
+  const serviceJobs = periodJobs.filter((j) => j.type === 'SERVICE');
+  const installationJobs = periodJobs.filter((j) => j.type === 'INSTALLATION');
+  const countBy = (list: Job[], status: JobStatus) => list.filter((j) => j.status === status).length;
+
+  const periodEnquiries = enquiries.filter((e) => inRange(e.createdAt, range));
+  const followUpEnquiriesCount = periodEnquiries.filter((e) => e.status === 'FOLLOW_UP').length;
+  const approvedEnquiriesCount = periodEnquiries.filter((e) => e.status === 'APPROVED').length;
+  const cancelledEnquiriesCount = periodEnquiries.filter((e) => e.status === 'CANCELLED').length;
+
+  const periodInvoices = useMemo(() => invoices.filter((inv) => inRange(inv.date, range)), [invoices, range]);
+  // Money received in the period (refunds are negative payments)
+  const totalCollected = payments.filter((p) => inRange(p.date, range)).reduce((sum, p) => sum + p.amount, 0);
 
   const openHolds = holdEvents.filter((h) => {
     if (h.status !== 'OPEN') return false;
@@ -87,73 +101,27 @@ export const DashboardPage: React.FC = () => {
     }
     return true;
   });
-  const totalRevenue = invoices.reduce((sum, inv) => sum + inv.amountPaid, 0);
 
-  // Computed trend indicator for Service completed/closed jobs
-  const serviceCompletedTrend = useMemo(() => {
-    const completedList = serviceJobs.filter((j) => j.status === 'COMPLETED' || j.status === 'CLOSED');
-    if (completedList.length < 2) return undefined;
-    const timestamps = completedList
-      .map((j) => new Date(j.completedAt || j.createdAt).getTime())
-      .filter((t) => !isNaN(t));
-    if (!timestamps.length) return undefined;
-    const maxTime = Math.max(...timestamps);
-    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-
-    const thisWeek = completedList.filter((j) => {
-      const t = new Date(j.completedAt || j.createdAt).getTime();
-      return t >= maxTime - oneWeekMs;
-    }).length;
-
-    const lastWeek = completedList.filter((j) => {
-      const t = new Date(j.completedAt || j.createdAt).getTime();
-      return t >= maxTime - 2 * oneWeekMs && t < maxTime - oneWeekMs;
-    }).length;
-
-    if (lastWeek === 0 && thisWeek === 0) return undefined;
-    if (lastWeek === 0) return { label: `+${thisWeek} new`, isPositive: true };
-
-    const diffPct = Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
-    return {
-      label: `${diffPct >= 0 ? '+' : ''}${diffPct}% vs last week`,
-      isPositive: diffPct >= 0,
-    };
-  }, [serviceJobs]);
-
-  // Computed trend indicator for Installation completed/closed jobs
-  const installationCompletedTrend = useMemo(() => {
-    const completedList = installationJobs.filter((j) => j.status === 'COMPLETED' || j.status === 'CLOSED');
-    if (completedList.length < 2) return undefined;
-    const timestamps = completedList
-      .map((j) => new Date(j.completedAt || j.createdAt).getTime())
-      .filter((t) => !isNaN(t));
-    if (!timestamps.length) return undefined;
-    const maxTime = Math.max(...timestamps);
-    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-
-    const thisWeek = completedList.filter((j) => {
-      const t = new Date(j.completedAt || j.createdAt).getTime();
-      return t >= maxTime - oneWeekMs;
-    }).length;
-
-    const lastWeek = completedList.filter((j) => {
-      const t = new Date(j.completedAt || j.createdAt).getTime();
-      return t >= maxTime - 2 * oneWeekMs && t < maxTime - oneWeekMs;
-    }).length;
-
-    if (lastWeek === 0 && thisWeek === 0) return undefined;
-    if (lastWeek === 0) return { label: `+${thisWeek} new`, isPositive: true };
-
-    const diffPct = Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
-    return {
-      label: `${diffPct >= 0 ? '+' : ''}${diffPct}% vs last week`,
-      isPositive: diffPct >= 0,
-    };
-  }, [installationJobs]);
+  // Jobs finished in this period compared with the period of the same length just before it
+  const completionTrend = (type: Job['type']) => {
+    const prev = previousRange(range);
+    if (!prev) return undefined;
+    const finished = visibleJobs.filter((j) => j.type === type && (j.status === 'COMPLETED' || j.status === 'CLOSED'));
+    const now = finished.filter((j) => inRange(j.completedAt || j.createdAt, range)).length;
+    const before = finished.filter((j) => inRange(j.completedAt || j.createdAt, prev)).length;
+    if (now === 0 && before === 0) return undefined;
+    const diff = now - before;
+    return { label: `${diff >= 0 ? '+' : '−'}${Math.abs(diff)} vs previous period`, isPositive: diff >= 0 };
+  };
+  const serviceCompletedTrend = completionTrend('SERVICE');
+  const installationCompletedTrend = completionTrend('INSTALLATION');
 
   // Chart 1 Data: Job Status Overview
+  const chartJobs = useMemo(
+    () => (currentUser?.role === 'TECHNICIAN' ? visibleJobs : jobs).filter((j) => inRange(j.createdAt, range)),
+    [currentUser, visibleJobs, jobs, range]
+  );
   const jobStatusData = useMemo(() => {
-    const targetJobs = currentUser?.role === 'TECHNICIAN' ? visibleJobs : jobs;
     const statusCounts: Record<JobStatus, number> = {
       ASSIGNED: 0,
       IN_PROGRESS: 0,
@@ -164,7 +132,7 @@ export const DashboardPage: React.FC = () => {
       CANCELLED: 0,
     };
 
-    targetJobs.forEach((j) => {
+    chartJobs.forEach((j) => {
       if (statusCounts[j.status] !== undefined) {
         statusCounts[j.status]++;
       }
@@ -186,7 +154,7 @@ export const DashboardPage: React.FC = () => {
       value: statusCounts[cfg.status],
       color: cfg.color,
     })).filter((item) => item.value > 0);
-  }, [currentUser, visibleJobs, jobs]);
+  }, [chartJobs]);
 
   // Chart 2 Data: Revenue by Category
   const categoryRevenueData = useMemo(() => {
@@ -195,7 +163,7 @@ export const DashboardPage: React.FC = () => {
       totals[c] = 0;
     });
 
-    invoices.forEach((inv) => {
+    periodInvoices.forEach((inv) => {
       const cat: ServiceCategory = invoiceCategory(inv, jobs);
       // Step 3: net of credit notes; cancelled invoices bill nothing
       totals[cat] = (totals[cat] || 0) + invoiceNetTotal(inv);
@@ -215,28 +183,30 @@ export const DashboardPage: React.FC = () => {
       fullName: c,
       revenue: totals[c] || 0,
     }));
-  }, [invoices, jobs]);
+  }, [periodInvoices, jobs]);
 
-  // Chart 3 Data: Revenue Trend Over Time
+  // Chart 3 Data: billed amount over time — by day for short periods, by month for long ones
   const revenueTrendData = useMemo(() => {
-    const sorted = [...invoices].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const dateMap = new Map<string, number>();
-    sorted.forEach((inv) => {
-      const key = inv.date;
-      dateMap.set(key, (dateMap.get(key) || 0) + invoiceNetTotal(inv));
-    });
-
-    const list: { date: string; displayDate: string; revenue: number }[] = [];
-    dateMap.forEach((revenue, date) => {
-      list.push({
-        date,
-        displayDate: formatDate(date),
-        revenue,
+    const dates = periodInvoices.map((inv) => inv.date).sort();
+    const spanDays =
+      rangeDays(range) ??
+      (dates.length ? (Date.parse(dates[dates.length - 1]) - Date.parse(dates[0])) / 86_400_000 : 0);
+    const byMonth = spanDays > 62;
+    const buckets = new Map<string, number>();
+    [...periodInvoices]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .forEach((inv) => {
+        const key = byMonth ? inv.date.slice(0, 7) : inv.date;
+        buckets.set(key, (buckets.get(key) || 0) + invoiceNetTotal(inv));
       });
-    });
-
-    return list;
-  }, [invoices]);
+    return [...buckets.entries()].map(([key, revenue]) => ({
+      date: key,
+      displayDate: byMonth
+        ? new Date(`${key}-01T12:00:00+05:30`).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+        : formatDate(key),
+      revenue,
+    }));
+  }, [periodInvoices, range]);
 
   // Build live activity feed strictly filtered to user's visibility
   const activityFeed: {
@@ -283,9 +253,40 @@ export const DashboardPage: React.FC = () => {
   // Sort activity feed by time descending
   activityFeed.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
+  const trendPill = (trend?: { label: string; isPositive: boolean }) =>
+    trend ? (
+      <span
+        className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap ${
+          trend.isPositive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+        }`}
+      >
+        {trend.isPositive ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
+        {trend.label}
+      </span>
+    ) : null;
+
+  // The six job stages, for the Service and Installation groups
+  const jobStageTiles = (list: Job[], trend?: { label: string; isPositive: boolean }, installation = false) => (
+    <div className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <StatTile label="Assigned" icon={Clock} value={countBy(list, 'ASSIGNED')} note="Ready to start" />
+      <StatTile label="In Progress" icon={Play} tone="orange" value={countBy(list, 'IN_PROGRESS')} note="Work going on" />
+      <StatTile label="On Hold" icon={AlertOctagon} tone="amber" value={countBy(list, 'ON_HOLD')} note="Timer paused" />
+      <StatTile label="Awaiting sign-off" icon={KeyRound} tone="orange" value={countBy(list, 'AWAITING_OTP')} note="Customer code pending" />
+      <StatTile
+        label="Completed"
+        icon={CheckCircle2}
+        tone="emerald"
+        value={countBy(list, 'COMPLETED')}
+        note={installation ? 'Installed, not yet closed' : 'Finished, not yet closed'}
+        extra={trendPill(trend)}
+      />
+      <StatTile label="Closed" icon={FileCheck2} tone="teal" value={countBy(list, 'CLOSED')} note="Signed off" />
+    </div>
+  );
+
   return (
     <div className="w-full space-y-6">
-      {/* Welcome Hero Banner */}
+      {/* Welcome banner with the date filter */}
       <div className="w-full relative overflow-hidden rounded-2xl bg-gradient-to-r from-orange-50 via-white to-amber-50/50 border border-orange-200/80 p-5 sm:p-6 shadow-xs">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -295,76 +296,41 @@ export const DashboardPage: React.FC = () => {
             <p className="text-[13px] sm:text-sm text-slate-600 mt-1 max-w-2xl font-normal">
               {currentUser?.role === 'TECHNICIAN'
                 ? `You have ${visibleJobs.filter((j) => j.status !== 'CLOSED' && j.status !== 'CANCELLED').length} open job(s).`
-                : "Here's how the business is doing today."}
+                : "Here's how the business is doing."}
             </p>
           </div>
-
+          <DateRangeFilter value={range} onChange={setRange} />
         </div>
       </div>
 
       {/* GROUP 0: Inward Enquiry Pipeline (Entry Point of Funnel) - Hidden for Technicians */}
       {currentUser?.role !== 'TECHNICIAN' && (
-        <div className="w-full p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3.5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-100">
+        <div className="w-full p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3.5">
+          <div className="flex items-center justify-between gap-2 pb-1 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
                 <Inbox className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  Enquiries
-                </h2>
-                <p className="text-xs text-slate-500">
-                  New customer requests waiting to become jobs
-                </p>
+                <h2 className="text-base font-bold text-slate-900">Enquiries</h2>
+                <p className="hidden sm:block text-xs text-slate-500">New customer requests waiting to become jobs</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="orange" className="text-[13px]">
-                {enquiries.length} Total Enquiries
-              </Badge>
-            </div>
+            <Badge variant="orange" className="text-[13px]">
+              {periodEnquiries.length} total
+            </Badge>
           </div>
 
-          <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <div className="p-4 rounded-xl bg-white border border-orange-200/80 shadow-xs hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <span className="text-xs uppercase font-bold text-orange-900 tracking-wider">Follow-up Required</span>
-                <div className="w-7 h-7 rounded-lg bg-orange-100/70 border border-orange-200 flex items-center justify-center text-orange-600">
-                  <Clock className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-orange-900 mt-2 font-mono">
-                {followUpEnquiriesCount}
-              </div>
-              <p className="text-xs text-orange-700 mt-1">Calls, site surveys & estimates pending</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white border border-orange-300/80 shadow-xs hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <span className="text-xs uppercase font-bold text-orange-950 tracking-wider">Approved & Converted</span>
-                <div className="w-7 h-7 rounded-lg bg-orange-200/60 border border-orange-300 flex items-center justify-center text-orange-700">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-orange-950 mt-2 font-mono">
-                {approvedEnquiriesCount}
-              </div>
-              <p className="text-xs text-orange-800 mt-1">Converted into active jobs</p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <span className="text-xs uppercase font-bold text-slate-600 tracking-wider">Cancelled</span>
-                <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-slate-900 mt-2 font-mono">
-                {cancelledEnquiriesCount}
-              </div>
-              <p className="text-xs text-slate-500 mt-1">Closed without job creation</p>
-            </div>
+          <div className="w-full grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <StatTile label="Follow-up" icon={Clock} tone="orange" value={followUpEnquiriesCount} note="Calls, surveys and estimates pending" />
+            <StatTile label="Approved" icon={CheckCircle2} tone="emerald" value={approvedEnquiriesCount} note="Turned into jobs" />
+            <StatTile
+              label="Cancelled"
+              icon={AlertTriangle}
+              value={cancelledEnquiriesCount}
+              note="Closed without a job"
+              className="col-span-2 sm:col-span-1"
+            />
           </div>
         </div>
       )}
@@ -372,249 +338,35 @@ export const DashboardPage: React.FC = () => {
       {/* Separate KPI Groupings for Service Jobs vs Installation Jobs */}
       <div className="w-full space-y-4">
         {/* GROUP 1: Service Department Overview */}
-        <div className="w-full p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3.5">
+        <div className="w-full p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3.5">
           <div className="flex items-center justify-between pb-1 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
+              <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
                 <Wrench className="w-4 h-4" />
               </div>
-              <h2 className="text-base font-bold text-slate-900">
-                Service jobs
-              </h2>
+              <h2 className="text-base font-bold text-slate-900">Service jobs</h2>
             </div>
             <Badge variant="orange" className="text-[13px]">
               {serviceJobs.length} total
             </Badge>
           </div>
-
-          <div className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Assigned</span>
-                <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600">
-                  <Clock className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-slate-900 my-1 font-mono">
-                {serviceJobs.filter((j) => j.status === 'ASSIGNED').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500">
-                <span>Ready to start</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-orange-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-orange-800 tracking-wider">In Progress</span>
-                <div className="w-7 h-7 rounded-lg bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600">
-                  <Play className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-orange-800 my-1 font-mono">
-                {serviceJobs.filter((j) => j.status === 'IN_PROGRESS').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-orange-700">
-                <span>Session active</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-amber-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-amber-800 tracking-wider">On Hold</span>
-                <div className="w-7 h-7 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-600">
-                  <AlertOctagon className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-amber-800 my-1 font-mono">
-                {serviceJobs.filter((j) => j.status === 'ON_HOLD').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-amber-700">
-                <span>Timer paused</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-orange-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-orange-900 tracking-wider">Awaiting sign-off</span>
-                <div className="w-7 h-7 rounded-lg bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600">
-                  <KeyRound className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-orange-900 my-1 font-mono">
-                {serviceJobs.filter((j) => j.status === 'AWAITING_OTP').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-orange-700">
-                <span>Sign-off pending</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-emerald-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-emerald-800 tracking-wider">Completed</span>
-                <div className="w-7 h-7 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-600">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-emerald-800 my-1 font-mono">
-                {serviceJobs.filter((j) => j.status === 'COMPLETED').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-emerald-700">
-                <span>Finished</span>
-                {serviceCompletedTrend && (
-                  <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded ${
-                    serviceCompletedTrend.isPositive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
-                  }`}>
-                    {serviceCompletedTrend.isPositive ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
-                    {serviceCompletedTrend.label}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-slate-600 tracking-wider">Closed</span>
-                <div className="w-7 h-7 rounded-lg bg-teal-100 border border-teal-200 flex items-center justify-center text-teal-700">
-                  <FileCheck2 className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-slate-900 my-1 font-mono">
-                {serviceJobs.filter((j) => j.status === 'CLOSED').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500">
-                <span>Signed off</span>
-                {serviceCompletedTrend && (
-                  <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <ArrowUpRight className="w-2.5 h-2.5" />
-                    Verified
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+          {jobStageTiles(serviceJobs, serviceCompletedTrend)}
         </div>
 
         {/* GROUP 2: Installation Department Overview */}
-        <div className="w-full p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3.5">
+        <div className="w-full p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3.5">
           <div className="flex items-center justify-between pb-1 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
                 <Layers className="w-4 h-4" />
               </div>
-              <h2 className="text-base font-bold text-slate-900">
-                Installation jobs
-              </h2>
+              <h2 className="text-base font-bold text-slate-900">Installation jobs</h2>
             </div>
             <Badge variant="orange" className="text-[13px]">
               {installationJobs.length} total
             </Badge>
           </div>
-
-          <div className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-slate-500 tracking-wider">Assigned</span>
-                <div className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600">
-                  <Clock className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-slate-900 my-1 font-mono">
-                {installationJobs.filter((j) => j.status === 'ASSIGNED').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500">
-                <span>Ready to start</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-orange-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-orange-800 tracking-wider">In Progress</span>
-                <div className="w-7 h-7 rounded-lg bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600">
-                  <Play className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-orange-800 my-1 font-mono">
-                {installationJobs.filter((j) => j.status === 'IN_PROGRESS').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-orange-700">
-                <span>Mounting / Wiring</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-amber-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-amber-800 tracking-wider">On Hold</span>
-                <div className="w-7 h-7 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-600">
-                  <AlertOctagon className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-amber-800 my-1 font-mono">
-                {installationJobs.filter((j) => j.status === 'ON_HOLD').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-amber-700">
-                <span>Site obstacle</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-orange-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-orange-900 tracking-wider">Awaiting sign-off</span>
-                <div className="w-7 h-7 rounded-lg bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600">
-                  <KeyRound className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-orange-900 my-1 font-mono">
-                {installationJobs.filter((j) => j.status === 'AWAITING_OTP').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-orange-700">
-                <span>Commission sign-off</span>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-emerald-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-emerald-800 tracking-wider">Completed</span>
-                <div className="w-7 h-7 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-600">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-emerald-800 my-1 font-mono">
-                {installationJobs.filter((j) => j.status === 'COMPLETED').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-emerald-700">
-                <span>Hardware mounted</span>
-                {installationCompletedTrend && (
-                  <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded ${
-                    installationCompletedTrend.isPositive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
-                  }`}>
-                    {installationCompletedTrend.isPositive ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
-                    {installationCompletedTrend.label}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between min-h-[110px]">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-slate-600 tracking-wider">Closed</span>
-                <div className="w-7 h-7 rounded-lg bg-teal-100 border border-teal-200 flex items-center justify-center text-teal-700">
-                  <FileCheck2 className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-extrabold text-slate-900 my-1 font-mono">
-                {installationJobs.filter((j) => j.status === 'CLOSED').length}
-              </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500">
-                <span>Live & Invoiced</span>
-                {installationCompletedTrend && (
-                  <span className="inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <ArrowUpRight className="w-2.5 h-2.5" />
-                    Verified
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+          {jobStageTiles(installationJobs, installationCompletedTrend, true)}
         </div>
       </div>
 
@@ -627,12 +379,12 @@ export const DashboardPage: React.FC = () => {
                 <TrendingUp className="w-4 h-4 text-orange-600" />
                 Business overview
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="hidden sm:block text-xs text-slate-500">
                 Jobs by stage, revenue by category and billing over time
               </p>
             </div>
             <Badge variant="outline" className="text-[13px] self-start sm:self-auto font-mono bg-white text-slate-700">
-              Total Revenue Collected: <strong className="ml-1 text-slate-900 font-bold">{formatINR(totalRevenue)}</strong>
+              Collected: <strong className="ml-1 text-slate-900 font-bold">{formatINR(totalCollected)}</strong>
             </Badge>
           </div>
 
@@ -647,11 +399,11 @@ export const DashboardPage: React.FC = () => {
                     Job Status Overview
                   </CardTitle>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    All {jobs.length} jobs by stage
+                    Jobs created in this period, by stage
                   </p>
                 </div>
                 <Badge variant="orange" className="text-[13px] font-mono">
-                  {jobs.length} Total
+                  {chartJobs.length} jobs
                 </Badge>
               </CardHeader>
               <CardContent className="pt-2">
@@ -673,7 +425,7 @@ export const DashboardPage: React.FC = () => {
                       </Pie>
                       <Tooltip
                         formatter={(value: any, name: any) => [
-                          `${value} jobs (${Math.round(((Number(value) || 0) / (jobs.length || 1)) * 100)}%)`,
+                          `${value} jobs (${Math.round(((Number(value) || 0) / (chartJobs.length || 1)) * 100)}%)`,
                           name,
                         ]}
                         contentStyle={{
@@ -712,7 +464,7 @@ export const DashboardPage: React.FC = () => {
                   </p>
                 </div>
                 <Badge variant="outline" className="text-[13px] font-mono text-emerald-700 bg-emerald-50 border-emerald-200">
-                  6 Verticals
+                  {formatINR(periodInvoices.reduce((sum, inv) => sum + invoiceNetTotal(inv), 0))}
                 </Badge>
               </CardHeader>
               <CardContent className="pt-2">
@@ -764,7 +516,7 @@ export const DashboardPage: React.FC = () => {
               <div>
                 <CardTitle className="text-sm text-slate-900 flex items-center gap-2 font-display font-bold">
                   <TrendingUp className="w-4 h-4 text-emerald-600" />
-                  Revenue Trend Over Time
+                  Billing over time
                 </CardTitle>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Billed amount by invoice date
@@ -772,7 +524,7 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-[13px] font-mono text-orange-700 bg-orange-50 border-orange-200">
-                  {invoices.length} Invoices Tracked
+                  {periodInvoices.length} invoices
                 </Badge>
               </div>
             </CardHeader>

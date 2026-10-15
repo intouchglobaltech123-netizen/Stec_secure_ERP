@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { StatTile } from '@/components/ui/stat-tile';
 import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { RepairTicket, RepairStatus, RepairPath } from '@/lib/stecsecure-types';
@@ -205,91 +206,31 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
         </div>
       </div>
 
-      {/* Top Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-        <div className="p-4 rounded-xl bg-white border border-slate-200/80 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-wider">
-            <span>Total RMA Tickets</span>
-            <RotateCcw className="w-4 h-4 text-orange-600" />
-          </div>
-          <div className="text-2xl font-extrabold text-slate-900 font-mono">
-            {visibleRepairTickets.length}
-          </div>
-          <p className="text-xs text-slate-500">Across all repair stages</p>
-        </div>
-
-        <div className="p-4 rounded-xl bg-white border border-orange-200/80 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-orange-800 text-xs font-bold uppercase tracking-wider">
-            <span>In-House Bench</span>
-            <Wrench className="w-4 h-4 text-orange-600" />
-          </div>
-          <div className="text-2xl font-extrabold text-orange-900 font-mono">
-            {inHouseCount}
-          </div>
-          <p className="text-xs text-orange-700">Under technician triage</p>
-        </div>
-
-        <div className="p-4 rounded-xl bg-white border border-blue-200/80 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-blue-800 text-xs font-bold uppercase tracking-wider">
-            <span>Sent to Vendor</span>
-            <Send className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="text-2xl font-extrabold text-blue-900 font-mono">
-            {vendorCount}
-          </div>
-          <p className="text-xs text-blue-700">External warranty dispatch</p>
-        </div>
-
-        {/* Overdue Vendor Repairs Metric Tile (Task 4) */}
-        <div
+      {/* Top Metric Cards (two per row on phones) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <StatTile label="Repair tickets" icon={RotateCcw} value={visibleRepairTickets.length} note="All stages" />
+        <StatTile label="In-house repair" icon={Wrench} tone="orange" value={inHouseCount} note="Being repaired here" />
+        <StatTile label="Sent to vendor" icon={Send} tone="blue" value={vendorCount} note="With the supplier" />
+        <StatTile
+          label="Overdue at vendor"
+          icon={AlertTriangle}
+          tone={overdueTickets.length > 0 ? 'rose' : 'slate'}
+          value={overdueTickets.length}
+          note={overdueTickets.length > 0 ? 'Tap to show them' : 'All on schedule'}
+          className={overdueTickets.length > 0 ? 'border-rose-300 bg-rose-50/60' : ''}
           onClick={() => {
             setShowOverdueOnly(true);
             setStatusFilter('ALL');
           }}
-          className={`p-4 rounded-xl border shadow-2xs space-y-1 cursor-pointer transition-all ${
-            overdueTickets.length > 0
-              ? 'bg-rose-50/70 border-rose-300 hover:border-rose-400 hover:shadow-md ring-1 ring-rose-200'
-              : 'bg-white border-slate-200/80'
-          }`}
-        >
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider">
-            <span className={overdueTickets.length > 0 ? 'text-rose-900' : 'text-slate-500'}>
-              Overdue Vendor Repairs
-            </span>
-            <AlertTriangle
-              className={`w-4 h-4 ${
-                overdueTickets.length > 0 ? 'text-rose-600 animate-pulse' : 'text-slate-400'
-              }`}
-            />
-          </div>
-          <div
-            className={`text-2xl font-extrabold font-mono ${
-              overdueTickets.length > 0 ? 'text-rose-700' : 'text-slate-900'
-            }`}
-          >
-            {overdueTickets.length}
-          </div>
-          <p
-            className={`text-xs ${
-              overdueTickets.length > 0 ? 'text-rose-800 font-medium' : 'text-slate-500'
-            }`}
-          >
-            {overdueTickets.length > 0
-              ? 'Click to filter delayed units'
-              : 'All vendors on schedule'}
-          </p>
-        </div>
-
-        <div className="p-4 rounded-xl bg-white border border-emerald-200/80 shadow-2xs space-y-1">
-          <div className="flex items-center justify-between text-emerald-800 text-xs font-bold uppercase tracking-wider">
-            <span>Ready / Reinstalled</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="text-2xl font-extrabold text-emerald-900 font-mono">
-            {readyOrReinstalledCount}
-          </div>
-          <p className="text-xs text-emerald-700">Restored to service</p>
-        </div>
+        />
+        <StatTile
+          label="Ready / reinstalled"
+          icon={CheckCircle2}
+          tone="emerald"
+          value={readyOrReinstalledCount}
+          note="Back in service"
+          className="col-span-2 sm:col-span-1"
+        />
       </div>
 
       {/* Filter and Search Bar */}

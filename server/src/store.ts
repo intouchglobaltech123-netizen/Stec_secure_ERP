@@ -8,6 +8,7 @@ import { ErpState, getSeedState, makeEnv, normalizeSavedState } from '../../src/
 import { ACTIONS, ActionName } from '../../src/lib/erp/actions';
 import { User } from '../../src/lib/stecsecure-types';
 import { DEMO_ACCOUNT_PINS } from '../../src/lib/demo-accounts';
+import { withStaffCodes } from '../../src/lib/staff-code';
 
 type CollectionName = Exclude<keyof ErpState, 'accessControl'>;
 type AnyRecord = { id: string };
@@ -78,6 +79,11 @@ export class Store {
     const { rows: countRows } = await this.db.query<{ n: string }>('SELECT count(*)::text AS n FROM records');
     if (Number(countRows[0].n) === 0) await this.bootstrap();
     await this.load();
+    // Staff numbers (TECH-001 …) for anyone added before staff numbers existed
+    if (withStaffCodes(this.state.users) !== this.state.users) {
+      await this.commit((s) => ({ ...s, users: withStaffCodes(s.users) }));
+      console.log('[store] gave staff numbers to existing staff');
+    }
   }
 
   // First start on an empty database
