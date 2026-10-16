@@ -4,12 +4,10 @@ import { localDateISO } from '@/lib/numbering';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { RepairTicket, RepairStatus, RepairPath } from '@/lib/stecsecure-types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Wrench,
   Plus,
-  Search,
   AlertTriangle,
   Clock,
   ArrowRight,
@@ -23,6 +21,9 @@ import {
 import { CreateRepairTicketModal } from '@/components/repairs/CreateRepairTicketModal';
 import { RepairTicketDetailModal } from '@/components/repairs/RepairTicketDetailModal';
 import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { humanize } from '@/lib/utils';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 import { DateRange, inRange, presetRange } from '@/lib/date-range';
 
 interface RepairsPageProps {
@@ -143,6 +144,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
     users,
     todayStr,
   ]);
+  const pager = usePagination(filteredTickets, [statusFilter, pathFilter, showOverdueOnly, searchQuery, range]);
 
   const selectedTicket = useMemo(() => {
     if (!selectedTicketId) return null;
@@ -242,20 +244,9 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
         />
       </div>
 
-      {/* Filter and Search Bar */}
+      {/* Filters (search is in the bar above the table) */}
       <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row md:flex-wrap md:items-center justify-between gap-3">
-          {/* Search box */}
-          <div className="relative flex-1 max-w-md md:min-w-[16rem]">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-            <Input
-              placeholder="Search by RMA #, customer, serial number, model..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 text-[13px] bg-slate-50 border-slate-200 focus:bg-white"
-            />
-          </div>
-
           {/* Filter Dropdowns */}
           <div className="flex flex-wrap items-center gap-2.5">
             <DateRangeFilter value={range} onChange={setRange} withTime />
@@ -272,14 +263,14 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                 className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
               >
                 <option value="ALL">All Statuses ({ticketsInRange.length})</option>
-                <option value="FAULT_REPORTED">FAULT_REPORTED</option>
-                <option value="PICKED_UP">PICKED_UP</option>
-                <option value="CHECKED_IN_AT_OFFICE">CHECKED_IN_AT_OFFICE</option>
-                <option value="IN_HOUSE_REPAIR">IN_HOUSE_REPAIR</option>
-                <option value="SENT_TO_VENDOR">SENT_TO_VENDOR</option>
-                <option value="READY_TO_REINSTALL">READY_TO_REINSTALL</option>
-                <option value="REINSTALLED">REINSTALLED</option>
-                <option value="WRITE_OFF">WRITE_OFF</option>
+                <option value="FAULT_REPORTED">{humanize('FAULT_REPORTED')}</option>
+                <option value="PICKED_UP">{humanize('PICKED_UP')}</option>
+                <option value="CHECKED_IN_AT_OFFICE">{humanize('CHECKED_IN_AT_OFFICE')}</option>
+                <option value="IN_HOUSE_REPAIR">{humanize('IN_HOUSE_REPAIR')}</option>
+                <option value="SENT_TO_VENDOR">{humanize('SENT_TO_VENDOR')}</option>
+                <option value="READY_TO_REINSTALL">{humanize('READY_TO_REINSTALL')}</option>
+                <option value="REINSTALLED">{humanize('REINSTALLED')}</option>
+                <option value="WRITE_OFF">{humanize('WRITE_OFF')}</option>
               </select>
             </div>
 
@@ -327,6 +318,12 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
         </div>
       </div>
 
+      <TablePager
+        pager={pager}
+        noun="repair tickets"
+        search={{ value: searchQuery, onChange: setSearchQuery, placeholder: 'Search by RMA #, customer, serial number, model...' }}
+      />
+
       {/* Main Tickets Table (Task 5 View) */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -352,7 +349,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                   </td>
                 </tr>
               ) : (
-                filteredTickets.map((ticket) => {
+                pager.items.map((ticket) => {
                   const cust = customers.find((c) => c.id === ticket.customerId);
                   const serial = serialUnits.find((s) => s.id === ticket.serialUnitId);
                   const prod = serial ? products.find((p) => p.id === serial.productId) : null;

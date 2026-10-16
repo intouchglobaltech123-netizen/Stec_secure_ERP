@@ -17,7 +17,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Plus,
-  Search,
   MessageSquare,
   Building2,
   MapPin,
@@ -52,6 +51,8 @@ import { JobDetailModal } from '@/components/jobs/JobDetailModal';
 import { QuotationBuilderModal } from '@/components/quotations/QuotationBuilderModal';
 import { QuotationPreviewModal } from '@/components/quotations/QuotationPreviewModal';
 import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
@@ -201,6 +202,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
 
     return matchesTab && matchesType && matchesCategory && matchesSearch;
   });
+  const pager = usePagination(filteredEnquiries, [activeTab, typeFilter, categoryFilter, searchQuery, range]);
 
   const handleOpenCreate = () => {
     setFormType('SERVICE');
@@ -421,18 +423,8 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
         })}
       </div>
 
-      {/* Search and Category Filters Row */}
+      {/* Date, category and type filters (search is in the bar above the table) */}
       <div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-3 bg-white p-2.5 rounded-md border border-slate-200 shadow-2xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <Input
-            placeholder="Search by ID, customer, phone, or scope..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 text-[13px] h-8 bg-slate-50 border-slate-200 rounded-md"
-          />
-        </div>
-
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <DateRangeFilter value={range} onChange={setRange} withTime />
 
@@ -460,6 +452,12 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
           </select>
         </div>
       </div>
+
+      <TablePager
+        pager={pager}
+        noun="enquiries"
+        search={{ value: searchQuery, onChange: setSearchQuery, placeholder: 'Search by ID, customer, phone, or scope...' }}
+      />
 
       {/* Robotics ERP Data Table View */}
       <div className="bg-white border border-slate-200 rounded-md shadow-2xs overflow-hidden">
@@ -490,7 +488,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
                   </td>
                 </tr>
               ) : (
-                filteredEnquiries.map((enq) => {
+                pager.items.map((enq) => {
                   const linkedJob = jobs.find(
                     (j) => j.id === enq.convertedJobId || j.enquiryId === enq.id
                   );

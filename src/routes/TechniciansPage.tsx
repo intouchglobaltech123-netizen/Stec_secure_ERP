@@ -8,7 +8,6 @@ import {
   Clock,
   AlertTriangle,
   Package,
-  Search,
   ArrowLeft,
   ChevronRight,
   Layers,
@@ -18,9 +17,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { StatTile } from '@/components/ui/stat-tile';
 import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import { formatDate, humanize } from '@/lib/utils';
 import { JobDetailModal } from '@/components/jobs/JobDetailModal';
@@ -79,6 +79,8 @@ export const TechniciansPage: React.FC = () => {
       (cust?.name || '').toLowerCase().includes(historyQuery)
     );
   });
+  const directoryPager = usePagination(directory, [directorySearch, roleFilter]);
+  const jobsPager = usePagination(userJobs, [selectedUserId, historySearch, historyStatusFilter, range]);
 
   // Materials used on those jobs
   const periodJobIds = new Set(periodJobs.map((j) => j.id));
@@ -108,16 +110,6 @@ export const TechniciansPage: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <div className="relative flex-1 sm:max-w-sm">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input
-                placeholder="Search name, mobile or staff no."
-                value={directorySearch}
-                onChange={(e) => setDirectorySearch(e.target.value)}
-                className="pl-9 h-10 text-[13px] bg-white"
-                aria-label="Search staff"
-              />
-            </div>
             <div className="flex items-center gap-2">
               <select
                 value={roleFilter}
@@ -128,9 +120,14 @@ export const TechniciansPage: React.FC = () => {
                 <option value="TECHNICIAN">Technicians</option>
                 <option value="ALL">All staff</option>
               </select>
-              <span className="text-xs text-slate-500 font-medium whitespace-nowrap">{directory.length} shown</span>
             </div>
           </div>
+
+          <TablePager
+            pager={directoryPager}
+            noun={roleFilter === 'ALL' ? 'staff' : 'technicians'}
+            search={{ value: directorySearch, onChange: setDirectorySearch, placeholder: 'Search name, mobile or staff no.' }}
+          />
 
           {directory.length === 0 ? (
             <div className="p-8 rounded-xl bg-white border border-slate-200 text-center text-[13px] text-slate-500">
@@ -138,7 +135,7 @@ export const TechniciansPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {directory.map((user) => {
+              {directoryPager.items.map((user) => {
                 const stats = getTechnicianStats(user.id);
                 const isCurrentUser = currentUser?.id === user.id;
                 return (
@@ -314,15 +311,6 @@ export const TechniciansPage: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="relative flex-1 sm:w-52 sm:flex-none">
-                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    placeholder="Search jobs"
-                    value={historySearch}
-                    onChange={(e) => setHistorySearch(e.target.value)}
-                    className="pl-8 h-9 text-[13px] bg-white"
-                  />
-                </div>
                 <select
                   value={historyStatusFilter}
                   onChange={(e) => setHistoryStatusFilter(e.target.value as 'ALL' | JobStatus)}
@@ -338,6 +326,12 @@ export const TechniciansPage: React.FC = () => {
                 </select>
               </div>
             </div>
+
+            <TablePager
+              pager={jobsPager}
+              noun="jobs"
+              search={{ value: historySearch, onChange: setHistorySearch, placeholder: 'Search job no, customer or product' }}
+            />
 
             <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
               <CardContent className="p-0">
@@ -362,7 +356,7 @@ export const TechniciansPage: React.FC = () => {
                           </td>
                         </tr>
                       ) : (
-                        userJobs.map((j) => {
+                        jobsPager.items.map((j) => {
                           const customer = getCustomer(j.customerNumber);
                           const statusVariant =
                             j.status === 'CLOSED'

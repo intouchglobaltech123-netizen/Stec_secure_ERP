@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import {
   Boxes,
-  Search,
   Plus,
   ArrowDownToLine,
   Building2,
@@ -24,7 +23,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { formatINR, formatDate, humanize } from '@/lib/utils';
 import { ServiceCategory, SERVICE_CATEGORIES, Product, Vendor, SerialUnit, SerialStatus } from '@/lib/stecsecure-types';
 import { generateInternalBarcode, copyBarcodeToClipboard } from '@/lib/barcode-utils';
@@ -34,6 +32,8 @@ import { ProductModal } from '@/components/inventory/ProductModal';
 import { AddStockModal } from '@/components/inventory/AddStockModal';
 import { SerialDetailsModal } from '@/components/inventory/SerialDetailsModal';
 import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import { toast } from 'sonner';
 
@@ -143,6 +143,9 @@ export const InventoryPage: React.FC = () => {
       v.address.toLowerCase().includes(vendorSearch.toLowerCase())
     );
   });
+  const serialPager = usePagination(filteredSerials, [serialSearch, serialStatusFilter, serialProductFilter, serialVendorFilter, range]);
+  const productPager = usePagination(filteredProducts, [productSearch, selectedCategory]);
+  const vendorPager = usePagination(filteredVendors, [vendorSearch]);
 
   return (
     <div className="space-y-6">
@@ -333,22 +336,12 @@ export const InventoryPage: React.FC = () => {
       {/* TAB 1: SERIAL UNIT TRACKER */}
       {activeTab === 'SERIALS' && (
         <div className="space-y-4">
-          {/* Search & Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          {/* Filters (search is in the bar above the table) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
             {/* Purchase date range (its own row) */}
-            <div className="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-2">
+            <div className="sm:col-span-2 lg:col-span-3 flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">Purchase date</span>
               <DateRangeFilter value={range} onChange={setRange} withTime />
-            </div>
-
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-              <Input
-                placeholder="Search serial no, product, customer..."
-                value={serialSearch}
-                onChange={(e) => setSerialSearch(e.target.value)}
-                className="pl-9 text-[13px] bg-white"
-              />
             </div>
 
             {/* Status Filter */}
@@ -358,11 +351,11 @@ export const InventoryPage: React.FC = () => {
               className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
             >
               <option value="ALL">All Statuses</option>
-              <option value="IN_STOCK">IN_STOCK (Warehouse)</option>
-              <option value="ALLOCATED">ALLOCATED (To Job)</option>
-              <option value="INSTALLED">INSTALLED (At Customer)</option>
-              <option value="IN_REPAIR">IN_REPAIR (RMA / Workshop)</option>
-              <option value="RETURNED">RETURNED (RMA Defect)</option>
+              <option value="IN_STOCK">In stock (warehouse)</option>
+              <option value="ALLOCATED">Allocated (to a job)</option>
+              <option value="INSTALLED">Installed (at customer)</option>
+              <option value="IN_REPAIR">In repair</option>
+              <option value="RETURNED">Returned (defective)</option>
             </select>
 
             {/* Product Filter */}
@@ -394,6 +387,12 @@ export const InventoryPage: React.FC = () => {
             </select>
           </div>
 
+          <TablePager
+            pager={serialPager}
+            noun="serial numbers"
+            search={{ value: serialSearch, onChange: setSerialSearch, placeholder: 'Search serial no, product, customer...' }}
+          />
+
           {/* Serials Table */}
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
             <CardContent className="p-0">
@@ -418,7 +417,7 @@ export const InventoryPage: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredSerials.map((s) => {
+                      serialPager.items.map((s) => {
                         const prod = products.find((p) => p.id === s.productId);
                         const vend = vendors.find((v) => v.id === s.purchasedFromVendorId);
                         const cust = customers.find((c) => c.id === s.soldToCustomerId);
@@ -517,16 +516,6 @@ export const InventoryPage: React.FC = () => {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
             <div className="flex flex-1 gap-2.5 w-full sm:w-auto">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-                <Input
-                  placeholder="Search product catalog or HSN..."
-                  value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
-                  className="pl-9 text-[13px] bg-white"
-                />
-              </div>
-
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
@@ -542,8 +531,14 @@ export const InventoryPage: React.FC = () => {
             </div>
           </div>
 
+          <TablePager
+            pager={productPager}
+            noun="products"
+            search={{ value: productSearch, onChange: setProductSearch, placeholder: 'Search product catalog or HSN...' }}
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredProducts.map((prod) => {
+            {productPager.items.map((prod) => {
               const serials = serialUnits.filter((s) => s.productId === prod.id);
               const nonSerialUsed = jobProductUsages
                 .filter((u) => u.productId === prod.id && (!u.serialUnitIds || u.serialUnitIds.length === 0))
@@ -687,17 +682,7 @@ export const InventoryPage: React.FC = () => {
       {/* TAB 3: VENDOR DIRECTORY MANAGEMENT */}
       {activeTab === 'VENDORS' && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div className="relative flex-1 w-full sm:w-auto">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-              <Input
-                placeholder="Search vendors by name, phone, GSTIN..."
-                value={vendorSearch}
-                onChange={(e) => setVendorSearch(e.target.value)}
-                className="pl-9 text-[13px] bg-white"
-              />
-            </div>
-
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-end">
             {isManagement && (
               <Button
                 variant="primary"
@@ -712,6 +697,12 @@ export const InventoryPage: React.FC = () => {
               </Button>
             )}
           </div>
+
+          <TablePager
+            pager={vendorPager}
+            noun="suppliers"
+            search={{ value: vendorSearch, onChange: setVendorSearch, placeholder: 'Search vendors by name, phone, GSTIN...' }}
+          />
 
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
             <CardContent className="p-0">
@@ -729,7 +720,7 @@ export const InventoryPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredVendors.map((vend) => {
+                    {vendorPager.items.map((vend) => {
                       const vendorSerials = serialUnits.filter(
                         (s) => s.purchasedFromVendorId === vend.id
                       );

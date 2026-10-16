@@ -32,7 +32,6 @@ import {
   ExternalLink,
   Boxes,
   Users,
-  Search,
   Trash2,
   Inbox,
 } from 'lucide-react';
@@ -53,6 +52,8 @@ import { JobPhotoUpload } from '@/components/jobs/JobPhotoUpload';
 import { AddProductUsedModal } from '@/components/jobs/AddProductUsedModal';
 import { SiteLocationModal } from '@/components/customers/SiteLocationModal';
 import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import { SAMPLE_BEFORE_PHOTO, SAMPLE_AFTER_PHOTO } from '@/lib/seed-data';
 import { errorMessage } from '@/lib/api';
@@ -287,6 +288,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
       (j.problemReported && j.problemReported.toLowerCase().includes(q))
     );
   });
+  const pager = usePagination(filteredJobs, [department, activeFilter, categoryFilter, searchQuery, range]);
 
   const handleStartJobWithPhoto = async (job: Job) => {
     const photo = beforePhotoMap[job.id] || job.beforePhotoUrl;
@@ -950,18 +952,8 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
         })}
       </div>
 
-      {/* Search and Category Filter Bar */}
+      {/* Date and category filters (search is in the bar above the list) */}
       <div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-3 bg-white p-2.5 rounded-md border border-slate-200 shadow-2xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <Input
-            placeholder="Search by Job #, customer, phone, or scope..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 text-[13px] h-8 bg-slate-50 border-slate-200 rounded-md"
-          />
-        </div>
-
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <DateRangeFilter value={range} onChange={setRange} withTime />
           <select
@@ -979,6 +971,12 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
         </div>
       </div>
 
+      <TablePager
+        pager={pager}
+        noun={department === 'SERVICE' ? 'service jobs' : 'installation jobs'}
+        search={{ value: searchQuery, onChange: setSearchQuery, placeholder: 'Search by Job #, customer, phone, or scope...' }}
+      />
+
       {/* Phones and tablets: one tappable card per job — the table below needs a wide screen */}
       <div className="lg:hidden grid gap-2 md:grid-cols-2">
         {filteredJobs.length === 0 ? (
@@ -986,7 +984,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
             No {department.toLowerCase()} jobs match this filter.
           </div>
         ) : (
-          filteredJobs.map((job) => {
+          pager.items.map((job) => {
             const customer = customers.find((c) => c.id === job.customerNumber);
             const lead = users.find((u) => u.id === (job.teamLeadUserId || job.assignedTeam[0]));
             const stage = MOBILE_JOB_STAGE[job.status];
@@ -1043,7 +1041,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
                   </td>
                 </tr>
               ) : (
-                filteredJobs.map((job) => {
+                pager.items.map((job) => {
                   const customer = customers.find((c) => c.id === job.customerNumber);
                   const leadUserId = job.teamLeadUserId || job.assignedTeam[0];
                   const teamLead = users.find((u) => u.id === leadUserId);

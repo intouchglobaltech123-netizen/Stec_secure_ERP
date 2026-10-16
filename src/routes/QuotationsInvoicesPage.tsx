@@ -8,7 +8,6 @@ import {
   Plus,
   CheckCircle2,
   Clock,
-  Search,
   Printer,
   Share2,
   FileText,
@@ -33,7 +32,6 @@ import { RecordAdvanceModal } from '@/components/payments/RecordAdvanceModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { formatINR, formatDate } from '@/lib/utils';
 import { QuotationBuilderModal } from '@/components/quotations/QuotationBuilderModal';
 import { QuotationPreviewModal } from '@/components/quotations/QuotationPreviewModal';
@@ -41,6 +39,8 @@ import { DeliveryChallanModal } from '@/components/jobs/DeliveryChallanModal';
 import { InvoicePreviewModal } from '@/components/invoices/InvoicePreviewModal';
 import { CreditNotePreviewModal } from '@/components/invoices/InvoiceCorrectionModals';
 import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import {
   creditNoteReasonLabel,
@@ -412,6 +412,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
       dc.lineItems.some((li) => li.itemDescription.toLowerCase().includes(challanSearch.toLowerCase()))
     );
   });
+  const projectPager = usePagination(filteredProjectGroups, [projectSearch, projectFilter, range]);
+  const quotationPager = usePagination(filteredQuotations, [quotationSearch, quotationStatusFilter, range]);
+  const creditNotePager = usePagination(creditNotesInRange, [range]);
+  const challanPager = usePagination(filteredChallans, [challanSearch, range]);
+  const invoicePager = usePagination(filteredInvoices, [invoiceSearch, range]);
 
   // Totals for top statistics (chosen period)
   const totalQuotationValue = quotationsInRange.reduce((sum, q) => sum + q.grandTotal, 0);
@@ -631,16 +636,6 @@ export const QuotationsInvoicesPage: React.FC = () => {
         <div className="space-y-4">
           {/* Filters Strip */}
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div className="relative flex-1 w-full sm:w-auto">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-              <Input
-                placeholder="Search by Job ID, Enquiry #, Customer, Quotation #, DC #, or Invoice #..."
-                value={projectSearch}
-                onChange={(e) => setProjectSearch(e.target.value)}
-                className="pl-9 text-[13px] bg-white"
-              />
-            </div>
-
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <select
                 value={projectFilter}
@@ -656,6 +651,12 @@ export const QuotationsInvoicesPage: React.FC = () => {
               </select>
             </div>
           </div>
+
+          <TablePager
+            pager={projectPager}
+            noun="jobs / projects"
+            search={{ value: projectSearch, onChange: setProjectSearch, placeholder: 'Search job, enquiry, customer, quotation, challan or invoice no...' }}
+          />
 
           {/* Grouped Table */}
           <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
@@ -681,7 +682,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredProjectGroups.map((group) => {
+                      projectPager.items.map((group) => {
                         const isExpanded = expandedGroups.has(group.groupId);
                         const quot = group.primaryQuotation;
                         const dc = group.primaryChallan;
@@ -1416,15 +1417,6 @@ export const QuotationsInvoicesPage: React.FC = () => {
       {activeTab === 'QUOTATIONS' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-            <div className="relative flex-1 w-full sm:w-auto">
-              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-              <Input
-                placeholder="Search quotation no, customer, or equipment..."
-                value={quotationSearch}
-                onChange={(e) => setQuotationSearch(e.target.value)}
-                className="pl-9 text-[13px] bg-white"
-              />
-            </div>
             <select
               value={quotationStatusFilter}
               onChange={(e) => setQuotationStatusFilter(e.target.value as any)}
@@ -1438,6 +1430,12 @@ export const QuotationsInvoicesPage: React.FC = () => {
               ))}
             </select>
           </div>
+
+          <TablePager
+            pager={quotationPager}
+            noun="quotations"
+            search={{ value: quotationSearch, onChange: setQuotationSearch, placeholder: 'Search quotation no, customer, or equipment...' }}
+          />
 
           <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
             <CardContent className="p-0">
@@ -1463,7 +1461,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredQuotations.map((q) => {
+                      quotationPager.items.map((q) => {
                         const customer = customers.find((c) => c.id === q.customerNumber);
                         const statusMeta = quotationStatusMeta(q.status);
 
@@ -1584,70 +1582,69 @@ export const QuotationsInvoicesPage: React.FC = () => {
       {/* TAB 3: ALL DELIVERY CHALLANS (SECONDARY VIEW) */}
       {/* Step 3: credit notes issued against invoices */}
       {activeTab === 'CREDIT_NOTES' && (
-        <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="stack-on-phone w-full text-left text-[13px]">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
-                  <tr>
-                    <th className="p-3">Credit Note</th>
-                    <th className="p-3">Against Invoice</th>
-                    <th className="p-3">Customer</th>
-                    <th className="p-3">Date</th>
-                    <th className="p-3">Reason</th>
-                    <th className="p-3 text-right">Value</th>
-                    <th className="p-3 text-right">Refunded</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {creditNotesInRange.length === 0 ? (
+        <div className="space-y-4">
+          <TablePager pager={creditNotePager} noun="credit notes" />
+          <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="stack-on-phone w-full text-left text-[13px]">
+                  <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-500 italic">
-                        {creditNotes.length === 0
-                          ? "No credit notes yet. Issue one from an invoice's preview (Credit Note button)."
-                          : 'No credit notes in this period.'}
-                      </td>
+                      <th className="p-3">Credit Note</th>
+                      <th className="p-3">Against Invoice</th>
+                      <th className="p-3">Customer</th>
+                      <th className="p-3">Date</th>
+                      <th className="p-3">Reason</th>
+                      <th className="p-3 text-right">Value</th>
+                      <th className="p-3 text-right">Refunded</th>
                     </tr>
-                  ) : (
-                    creditNotesInRange.map((cn) => (
-                      <tr
-                        key={cn.id}
-                        className="hover:bg-slate-50 cursor-pointer transition-colors"
-                        onClick={() => setViewCreditNote(cn)}
-                      >
-                        <td className="p-3 font-mono font-bold whitespace-nowrap text-orange-700">{cn.creditNoteNo}</td>
-                        <td className="p-3 font-mono">{cn.invoiceNo}</td>
-                        <td className="p-3 font-semibold text-slate-900">{cn.billTo.name}</td>
-                        <td className="p-3 text-slate-500 font-mono text-xs whitespace-nowrap">{formatDate(cn.date)}</td>
-                        <td className="p-3 text-slate-600">
-                          {creditNoteReasonLabel(cn.reason)}
-                          {cn.reasonNote && <div className="text-[11px] text-slate-500">{cn.reasonNote}</div>}
-                        </td>
-                        <td className="p-3 text-right font-mono font-semibold">{formatINR(cn.grandTotal)}</td>
-                        <td className="p-3 text-right font-mono text-slate-600">
-                          {cn.refundedAmount ? formatINR(cn.refundedAmount) : '—'}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {creditNotesInRange.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-slate-500 italic">
+                          {creditNotes.length === 0
+                            ? "No credit notes yet. Issue one from an invoice's preview (Credit Note button)."
+                            : 'No credit notes in this period.'}
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                    ) : (
+                      creditNotePager.items.map((cn) => (
+                        <tr
+                          key={cn.id}
+                          className="hover:bg-slate-50 cursor-pointer transition-colors"
+                          onClick={() => setViewCreditNote(cn)}
+                        >
+                          <td className="p-3 font-mono font-bold whitespace-nowrap text-orange-700">{cn.creditNoteNo}</td>
+                          <td className="p-3 font-mono">{cn.invoiceNo}</td>
+                          <td className="p-3 font-semibold text-slate-900">{cn.billTo.name}</td>
+                          <td className="p-3 text-slate-500 font-mono text-xs whitespace-nowrap">{formatDate(cn.date)}</td>
+                          <td className="p-3 text-slate-600">
+                            {creditNoteReasonLabel(cn.reason)}
+                            {cn.reasonNote && <div className="text-[11px] text-slate-500">{cn.reasonNote}</div>}
+                          </td>
+                          <td className="p-3 text-right font-mono font-semibold">{formatINR(cn.grandTotal)}</td>
+                          <td className="p-3 text-right font-mono text-slate-600">
+                            {cn.refundedAmount ? formatINR(cn.refundedAmount) : '—'}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {activeTab === 'CHALLANS' && (
         <div className="space-y-4">
-          <div className="relative w-full sm:w-96">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-            <Input
-              placeholder="Search challan no, customer, or items..."
-              value={challanSearch}
-              onChange={(e) => setChallanSearch(e.target.value)}
-              className="pl-9 text-[13px] bg-white"
-            />
-          </div>
+          <TablePager
+            pager={challanPager}
+            noun="delivery challans"
+            search={{ value: challanSearch, onChange: setChallanSearch, placeholder: 'Search challan no, customer, or items...' }}
+          />
 
           <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
             <CardContent className="p-0">
@@ -1671,7 +1668,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredChallans.map((dc) => {
+                      challanPager.items.map((dc) => {
                         const customer = customers.find((c) => c.id === dc.customerNumber);
                         return (
                           <tr
@@ -1757,15 +1754,11 @@ export const QuotationsInvoicesPage: React.FC = () => {
       {/* TAB 4: ALL TAX INVOICES (SECONDARY VIEW) */}
       {activeTab === 'INVOICES' && (
         <div className="space-y-4">
-          <div className="relative w-full sm:w-96">
-            <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-            <Input
-              placeholder="Search invoice no or customer..."
-              value={invoiceSearch}
-              onChange={(e) => setInvoiceSearch(e.target.value)}
-              className="pl-9 text-[13px] bg-white"
-            />
-          </div>
+          <TablePager
+            pager={invoicePager}
+            noun="tax invoices"
+            search={{ value: invoiceSearch, onChange: setInvoiceSearch, placeholder: 'Search invoice no or customer...' }}
+          />
 
           <Card className="border-slate-200 bg-white shadow-2xs overflow-hidden">
             <CardContent className="p-0">
@@ -1791,7 +1784,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      filteredInvoices.map((inv) => {
+                      invoicePager.items.map((inv) => {
                         const customer = customers.find((c) => c.id === inv.customerNumber);
                         const badge = invoiceBadge(inv);
                         const cancelled = isCancelledInvoice(inv);

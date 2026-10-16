@@ -10,7 +10,6 @@ import {
   Plus,
   Edit,
   ExternalLink,
-  Search,
   Navigation,
   CheckCircle2,
   AlertCircle,
@@ -18,10 +17,11 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { CustomerModal } from '@/components/customers/CustomerModal';
 import { SiteLocationModal } from '@/components/customers/SiteLocationModal';
 import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 import { DateRange, inRange, presetRange } from '@/lib/date-range';
 
 export const CustomersPage: React.FC = () => {
@@ -51,6 +51,7 @@ export const CustomersPage: React.FC = () => {
         (c.gstin && c.gstin.toLowerCase().includes(q))
     );
   }, [customersInRange, search]);
+  const pager = usePagination(filteredCustomers, [search, range]);
 
   return (
     <div className="space-y-6">
@@ -80,24 +81,17 @@ export const CustomersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-3">
-        <div className="relative flex-1 w-full sm:max-w-md sm:min-w-[16rem]">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-          <Input
-            placeholder="Search customers by name, phone, address, or GST..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 text-[13px] bg-white"
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 w-full sm:w-auto">
-          <DateRangeFilter value={range} onChange={setRange} withTime />
-          <div className="text-[13px] text-slate-500 font-medium">
-            Showing {filteredCustomers.length} of {customersInRange.length} client accounts
-          </div>
-        </div>
+      {/* Date filter (search is in the bar below) */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <DateRangeFilter value={range} onChange={setRange} withTime />
+        <div className="text-[13px] text-slate-500 font-medium">{customersInRange.length} customers added in these dates</div>
       </div>
+
+      <TablePager
+        pager={pager}
+        noun="customers"
+        search={{ value: search, onChange: setSearch, placeholder: 'Search customers by name, phone, address, or GST...' }}
+      />
 
       {filteredCustomers.length === 0 && (
         <div className="p-8 text-center text-[13px] text-slate-500 bg-white border border-slate-200 rounded-md">
@@ -107,7 +101,7 @@ export const CustomersPage: React.FC = () => {
 
       {/* Customer Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredCustomers.map((cust) => {
+        {pager.items.map((cust) => {
           const customerJobs = visibleJobs.filter((j) => j.customerNumber === cust.id);
           const custInvoices = invoices.filter((i) => i.customerNumber === cust.id);
           const totalBilled = custInvoices.reduce((sum, i) => sum + invoiceNetTotal(i), 0);

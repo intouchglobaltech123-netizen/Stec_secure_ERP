@@ -16,7 +16,6 @@ import {
   ArrowDownLeft,
   CheckCircle2,
   ShieldCheck,
-  Search,
   Filter,
   Plus,
   Calendar,
@@ -41,6 +40,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
 import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import { formatINR, formatDate, formatDateTime, humanize } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -231,6 +232,8 @@ export const PaymentsPage: React.FC = () => {
       }
       return cockpitSortOrder === 'desc' ? -comparison : comparison;
     });
+  const outstandingPager = usePagination(sortedAndFilteredOutstanding, [cockpitSearch, cockpitStatusFilter, cockpitSortField, cockpitSortOrder, range]);
+  const paymentsPager = usePagination(filteredPayments, [searchQuery, modeFilter, typeFilter, range]);
 
   // Open Manual Payment Modal helper
   const handleOpenRecordPayment = (prefillCustId?: string, prefillInvId?: string) => {
@@ -477,18 +480,8 @@ export const PaymentsPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Search & Filter Bar */}
+              {/* Filter (search is in the bar above the table) */}
               <div className="flex flex-wrap items-center gap-2">
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <Input
-                    placeholder="Search by name, ID, or phone..."
-                    value={cockpitSearch}
-                    onChange={(e) => setCockpitSearch(e.target.value)}
-                    className="pl-8 text-[13px] h-8 bg-slate-50"
-                  />
-                </div>
-
                 <select
                   value={cockpitStatusFilter}
                   onChange={(e) => setCockpitStatusFilter(e.target.value as any)}
@@ -503,6 +496,13 @@ export const PaymentsPage: React.FC = () => {
           </CardHeader>
 
           <CardContent className="p-0">
+            <div className="p-3 border-b border-slate-100">
+              <TablePager
+                pager={outstandingPager}
+                noun="customers"
+                search={{ value: cockpitSearch, onChange: setCockpitSearch, placeholder: 'Search by name, ID, or phone...' }}
+              />
+            </div>
             <div className="overflow-x-auto">
               <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
@@ -590,7 +590,7 @@ export const PaymentsPage: React.FC = () => {
                       </td>
                     </tr>
                   ) : (
-                    sortedAndFilteredOutstanding.map((entry, idx) => {
+                    outstandingPager.items.map((entry, idx) => {
                       const cust = entry.customer;
                       const hasBalance = entry.totalBalance > 0;
                       const isPartial = hasBalance && entry.totalCollected > 0;
@@ -698,18 +698,8 @@ export const PaymentsPage: React.FC = () => {
                 All Payment Receipts & Collections
               </CardTitle>
 
-              {/* Filters */}
+              {/* Filters (search is in the bar above the table) */}
               <div className="flex flex-wrap items-center gap-2">
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <Input
-                    placeholder="Search receipt, invoice, or client..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 text-[13px] h-8 bg-slate-50"
-                  />
-                </div>
-
                 <select
                   value={modeFilter}
                   onChange={(e) => setModeFilter(e.target.value)}
@@ -718,8 +708,8 @@ export const PaymentsPage: React.FC = () => {
                   <option value="ALL">All Modes</option>
                   <option value="UPI">UPI</option>
                   <option value="NEFT">NEFT</option>
-                  <option value="CASH">CASH</option>
-                  <option value="CHEQUE">CHEQUE</option>
+                  <option value="CASH">Cash</option>
+                  <option value="CHEQUE">Cheque</option>
                 </select>
 
                 <select
@@ -728,16 +718,23 @@ export const PaymentsPage: React.FC = () => {
                   className="text-[13px] h-8 px-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 focus:outline-none cursor-pointer"
                 >
                   <option value="ALL">All Types</option>
-                  <option value="FULL">FULL</option>
-                  <option value="BALANCE">BALANCE</option>
-                  <option value="ADVANCE">ADVANCE</option>
-                  <option value="REFUND">REFUND</option>
+                  <option value="FULL">Full</option>
+                  <option value="BALANCE">Balance</option>
+                  <option value="ADVANCE">Advance</option>
+                  <option value="REFUND">Refund</option>
                 </select>
               </div>
             </div>
           </CardHeader>
 
           <CardContent className="p-0">
+            <div className="p-3 border-b border-slate-100">
+              <TablePager
+                pager={paymentsPager}
+                noun="payments"
+                search={{ value: searchQuery, onChange: setSearchQuery, placeholder: 'Search receipt, invoice, or client...' }}
+              />
+            </div>
             <div className="overflow-x-auto">
               <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
@@ -760,7 +757,7 @@ export const PaymentsPage: React.FC = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredPayments.map((p, idx) => {
+                    paymentsPager.items.map((p, idx) => {
                       const cust = customers.find((c) => c.id === p.customerNumber);
                       const inv = invoices.find((i) => i.id === p.invoiceId);
                       const job = jobs.find((j) => j.id === (inv?.linkedJobId ?? p.jobId));

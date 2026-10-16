@@ -30,6 +30,8 @@ import { Button } from '@/components/ui/button';
 import { formatINR, formatDate, humanize } from '@/lib/utils';
 import { DateRange, inRange, presetRange, rangeFileTag, rangeLabel } from '@/lib/date-range';
 import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 import { StatTile } from '@/components/ui/stat-tile';
 import type { SheetSpec } from '@/lib/excel-book';
 import { ExportFormat, ReportExport, exportReport } from '@/lib/report-export';
@@ -84,12 +86,7 @@ async function runExport(format: ExportFormat, report: ReportExport) {
 }
 
 // A few columns of a sheet as an on-screen table (the download has them all)
-const PreviewTable: React.FC<{ sheet: SheetSpec; keys: string[]; limit?: number; empty: string }> = ({
-  sheet,
-  keys,
-  limit = 100,
-  empty,
-}) => {
+const PreviewTable: React.FC<{ sheet: SheetSpec; keys: string[]; empty: string }> = ({ sheet, keys, empty }) => {
   const cols = keys.map((k) => sheet.columns.find((c) => c.key === k)!).filter(Boolean);
   const show = (v: unknown, type?: string) => {
     if (v === undefined || v === null || v === '') return <span className="text-slate-400">—</span>;
@@ -98,18 +95,19 @@ const PreviewTable: React.FC<{ sheet: SheetSpec; keys: string[]; limit?: number;
     if (type === 'datetime') return formatDate(String(v));
     return String(v);
   };
-  const rows = sheet.rows.slice(-limit).reverse();
+  const rows = useMemo(() => [...sheet.rows].reverse(), [sheet.rows]);
+  const pager = usePagination(rows, [sheet.title, sheet.rows.length]);
   return (
     <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
       <CardHeader className="pb-3 border-b border-slate-100">
         <CardTitle className="text-sm font-bold text-slate-900">
           {sheet.title || sheet.name} ({sheet.rows.length})
-          {sheet.rows.length > limit && (
-            <span className="font-normal text-slate-500"> — latest {limit} shown; the download has all</span>
-          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
+        <div className="p-3 border-b border-slate-100">
+          <TablePager pager={pager} noun="rows" />
+        </div>
         <table className="stack-on-phone w-full text-left text-[13px]">
           <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
             <tr>
@@ -128,8 +126,8 @@ const PreviewTable: React.FC<{ sheet: SheetSpec; keys: string[]; limit?: number;
                 </td>
               </tr>
             ) : (
-              rows.map((r, i) => (
-                <tr key={i} className="hover:bg-slate-50/80">
+              pager.items.map((r, i) => (
+                <tr key={pager.first + i} className="hover:bg-slate-50/80">
                   {cols.map((c, k) => (
                     <td
                       key={c.key}
@@ -872,6 +870,11 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
     </div>
   );
 
+  const amcPager = usePagination(amcCustomers, [amcDaysFilter]);
+  const duesPager = usePagination(outstandingReport, [range]);
+  const techPager = usePagination(technicianStats, [range]);
+  const ongoingPager = usePagination(ongoingProjects);
+
   return (
     <div className="w-full space-y-6">
       {/* Header */}
@@ -1103,6 +1106,9 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
+              <div className="p-3 border-b border-slate-100">
+                <TablePager pager={amcPager} noun="AMC customers" />
+              </div>
               <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
@@ -1123,7 +1129,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                       </td>
                     </tr>
                   ) : (
-                    amcCustomers.map((item) => (
+                    amcPager.items.map((item) => (
                       <tr key={item.customer.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="p-3">
                           <div className="font-bold text-slate-900">{item.customer.name}</div>
@@ -1217,6 +1223,9 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
+              <div className="p-3 border-b border-slate-100">
+                <TablePager pager={duesPager} noun="customers" />
+              </div>
               <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
@@ -1231,7 +1240,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {outstandingReport.map((row) => (
+                  {duesPager.items.map((row) => (
                     <tr key={row.customer.id} className="hover:bg-slate-50/80">
                       <td className="p-3">
                         <div className="font-bold text-slate-900">{row.customer.name}</div>
@@ -1332,6 +1341,9 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
+              <div className="p-3 border-b border-slate-100">
+                <TablePager pager={techPager} noun="technicians" />
+              </div>
               <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
@@ -1346,7 +1358,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {technicianStats.map((row) => (
+                  {techPager.items.map((row) => (
                     <tr key={row.tech.id} className="hover:bg-slate-50/80">
                       <td className="p-3 font-semibold text-slate-900">{row.tech.name}</td>
                       <td className="p-3 font-mono text-slate-600">{row.tech.phone}</td>
@@ -1391,6 +1403,9 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
+              <div className="p-3 border-b border-slate-100">
+                <TablePager pager={ongoingPager} noun="open jobs" />
+              </div>
               <table className="stack-on-phone w-full text-left text-[13px]">
                 <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
                   <tr>
@@ -1412,7 +1427,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                       </td>
                     </tr>
                   ) : (
-                    ongoingProjects.map((item) => (
+                    ongoingPager.items.map((item) => (
                       <tr
                         key={item.job.id}
                         onClick={() => {

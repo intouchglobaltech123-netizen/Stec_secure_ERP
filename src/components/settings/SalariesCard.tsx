@@ -7,6 +7,8 @@ import { humanize, formatINR } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 
 type Draft = {
   monthlySalary: string;
@@ -22,6 +24,12 @@ export const SalariesCard: React.FC = () => {
   const { users, payProfiles, setPayProfile } = useStecSecure();
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const q = search.trim().toLowerCase();
+  const shownUsers = q
+    ? users.filter((u) => u.name.toLowerCase().includes(q) || (u.staffCode || '').toLowerCase().includes(q))
+    : users;
+  const pager = usePagination(shownUsers, [search]);
 
   const saved = (userId: string): Draft => {
     const p = payProfiles.find((x) => x.id === userId);
@@ -92,6 +100,12 @@ export const SalariesCard: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <TablePager
+          pager={pager}
+          noun="staff"
+          search={{ value: search, onChange: setSearch, placeholder: 'Search name or staff no.' }}
+          className="mb-3"
+        />
         <table className="stack-on-phone w-full text-[13px]">
           <thead>
             <tr className="text-left text-xs uppercase text-slate-500 border-b border-slate-200">
@@ -106,7 +120,7 @@ export const SalariesCard: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => {
+            {pager.items.map((u) => {
               const d = drafts[u.id] ?? saved(u.id);
               const s = saved(u.id);
               const changed =

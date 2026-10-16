@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { TablePager } from '@/components/ui/table-pager';
+import { usePagination } from '@/lib/use-pagination';
 
 const ROLES: UserRole[] = ['TECHNICIAN', 'MANAGER', 'CEO'];
 const onlyDigits = (v: string, max: number) => v.replace(/\D/g, '').slice(0, max);
@@ -48,6 +50,19 @@ export const StaffAccountsCard: React.FC = () => {
   useEffect(() => {
     void reload();
   }, []);
+
+  // Search by name, mobile or staff number, a page at a time
+  const [search, setSearch] = useState('');
+  const q = search.trim().toLowerCase();
+  const shownStaff = q
+    ? staff.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) ||
+          s.phone.includes(q.replace(/\D/g, '') || q) ||
+          (s.staffCode || '').toLowerCase().includes(q)
+      )
+    : staff;
+  const pager = usePagination(shownStaff, [search]);
 
   const open = (next: Dialog) => {
     const s = next && next.kind !== 'add' ? next.staff : null;
@@ -126,6 +141,12 @@ export const StaffAccountsCard: React.FC = () => {
           <p className="text-[13px] text-slate-500">Loading staff…</p>
         ) : (
           <div className="overflow-x-auto">
+            <TablePager
+              pager={pager}
+              noun="staff"
+              search={{ value: search, onChange: setSearch, placeholder: 'Search name, mobile or staff no.' }}
+              className="mb-3"
+            />
             <table className="stack-on-phone w-full text-[13px]">
               <thead>
                 <tr className="text-left text-slate-500 border-b border-slate-200">
@@ -137,7 +158,7 @@ export const StaffAccountsCard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {staff.map((s) => (
+                {pager.items.map((s) => (
                   <tr key={s.id} className="border-b border-slate-100 last:border-0">
                     <td className="py-2 pr-3 font-medium text-slate-900">
                       {s.name}
