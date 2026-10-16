@@ -66,6 +66,20 @@ has data unless `--replace` is given.
 4. **Redeploy the app service.** Log in as the CEO and set the listed staff members' PINs in Settings → Staff
    Accounts → **Reset PIN**.
 
+## Demo data (for showing the ERP)
+
+`server-dist/demo-data.js` fills an empty database with about 10 of every kind of record (staff, salaries and
+leave, suppliers, stock, customers, enquiries, quotations, jobs at every stage, invoices, payments, repairs),
+dated July–October 2026. It refuses a database that already has customers, products, jobs or invoices. Demo staff
+have no PIN until the CEO sets one in Settings → Staff Accounts.
+
+```bash
+railway ssh --service Stec_secure_ERP -- node server-dist/demo-data.js
+railway restart --service Stec_secure_ERP
+```
+
+The restart makes the running server read the new records.
+
 ## Something wrong?
 
 - App service → **Deployments → View logs**: the server logs `[store] loaded … records` and `listening on port …`
