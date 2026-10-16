@@ -51,6 +51,8 @@ import { JobCreateModal } from '@/components/jobs/JobCreateModal';
 import { JobDetailModal } from '@/components/jobs/JobDetailModal';
 import { QuotationBuilderModal } from '@/components/quotations/QuotationBuilderModal';
 import { QuotationPreviewModal } from '@/components/quotations/QuotationPreviewModal';
+import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -89,6 +91,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [typeFilter, setTypeFilter] = useState<'ALL' | EnquiryType>('ALL');
+  const [range, setRange] = useState<DateRange>(() => presetRange('FY'));
 
   // Modal Controls
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -166,14 +169,17 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
     }
   };
 
+  // Date filter (received in the chosen period) — tabs, counts and search all work inside it
+  const enquiriesInRange = enquiries.filter((e) => inRange(e.createdAt, range));
+
   // Counts for tabs
-  const todaysCount = enquiries.filter((e) => isToday(e.createdAt)).length;
-  const followUpCount = enquiries.filter((e) => e.status === 'FOLLOW_UP').length;
-  const approvedCount = enquiries.filter((e) => e.status === 'APPROVED').length;
-  const cancelledCount = enquiries.filter((e) => e.status === 'CANCELLED').length;
+  const todaysCount = enquiriesInRange.filter((e) => isToday(e.createdAt)).length;
+  const followUpCount = enquiriesInRange.filter((e) => e.status === 'FOLLOW_UP').length;
+  const approvedCount = enquiriesInRange.filter((e) => e.status === 'APPROVED').length;
+  const cancelledCount = enquiriesInRange.filter((e) => e.status === 'CANCELLED').length;
 
   // Filtered List
-  const filteredEnquiries = enquiries.filter((enq) => {
+  const filteredEnquiries = enquiriesInRange.filter((enq) => {
     let matchesTab = true;
     if (activeTab === 'TODAYS') {
       matchesTab = isToday(enq.createdAt);
@@ -361,7 +367,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
               Enquiries ({filteredEnquiries.length})
             </h1>
             <span className="text-[13px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold border border-slate-200">
-              Total {enquiries.length}
+              Total {enquiriesInRange.length}
             </span>
           </div>
           <p className="text-[13px] text-slate-500 mt-0.5">
@@ -384,7 +390,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
       {/* Filter Tabs matching Robotics ERP reference */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200">
         {[
-          { id: 'ALL', label: 'All', count: enquiries.length },
+          { id: 'ALL', label: 'All', count: enquiriesInRange.length },
           { id: 'TODAYS', label: "Today's", count: todaysCount },
           { id: 'FOLLOW_UP', label: 'Follow-up', count: followUpCount },
           { id: 'APPROVED', label: 'Approved', count: approvedCount },
@@ -416,7 +422,7 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
       </div>
 
       {/* Search and Category Filters Row */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-2.5 rounded-md border border-slate-200 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-3 bg-white p-2.5 rounded-md border border-slate-200 shadow-2xs">
         <div className="relative w-full sm:w-80">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <Input
@@ -428,6 +434,8 @@ export const EnquiriesPage: React.FC<EnquiriesPageProps> = ({ onNavigateToJob })
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <DateRangeFilter value={range} onChange={setRange} withTime />
+
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}

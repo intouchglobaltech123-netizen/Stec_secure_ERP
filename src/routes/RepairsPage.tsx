@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { CreateRepairTicketModal } from '@/components/repairs/CreateRepairTicketModal';
 import { RepairTicketDetailModal } from '@/components/repairs/RepairTicketDetailModal';
+import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { DateRange, inRange, presetRange } from '@/lib/date-range';
 
 interface RepairsPageProps {
   onNavigateToJob?: (jobId: string) => void;
@@ -47,41 +49,48 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
   const [statusFilter, setStatusFilter] = useState<'ALL' | RepairStatus>('ALL');
   const [pathFilter, setPathFilter] = useState<'ALL' | RepairPath>('ALL');
   const [showOverdueOnly, setShowOverdueOnly] = useState(false);
+  const [range, setRange] = useState<DateRange>(() => presetRange('FY'));
+
+  // Date filter (raised in the chosen period) — tiles, counts and the list all work inside it
+  const ticketsInRange = useMemo(
+    () => visibleRepairTickets.filter((t) => inRange(t.createdAt, range)),
+    [visibleRepairTickets, range]
+  );
 
   // Computed metrics
   // India date, recomputed each render so it rolls over at midnight
   const todayStr = localDateISO();
 
   const overdueTickets = useMemo(() => {
-    return visibleRepairTickets.filter(
+    return ticketsInRange.filter(
       (t) =>
         t.status === 'SENT_TO_VENDOR' &&
         t.vendorExpectedReturnDate &&
         todayStr > t.vendorExpectedReturnDate
     );
-  }, [visibleRepairTickets, todayStr]);
+  }, [ticketsInRange, todayStr]);
 
   const inHouseCount = useMemo(
-    () => visibleRepairTickets.filter((t) => t.status === 'IN_HOUSE_REPAIR').length,
-    [visibleRepairTickets]
+    () => ticketsInRange.filter((t) => t.status === 'IN_HOUSE_REPAIR').length,
+    [ticketsInRange]
   );
 
   const vendorCount = useMemo(
-    () => visibleRepairTickets.filter((t) => t.status === 'SENT_TO_VENDOR').length,
-    [visibleRepairTickets]
+    () => ticketsInRange.filter((t) => t.status === 'SENT_TO_VENDOR').length,
+    [ticketsInRange]
   );
 
   const readyOrReinstalledCount = useMemo(
     () =>
-      visibleRepairTickets.filter(
+      ticketsInRange.filter(
         (t) => t.status === 'READY_TO_REINSTALL' || t.status === 'REINSTALLED'
       ).length,
-    [visibleRepairTickets]
+    [ticketsInRange]
   );
 
   // Filtered ticket list
   const filteredTickets = useMemo(() => {
-    return visibleRepairTickets.filter((ticket) => {
+    return ticketsInRange.filter((ticket) => {
       // Overdue filter toggle
       const isTicketOverdue =
         ticket.status === 'SENT_TO_VENDOR' &&
@@ -122,7 +131,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
       return true;
     });
   }, [
-    visibleRepairTickets,
+    ticketsInRange,
     statusFilter,
     pathFilter,
     showOverdueOnly,
@@ -192,7 +201,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
             {currentUser?.role === 'TECHNICIAN' && (
               <div className="flex items-center gap-1.5 bg-orange-50 border border-orange-200 px-3 py-2 rounded-xl text-[13px] font-semibold text-orange-950">
                 <HardHat className="w-4 h-4 text-orange-600" />
-                <span>Assigned Tasks ({visibleRepairTickets.length})</span>
+                <span>Assigned Tasks ({ticketsInRange.length})</span>
               </div>
             )}
             <Button
@@ -208,7 +217,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
 
       {/* Top Metric Cards (two per row on phones) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatTile label="Repair tickets" icon={RotateCcw} value={visibleRepairTickets.length} note="All stages" />
+        <StatTile label="Repair tickets" icon={RotateCcw} value={ticketsInRange.length} note="All stages" />
         <StatTile label="In-house repair" icon={Wrench} tone="orange" value={inHouseCount} note="Being repaired here" />
         <StatTile label="Sent to vendor" icon={Send} tone="blue" value={vendorCount} note="With the supplier" />
         <StatTile
@@ -235,9 +244,9 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
 
       {/* Filter and Search Bar */}
       <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-col md:flex-row md:flex-wrap md:items-center justify-between gap-3">
           {/* Search box */}
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-1 max-w-md md:min-w-[16rem]">
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
             <Input
               placeholder="Search by RMA #, customer, serial number, model..."
@@ -249,6 +258,8 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
 
           {/* Filter Dropdowns */}
           <div className="flex flex-wrap items-center gap-2.5">
+            <DateRangeFilter value={range} onChange={setRange} withTime />
+
             {/* Status Filter */}
             <div className="flex items-center gap-1.5 text-[13px] text-slate-600">
               <Filter className="w-3.5 h-3.5 text-slate-400" />
@@ -260,7 +271,7 @@ export const RepairsPage: React.FC<RepairsPageProps> = ({ onNavigateToJob }) => 
                 }}
                 className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 focus:outline-none focus:border-orange-500"
               >
-                <option value="ALL">All Statuses ({visibleRepairTickets.length})</option>
+                <option value="ALL">All Statuses ({ticketsInRange.length})</option>
                 <option value="FAULT_REPORTED">FAULT_REPORTED</option>
                 <option value="PICKED_UP">PICKED_UP</option>
                 <option value="CHECKED_IN_AT_OFFICE">CHECKED_IN_AT_OFFICE</option>

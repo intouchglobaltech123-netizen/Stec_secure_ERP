@@ -8,6 +8,7 @@ import { errorMessage } from '@/lib/api';
 import { APP_SECTIONS, AppSection, ConfigurableRole } from '@/lib/stecsecure-types';
 import { StaffAccountsCard } from '@/components/settings/StaffAccountsCard';
 import { BackupCard } from '@/components/settings/BackupCard';
+import { SalariesCard } from '@/components/settings/SalariesCard';
 
 const CONFIGURABLE_ROLES: { role: ConfigurableRole; label: string }[] = [
   { role: 'MANAGER', label: 'Manager' },
@@ -49,6 +50,8 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {isCeo && <StaffAccountsCard />}
+
+      {isCeo && <SalariesCard />}
 
       {isCeo && <BackupCard />}
 

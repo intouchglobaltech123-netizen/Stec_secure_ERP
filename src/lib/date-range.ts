@@ -62,17 +62,18 @@ export function rangeBounds(range: DateRange): { start: number; end: number } {
   return { start: Number.isNaN(start) ? -Infinity : start, end: Number.isNaN(end) ? Infinity : end };
 }
 
-// Instant of a stored value: a full timestamp, or an India calendar date (taken as midday)
-function instantOf(value: string): number {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? Date.parse(`${value}T12:00:00+05:30`) : Date.parse(value);
-}
-
 export function inRange(value: string | undefined | null, range: DateRange): boolean {
   if (range.preset === 'ALL') return true;
   if (!value) return false;
-  const t = instantOf(value);
-  if (Number.isNaN(t)) return false;
   const { start, end } = rangeBounds(range);
+  // A date without a time (invoice, payment, quotation dates) counts when any part of that day is in range
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const dayStart = Date.parse(`${value}T00:00:00+05:30`);
+    const dayEnd = dayStart + DAY_MS - 1;
+    return dayEnd >= start && dayStart <= end;
+  }
+  const t = Date.parse(value);
+  if (Number.isNaN(t)) return false;
   return t >= start && t <= end;
 }
 

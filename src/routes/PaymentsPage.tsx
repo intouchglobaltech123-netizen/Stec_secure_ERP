@@ -40,6 +40,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
+import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import { formatINR, formatDate, formatDateTime, humanize } from '@/lib/utils';
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/api';
@@ -98,16 +100,29 @@ export const PaymentsPage: React.FC = () => {
   const [manualDate, setManualDate] = useState<string>(localDateISO());
   const [savingPayment, setSavingPayment] = useState(false);
 
+  // Date filter for the tiles and both tabs (opens on this financial year)
+  const [range, setRange] = useState<DateRange>(() => presetRange('FY'));
+
+  // Date filter (dated in the chosen period): payments by payment date, invoices by invoice date
+  const paymentsInRange = payments.filter((p) => inRange(p.date, range));
+  const invoicesInRange = invoices.filter((inv) => inRange(inv.date, range));
+  // Balances by customer: money received against those invoices (refunds included), plus advances
+  // not yet on an invoice that were received in the period
+  const invoiceIdsInRange = new Set(invoicesInRange.map((inv) => inv.id));
+  const balancePayments = payments.filter((p) =>
+    p.invoiceId ? invoiceIdsInRange.has(p.invoiceId) : inRange(p.date, range)
+  );
+
   // TASK 1: Overview KPIs
   // Step 3: billed = invoices net of credit notes; cancelled invoices bill nothing. Refunds are
   // negative payments, so collections are net of them.
-  const totalInvoiced = invoices.reduce((sum, inv) => sum + invoiceNetTotal(inv), 0);
-  const totalCollected = payments.reduce((sum, p) => sum + p.amount, 0);
-  const totalOutstanding = invoices.reduce((sum, inv) => sum + inv.balanceDue, 0);
+  const totalInvoiced = invoicesInRange.reduce((sum, inv) => sum + invoiceNetTotal(inv), 0);
+  const totalCollected = paymentsInRange.reduce((sum, p) => sum + p.amount, 0);
+  const totalOutstanding = invoicesInRange.reduce((sum, inv) => sum + inv.balanceDue, 0);
 
   // Overdue calculation (pending beyond 15 days threshold)
   const nowMs = new Date().getTime();
-  const overdueInvoices = invoices.filter((inv) => {
+  const overdueInvoices = invoicesInRange.filter((inv) => {
     if (inv.balanceDue <= 0) return false;
     const invDateMs = new Date(inv.date).getTime();
     const diffDays = (nowMs - invDateMs) / (1000 * 60 * 60 * 24);
@@ -117,7 +132,7 @@ export const PaymentsPage: React.FC = () => {
 
   // Distinct customers with outstanding balance
   const customersWithBalanceMap = new Map<string, { totalDue: number; invoicesCount: number }>();
-  invoices.forEach((inv) => {
+  invoicesInRange.forEach((inv) => {
     if (inv.balanceDue > 0) {
       const existing = customersWithBalanceMap.get(inv.customerNumber) || {
         totalDue: 0,
@@ -132,7 +147,7 @@ export const PaymentsPage: React.FC = () => {
   const customersWithOutstandingCount = customersWithBalanceMap.size;
 
   // Filtered Payments Ledger
-  const filteredPayments = payments.filter((p) => {
+  const filteredPayments = paymentsInRange.filter((p) => {
     const cust = customers.find((c) => c.id === p.customerNumber);
     const matchesSearch =
       !searchQuery.trim() ||
@@ -151,8 +166,8 @@ export const PaymentsPage: React.FC = () => {
   // Grouped by Customer for Outstanding View
   const customerOutstandingList = customers
     .map((cust) => {
-      const custInvoices = invoices.filter((i) => i.customerNumber === cust.id);
-      const custPayments = payments.filter((p) => p.customerNumber === cust.id);
+      const custInvoices = invoicesInRange.filter((i) => i.customerNumber === cust.id);
+      const custPayments = balancePayments.filter((p) => p.customerNumber === cust.id);
       const custInvoiced = custInvoices.reduce((sum, i) => sum + invoiceNetTotal(i), 0);
       const custCollected = custPayments.reduce((sum, p) => sum + p.amount, 0);
       const custBalance = custInvoices.reduce((sum, i) => sum + i.balanceDue, 0);
@@ -308,7 +323,7 @@ export const PaymentsPage: React.FC = () => {
   return (
     <div className="w-full space-y-6">
       {/* Header & Main Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
             Payments
@@ -318,17 +333,22 @@ export const PaymentsPage: React.FC = () => {
           </p>
         </div>
 
-        {isManagement && (
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => handleOpenRecordPayment()}
-            className="text-[13px] font-semibold shrink-0"
-          >
-            <Plus className="w-4 h-4 mr-1.5" />
-            Record Payment Receipt
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Period for the tiles and both tabs below */}
+          <DateRangeFilter value={range} onChange={setRange} withTime />
+
+          {isManagement && (
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => handleOpenRecordPayment()}
+              className="text-[13px] font-semibold shrink-0"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              Record Payment Receipt
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* TASK 1: Overview Dashboard KPI Tiles */}
@@ -342,7 +362,7 @@ export const PaymentsPage: React.FC = () => {
             <div className="text-2xl font-bold text-slate-900 font-mono">
               {formatINR(totalInvoiced)}
             </div>
-            <p className="text-[11px] text-slate-500">{invoices.length} total tax invoices</p>
+            <p className="text-[11px] text-slate-500">{invoicesInRange.length} total tax invoices</p>
           </CardContent>
         </Card>
 
@@ -355,7 +375,7 @@ export const PaymentsPage: React.FC = () => {
             <div className="text-2xl font-bold text-orange-900 font-mono">
               {formatINR(totalCollected)}
             </div>
-            <p className="text-[11px] text-orange-700">{payments.length} verified receipts</p>
+            <p className="text-[11px] text-orange-700">{paymentsInRange.length} verified receipts</p>
           </CardContent>
         </Card>
 
@@ -437,7 +457,7 @@ export const PaymentsPage: React.FC = () => {
               activeTab === 'LEDGER' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
             }`}
           >
-            {payments.length}
+            {paymentsInRange.length}
           </span>
         </button>
       </div>

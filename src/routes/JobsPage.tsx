@@ -52,6 +52,8 @@ import { DeliveryChallanModal } from '@/components/jobs/DeliveryChallanModal';
 import { JobPhotoUpload } from '@/components/jobs/JobPhotoUpload';
 import { AddProductUsedModal } from '@/components/jobs/AddProductUsedModal';
 import { SiteLocationModal } from '@/components/customers/SiteLocationModal';
+import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import { SAMPLE_BEFORE_PHOTO, SAMPLE_AFTER_PHOTO } from '@/lib/seed-data';
 import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
@@ -164,8 +166,11 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
     payments,
   } = useStecSecure();
 
+  const [range, setRange] = useState<DateRange>(() => presetRange('FY'));
+
   // Filter jobs strictly by the active department
-  const deptJobs = visibleJobs.filter((j) => j.type === department);
+  // Date filter (created in the chosen period) — tab counts, search and the list all work inside it
+  const deptJobs = visibleJobs.filter((j) => j.type === department && inRange(j.createdAt, range));
 
   // Status Filter Tab & Search
   const [activeFilter, setActiveFilter] = useState<'ALL' | JobStatus>('ALL');
@@ -946,7 +951,7 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
       </div>
 
       {/* Search and Category Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-2.5 rounded-md border border-slate-200 shadow-2xs">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-3 bg-white p-2.5 rounded-md border border-slate-200 shadow-2xs">
         <div className="relative w-full sm:w-80">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <Input
@@ -957,7 +962,8 @@ export const JobsPage: React.FC<JobsPageProps> = ({ department = 'SERVICE' }) =>
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <DateRangeFilter value={range} onChange={setRange} withTime />
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}

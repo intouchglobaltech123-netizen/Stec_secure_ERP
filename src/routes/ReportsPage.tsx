@@ -17,6 +17,12 @@ import {
   FileSpreadsheet,
   PieChart as PieIcon,
   RefreshCw,
+  Wallet,
+  Inbox,
+  RotateCcw,
+  Boxes,
+  FileText,
+  FileDown,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,8 +31,10 @@ import { formatINR, formatDate, humanize } from '@/lib/utils';
 import { DateRange, inRange, presetRange, rangeFileTag, rangeLabel } from '@/lib/date-range';
 import { DateRangeFilter } from '@/components/ui/date-range-filter';
 import { StatTile } from '@/components/ui/stat-tile';
-import { downloadExcel } from '@/lib/excel-download';
 import type { SheetSpec } from '@/lib/excel-book';
+import { ExportFormat, ReportExport, exportReport } from '@/lib/report-export';
+import { customersSheet, enquiriesSheet, jobsSheet, repairsSheet, stockSheet, stockSummarySheet } from '@/lib/backup-sheets';
+import { computePayroll } from '@/lib/payroll';
 import { stateName } from '@/lib/gst';
 import { errorMessage } from '@/lib/api';
 import { invoiceCategory, invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
@@ -46,21 +54,100 @@ import {
 import { JobDetailModal } from '@/components/jobs/JobDetailModal';
 import { toast } from 'sonner';
 
-type ReportTab = 'REVENUE' | 'AMC_RENEWAL' | 'OUTSTANDING' | 'TECHNICIAN' | 'ONGOING';
+type ReportTab =
+  | 'REVENUE'
+  | 'OUTSTANDING'
+  | 'PAYROLL'
+  | 'ENQUIRIES'
+  | 'SERVICE_JOBS'
+  | 'INSTALL_JOBS'
+  | 'ONGOING'
+  | 'REPAIRS'
+  | 'TECHNICIAN'
+  | 'INVENTORY'
+  | 'CUSTOMERS'
+  | 'AMC_RENEWAL';
 
 interface ReportsPageProps {
   onNavigateToJob?: (jobId: string, type: 'SERVICE' | 'INSTALLATION') => void;
 }
 
-// Report downloads are Excel files; the library loads only when someone downloads
-async function exportExcel(fileBase: string, sheets: SheetSpec[]) {
+// Report downloads: Excel, CSV or PDF of the same sheets; the libraries load only when someone downloads
+async function runExport(format: ExportFormat, report: ReportExport) {
   try {
-    const name = await downloadExcel(fileBase, sheets);
+    const name = await exportReport(format, report);
     toast.success(`Downloaded ${name}`);
   } catch (err) {
     toast.error(errorMessage(err));
   }
 }
+
+// A few columns of a sheet as an on-screen table (the download has them all)
+const PreviewTable: React.FC<{ sheet: SheetSpec; keys: string[]; limit?: number; empty: string }> = ({
+  sheet,
+  keys,
+  limit = 100,
+  empty,
+}) => {
+  const cols = keys.map((k) => sheet.columns.find((c) => c.key === k)!).filter(Boolean);
+  const show = (v: unknown, type?: string) => {
+    if (v === undefined || v === null || v === '') return <span className="text-slate-400">—</span>;
+    if (type === 'money') return formatINR(Number(v));
+    if (type === 'date') return formatDate(String(v));
+    if (type === 'datetime') return formatDate(String(v));
+    return String(v);
+  };
+  const rows = sheet.rows.slice(-limit).reverse();
+  return (
+    <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
+      <CardHeader className="pb-3 border-b border-slate-100">
+        <CardTitle className="text-sm font-bold text-slate-900">
+          {sheet.title || sheet.name} ({sheet.rows.length})
+          {sheet.rows.length > limit && (
+            <span className="font-normal text-slate-500"> — latest {limit} shown; the download has all</span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <table className="stack-on-phone w-full text-left text-[13px]">
+          <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+            <tr>
+              {cols.map((c) => (
+                <th key={c.key} className={`p-3 ${c.type === 'money' || c.type === 'number' ? 'text-right' : ''}`}>
+                  {c.header.replace(' (₹)', '')}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={cols.length} className="p-8 text-center text-slate-400">
+                  {empty}
+                </td>
+              </tr>
+            ) : (
+              rows.map((r, i) => (
+                <tr key={i} className="hover:bg-slate-50/80">
+                  {cols.map((c, k) => (
+                    <td
+                      key={c.key}
+                      className={`p-3 ${k === 0 ? 'font-semibold text-slate-900 whitespace-nowrap' : 'text-slate-700'} ${
+                        c.type === 'money' || c.type === 'number' ? 'text-right font-mono whitespace-nowrap' : ''
+                      } ${c.type === 'date' || c.type === 'datetime' ? 'whitespace-nowrap' : ''}`}
+                    >
+                      {show(r[c.key], c.type)}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </CardContent>
+    </Card>
+  );
+};
 
 const DEPT_LABEL = { ALL: 'All', SERVICE: 'Service', INSTALLATION: 'Installation' } as const;
 
@@ -73,7 +160,25 @@ const SHORT_CATEGORY: Record<string, string> = {
 };
 
 export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => {
-  const { jobs: allJobs, visibleJobs, currentUser, customers, invoices, payments, users, holdEvents } = useStecSecure();
+  const {
+    jobs: allJobs,
+    visibleJobs,
+    currentUser,
+    customers,
+    invoices,
+    payments,
+    users,
+    holdEvents,
+    enquiries,
+    repairTickets,
+    products,
+    vendors,
+    serialUnits,
+    quotations,
+    workLogs,
+    payProfiles,
+  } = useStecSecure();
+  const isCeo = currentUser?.role === 'CEO';
   const jobs = currentUser?.role === 'TECHNICIAN' ? visibleJobs : allJobs;
   const [activeReport, setActiveReport] = useState<ReportTab>('REVENUE');
   const [inspectedJob, setInspectedJob] = useState<Job | null>(null);
@@ -81,7 +186,8 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
   // Report period for Revenue, Dues and Technicians (AMC looks ahead by renewal date; Ongoing is "right now")
   const [range, setRange] = useState<DateRange>(() => presetRange('FY'));
   const periodLabel = rangeLabel(range);
-  const usesPeriod = activeReport === 'REVENUE' || activeReport === 'OUTSTANDING' || activeReport === 'TECHNICIAN';
+  // AMC looks ahead by renewal date and Ongoing is "right now"; every other report uses the period
+  const usesPeriod = activeReport !== 'AMC_RENEWAL' && activeReport !== 'ONGOING';
 
   // Filters for AMC Renewal Report
   const [amcDaysFilter, setAmcDaysFilter] = useState<'30' | '60' | '90' | 'ALL'>('60');
@@ -142,7 +248,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
   const totalRevenueCollected = revenueByCategory.reduce((sum, c) => sum + c.collected, 0);
   const totalRevenueJobs = revenueByCategory.reduce((sum, c) => sum + c.jobsCount, 0);
 
-  const handleDownloadRevenue = () => {
+  const revenueReport = (): ReportExport => {
     const rows = [...revenueInvoices]
       .sort((a, b) => a.date.localeCompare(b.date) || a.invoiceNo.localeCompare(b.invoiceNo))
       .map((inv) => {
@@ -176,7 +282,11 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         };
       });
     const dept = revenueTypeFilter === 'ALL' ? '' : ` · ${DEPT_LABEL[revenueTypeFilter]}`;
-    void exportExcel(`stec_revenue_${rangeFileTag(range)}`, [
+    return {
+      fileBase: `stec_revenue_${rangeFileTag(range)}`,
+      title: `Revenue${revenueTypeFilter === 'ALL' ? '' : ` — ${DEPT_LABEL[revenueTypeFilter]}`}`,
+      period: periodLabel,
+      sheets: [
       {
         name: 'Invoices',
         title: `Revenue — invoices dated ${periodLabel}${dept}`,
@@ -185,24 +295,24 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           { header: 'Invoice date', key: 'date', type: 'date' },
           { header: 'Customer', key: 'customer' },
           { header: 'Mobile', key: 'phone' },
-          { header: 'Email', key: 'email' },
-          { header: 'Address', key: 'address', width: 40 },
+          { header: 'Email', key: 'email', pdf: false },
+          { header: 'Address', key: 'address', width: 40, pdf: false },
           { header: 'GSTIN', key: 'gstin' },
-          { header: 'State', key: 'state' },
+          { header: 'State', key: 'state', pdf: false },
           { header: 'Job', key: 'job' },
           { header: 'Category', key: 'category' },
-          { header: 'Department', key: 'department' },
+          { header: 'Department', key: 'department', pdf: false },
           { header: 'Taxable (₹)', key: 'taxable', type: 'money' },
           { header: 'CGST (₹)', key: 'cgst', type: 'money' },
           { header: 'SGST (₹)', key: 'sgst', type: 'money' },
           { header: 'IGST (₹)', key: 'igst', type: 'money' },
-          { header: 'Invoice total (₹)', key: 'total', type: 'money' },
-          { header: 'Credit notes (₹)', key: 'credit', type: 'money' },
+          { header: 'Invoice total (₹)', key: 'total', type: 'money', pdf: false },
+          { header: 'Credit notes (₹)', key: 'credit', type: 'money', pdf: false },
           { header: 'Net billed (₹)', key: 'net', type: 'money' },
           { header: 'Paid (₹)', key: 'paid', type: 'money' },
           { header: 'Balance (₹)', key: 'balance', type: 'money' },
           { header: 'Last payment', key: 'lastPayment', type: 'date' },
-          { header: 'Payment mode', key: 'modes' },
+          { header: 'Payment mode', key: 'modes', pdf: false },
           { header: 'Status', key: 'status' },
         ],
         rows,
@@ -222,7 +332,8 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         rows: revenueByCategory,
         totalKeys: ['jobsCount', 'invoicesCount', 'billed', 'collected', 'outstanding'],
       },
-    ]);
+    ],
+    };
   };
 
   // ==========================================
@@ -262,8 +373,12 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       .sort((a, b) => (a.daysRemaining ?? Infinity) - (b.daysRemaining ?? Infinity));
   }, [customers, jobs, amcDaysFilter, nowMs]);
 
-  const handleDownloadAmc = () => {
-    void exportExcel(`stec_amc_renewals_${amcDaysFilter === 'ALL' ? 'all' : `${amcDaysFilter}-days`}`, [
+  const amcReport = (): ReportExport => {
+    return {
+      fileBase: `stec_amc_renewals_${amcDaysFilter === 'ALL' ? 'all' : `${amcDaysFilter}-days`}`,
+      title: 'AMC renewals',
+      period: amcDaysFilter === 'ALL' ? 'All AMC customers' : `Renewing within ${amcDaysFilter} days`,
+      sheets: [
       {
         name: 'AMC renewals',
         title: `AMC renewals — ${amcDaysFilter === 'ALL' ? 'all AMC customers' : `renewing within ${amcDaysFilter} days`}`,
@@ -271,8 +386,8 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           { header: 'Customer', key: 'name' },
           { header: 'Mobile', key: 'phone' },
           { header: 'Contact person', key: 'contact' },
-          { header: 'Email', key: 'email' },
-          { header: 'Address', key: 'address', width: 40 },
+          { header: 'Email', key: 'email', pdf: false },
+          { header: 'Address', key: 'address', width: 40, pdf: false },
           { header: 'Renewal date', key: 'renewal', type: 'date' },
           { header: 'Days left', key: 'days', type: 'number' },
           { header: 'Status', key: 'status' },
@@ -292,7 +407,8 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           jobs: a.amcJobsCount,
         })),
       },
-    ]);
+    ],
+    };
   };
 
   // ==========================================
@@ -336,7 +452,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
   const overdueAccounts = outstandingReport.filter((o) => o.maxOverdueDays > 15);
   const overdueAmount = overdueAccounts.reduce((sum, o) => sum + o.balanceDue, 0);
 
-  const handleDownloadOutstanding = () => {
+  const duesReport = (): ReportExport => {
     const invoiceRows = outstandingReport
       .flatMap((o) =>
         o.unpaidInvoices.map((inv) => ({
@@ -351,7 +467,11 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         }))
       )
       .sort((a, b) => b.days - a.days);
-    void exportExcel(`stec_dues_${rangeFileTag(range)}`, [
+    return {
+      fileBase: `stec_dues_${rangeFileTag(range)}`,
+      title: 'Dues',
+      period: periodLabel,
+      sheets: [
       {
         name: 'Dues by customer',
         title: `Dues as of today on invoices dated ${periodLabel}`,
@@ -399,7 +519,8 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         rows: invoiceRows,
         totalKeys: ['net', 'paid', 'balance'],
       },
-    ]);
+    ],
+    };
   };
 
   // ==========================================
@@ -436,8 +557,12 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
     });
   }, [users, periodJobs, holdEvents, range]);
 
-  const handleDownloadTechnicians = () => {
-    void exportExcel(`stec_technicians_${rangeFileTag(range)}`, [
+  const techniciansReport = (): ReportExport => {
+    return {
+      fileBase: `stec_technicians_${rangeFileTag(range)}`,
+      title: 'Technician performance',
+      period: periodLabel,
+      sheets: [
       {
         name: 'Technicians',
         title: `Technician performance — jobs created ${periodLabel}`,
@@ -465,7 +590,8 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
         })),
         totalKeys: ['assigned', 'completed', 'active', 'holds'],
       },
-    ]);
+    ],
+    };
   };
 
   // ==========================================
@@ -495,8 +621,12 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
       .sort((a, b) => b.daysElapsed - a.daysElapsed);
   }, [jobs, customerById, users, ongoingDeptFilter, nowMs]);
 
-  const handleDownloadOngoing = () => {
-    void exportExcel(`stec_ongoing_jobs_${new Date(nowMs).toISOString().slice(0, 10)}`, [
+  const ongoingReport = (): ReportExport => {
+    return {
+      fileBase: `stec_ongoing_jobs_${new Date(nowMs).toISOString().slice(0, 10)}`,
+      title: 'Ongoing jobs',
+      period: 'As of today',
+      sheets: [
       {
         name: 'Ongoing jobs',
         title: `Jobs in progress, on hold or awaiting sign-off${ongoingDeptFilter === 'ALL' ? '' : ` · ${DEPT_LABEL[ongoingDeptFilter]}`}`,
@@ -527,14 +657,143 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           problem: p.job.problemReported,
         })),
       },
-    ]);
+    ],
+    };
   };
 
-  const excelButton = (onClick: () => void) => (
-    <Button variant="outline" size="sm" onClick={onClick} className="text-[13px] font-semibold cursor-pointer shrink-0">
-      <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-      Download Excel
-    </Button>
+  // ==========================================
+  // 6. LISTS FOR THE PERIOD: enquiries, jobs, repairs, inventory, customers
+  // ==========================================
+  const lookups = { customers, users, products, vendors, jobs: allJobs, invoices, quotations, serialUnits, payments };
+  const periodEnquiries = enquiries.filter((e) => inRange(e.createdAt, range));
+  const enquirySheet = enquiriesSheet(lookups, periodEnquiries, `Enquiries logged ${periodLabel}`);
+  const serviceJobsPeriod = periodJobs.filter((j) => j.type === 'SERVICE');
+  const installJobsPeriod = periodJobs.filter((j) => j.type === 'INSTALLATION');
+  const serviceSheet = jobsSheet(lookups, serviceJobsPeriod, 'Service jobs', `Service jobs created ${periodLabel}`);
+  const installSheet = jobsSheet(lookups, installJobsPeriod, 'Installation jobs', `Installation jobs created ${periodLabel}`);
+  const periodRepairs = repairTickets.filter((t) => inRange(t.createdAt, range));
+  const repairSheet = repairsSheet(lookups, periodRepairs, `Repair tickets opened ${periodLabel}`);
+  const boughtUnits = serialUnits.filter((u) => inRange(u.purchaseDate, range));
+  const stockNowSheet = stockSummarySheet(lookups, 'Stock by product (today)');
+  const boughtSheet = stockSheet(lookups, boughtUnits, `Units bought ${periodLabel}`, 'Units bought');
+  const periodCustomers = customers.filter((c) => inRange(c.createdAt, range));
+  const customerSheet = customersSheet(lookups, periodCustomers, `Customers added ${periodLabel}`);
+
+  const listReport = (name: string, title: string, sheets: SheetSpec[]): ReportExport => ({
+    fileBase: `stec_${name}_${rangeFileTag(range)}`,
+    title,
+    period: periodLabel,
+    sheets,
+  });
+  const openStatuses = ['ASSIGNED', 'IN_PROGRESS', 'ON_HOLD', 'AWAITING_OTP'];
+  const jobTiles = (list: Job[], sheet: SheetSpec) => (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <StatTile label="Jobs" icon={Wrench} value={list.length} note="Created in the period" />
+      <StatTile label="Open" icon={Clock} tone="amber" value={list.filter((j) => openStatuses.includes(j.status)).length} note="Not finished yet" />
+      <StatTile
+        label="Finished"
+        icon={CheckCircle2}
+        tone="emerald"
+        value={list.filter((j) => j.status === 'COMPLETED' || j.status === 'CLOSED').length}
+        note="Completed or closed"
+      />
+      <StatTile
+        label="Billed"
+        icon={FileSpreadsheet}
+        value={formatINR(sheet.rows.reduce((sum, r) => sum + (Number(r.billed) || 0), 0))}
+        note={`Balance ${formatINR(sheet.rows.reduce((sum, r) => sum + (Number(r.balance) || 0), 0))}`}
+      />
+    </div>
+  );
+
+  // ==========================================
+  // 7. PAYROLL (CEO only): salary for the period + incentives for finished jobs
+  // ==========================================
+  const payroll = useMemo(
+    () => (isCeo ? computePayroll({ users, payProfiles, jobs: allJobs, workLogs, holdEvents }, range) : null),
+    [isCeo, users, payProfiles, allJobs, workLogs, holdEvents, range]
+  );
+  const payrollSheet: SheetSpec | null = payroll
+    ? {
+        name: 'Payroll',
+        title: `Payroll — salary for ${payroll.days} days (${formatDate(payroll.from)} to ${formatDate(payroll.to)}) + job incentives`,
+        columns: [
+          { header: 'Staff no.', key: 'code' },
+          { header: 'Name', key: 'name' },
+          { header: 'Role', key: 'role' },
+          { header: 'Mobile', key: 'phone', pdf: false },
+          { header: 'Monthly salary (₹)', key: 'monthly', type: 'money' },
+          { header: 'Salary days', key: 'days', type: 'number' },
+          { header: 'Salary for period (₹)', key: 'salary', type: 'money' },
+          { header: 'Service jobs finished', key: 'serviceJobs', type: 'number' },
+          { header: 'Per service job (₹)', key: 'serviceRate', type: 'money', pdf: false },
+          { header: 'Installation jobs finished', key: 'installJobs', type: 'number' },
+          { header: 'Per installation job (₹)', key: 'installRate', type: 'money', pdf: false },
+          { header: 'Incentives (₹)', key: 'incentives', type: 'money' },
+          { header: 'Hours worked', key: 'hours', type: 'number' },
+          { header: 'Holds raised', key: 'holds', type: 'number' },
+          { header: 'Total pay (₹)', key: 'total', type: 'money' },
+        ],
+        rows: payroll.rows.map((r) => ({
+          code: r.user.staffCode,
+          name: r.user.name,
+          role: humanize(r.user.role),
+          phone: r.user.phone,
+          monthly: r.monthlySalary,
+          days: r.monthlySalary ? r.days : null,
+          salary: r.salary,
+          serviceJobs: r.serviceJobs,
+          serviceRate: r.serviceIncentive,
+          installJobs: r.installationJobs,
+          installRate: r.installationIncentive,
+          incentives: r.incentives,
+          hours: r.hours,
+          holds: r.holds,
+          total: r.total,
+        })),
+        totalKeys: ['monthly', 'salary', 'serviceJobs', 'installJobs', 'incentives', 'hours', 'holds', 'total'],
+      }
+    : null;
+  const payrollTotals = payroll
+    ? {
+        salary: payroll.rows.reduce((sum, r) => sum + r.salary, 0),
+        incentives: payroll.rows.reduce((sum, r) => sum + r.incentives, 0),
+        total: payroll.rows.reduce((sum, r) => sum + r.total, 0),
+        notSet: payroll.rows.filter((r) => !r.profile).length,
+      }
+    : null;
+
+  // Download buttons: Excel, CSV, PDF of the same report
+  const exportButtons = (build: () => ReportExport) => (
+    <div className="flex items-center gap-1.5 shrink-0">
+      <span className="hidden md:inline text-xs font-semibold text-slate-500 mr-0.5">Download</span>
+      {(
+        [
+          ['xlsx', 'Excel', FileSpreadsheet, 'text-emerald-600'],
+          ['csv', 'CSV', FileText, 'text-blue-600'],
+          ['pdf', 'PDF', FileDown, 'text-rose-600'],
+        ] as const
+      ).map(([fmt, label, Icon, color]) => (
+        <Button
+          key={fmt}
+          variant="outline"
+          size="sm"
+          onClick={() => void runExport(fmt, build())}
+          className="text-[13px] font-semibold cursor-pointer"
+          aria-label={`Download ${label}`}
+        >
+          <Icon className={`w-3.5 h-3.5 mr-1.5 ${color}`} />
+          {label}
+        </Button>
+      ))}
+    </div>
+  );
+
+  const reportBar = (left: React.ReactNode, build: () => ReportExport) => (
+    <div className="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 rounded-xl bg-white border border-slate-200 shadow-xs">
+      <div className="min-w-0">{left}</div>
+      {exportButtons(build)}
+    </div>
   );
 
   const deptButtons = (value: 'ALL' | 'SERVICE' | 'INSTALLATION', onPick: (v: 'ALL' | 'SERVICE' | 'INSTALLATION') => void) => (
@@ -566,97 +825,51 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
             Revenue, AMC renewals, dues, technician performance and ongoing jobs
           </p>
         </div>
-        {usesPeriod && <DateRangeFilter value={range} onChange={setRange} />}
+        {usesPeriod && <DateRangeFilter value={range} onChange={setRange} withTime />}
       </div>
 
-      {/* 5 Dedicated Report Navigation Tabs */}
-      <div className="w-full border-b border-slate-200 overflow-x-auto pb-2">
-        <div className="flex items-center gap-2 min-w-max">
-          <button
-            type="button"
-            onClick={() => setActiveReport('REVENUE')}
-            className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 ${
-              activeReport === 'REVENUE'
-                ? 'bg-orange-500 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>Revenue</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveReport('AMC_RENEWAL')}
-            className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 ${
-              activeReport === 'AMC_RENEWAL'
-                ? 'bg-orange-500 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>AMC renewals</span>
-            <span
-              className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                activeReport === 'AMC_RENEWAL' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
+      {/* Report tabs: scroll sideways on phones, wrap on larger screens */}
+      <div className="w-full border-b border-slate-200 overflow-x-auto sm:overflow-visible pb-2">
+        <div className="flex items-center gap-2 min-w-max sm:min-w-0 sm:flex-wrap">
+          {(
+            [
+              ['REVENUE', 'Revenue', TrendingUp, undefined],
+              ['OUTSTANDING', 'Dues', Building2, outstandingReport.length],
+              ...(isCeo ? ([['PAYROLL', 'Payroll', Wallet, undefined]] as const) : []),
+              ['ENQUIRIES', 'Enquiries', Inbox, periodEnquiries.length],
+              ['SERVICE_JOBS', 'Service jobs', Wrench, serviceJobsPeriod.length],
+              ['INSTALL_JOBS', 'Installation jobs', Layers, installJobsPeriod.length],
+              ['ONGOING', 'Ongoing jobs', Clock, ongoingProjects.length],
+              ['REPAIRS', 'Repairs', RotateCcw, periodRepairs.length],
+              ['TECHNICIAN', 'Technicians', Users, undefined],
+              ['INVENTORY', 'Inventory', Boxes, undefined],
+              ['CUSTOMERS', 'Customers', Building2, periodCustomers.length],
+              ['AMC_RENEWAL', 'AMC renewals', RefreshCw, amcCustomers.length],
+            ] as const
+          ).map(([id, label, Icon, count]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveReport(id)}
+              className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
+                activeReport === id
+                  ? 'bg-orange-500 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
               }`}
             >
-              {amcCustomers.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveReport('OUTSTANDING')}
-            className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 ${
-              activeReport === 'OUTSTANDING'
-                ? 'bg-orange-500 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>Dues</span>
-            <span
-              className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                activeReport === 'OUTSTANDING' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              {outstandingReport.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveReport('TECHNICIAN')}
-            className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 ${
-              activeReport === 'TECHNICIAN'
-                ? 'bg-orange-500 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Technicians</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveReport('ONGOING')}
-            className={`px-3.5 py-2 rounded-xl text-[13px] font-semibold cursor-pointer transition-all flex items-center gap-2 ${
-              activeReport === 'ONGOING'
-                ? 'bg-orange-500 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Ongoing jobs</span>
-            <span
-              className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                activeReport === 'ONGOING' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
-              }`}
-            >
-              {ongoingProjects.length}
-            </span>
-          </button>
+              <Icon className="w-3.5 h-3.5" />
+              <span>{label}</span>
+              {count !== undefined && (
+                <span
+                  className={`text-[11px] px-1.5 rounded-full font-mono font-bold ${
+                    activeReport === id ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -671,7 +884,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               <span className="hidden sm:inline text-[13px] font-semibold text-slate-700">Department:</span>
               {deptButtons(revenueTypeFilter, setRevenueTypeFilter)}
             </div>
-            {excelButton(handleDownloadRevenue)}
+            {exportButtons(revenueReport)}
           </div>
 
           {/* Revenue KPI Summary */}
@@ -816,7 +1029,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                 ))}
               </div>
             </div>
-            {excelButton(handleDownloadAmc)}
+            {exportButtons(amcReport)}
           </div>
 
           <div className="hidden sm:block p-3 rounded-xl bg-orange-50/60 border border-orange-200 text-[13px] text-orange-900">
@@ -918,7 +1131,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
                 Balance today on invoices dated {periodLabel} · highest first
               </p>
             </div>
-            {excelButton(handleDownloadOutstanding)}
+            {exportButtons(duesReport)}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -1014,7 +1227,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               <h2 className="text-sm font-bold text-slate-900">Technician performance</h2>
               <p className="hidden sm:block text-xs text-slate-500">Jobs created {periodLabel}</p>
             </div>
-            {excelButton(handleDownloadTechnicians)}
+            {exportButtons(techniciansReport)}
           </div>
 
           {/* Comparative Cards */}
@@ -1109,7 +1322,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               <span className="hidden sm:inline text-[13px] font-semibold text-slate-700">Department:</span>
               {deptButtons(ongoingDeptFilter, setOngoingDeptFilter)}
             </div>
-            {excelButton(handleDownloadOngoing)}
+            {exportButtons(ongoingReport)}
           </div>
 
           <Card className="border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -1197,6 +1410,214 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
               </table>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PAYROLL (CEO only) */}
+      {/* ========================================================================= */}
+      {activeReport === 'PAYROLL' && payroll && payrollSheet && payrollTotals && (
+        <div className="space-y-6">
+          {reportBar(
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">Payroll</h2>
+              <p className="text-xs text-slate-500">
+                Salary for {payroll.days} days ({formatDate(payroll.from)} – {formatDate(payroll.to)}) + incentives for finished jobs
+              </p>
+            </div>,
+            () => listReport('payroll', 'Payroll', [payrollSheet])
+          )}
+          {payrollTotals.notSet > 0 && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[13px] text-amber-900">
+              {payrollTotals.notSet} {payrollTotals.notSet === 1 ? 'person has' : 'people have'} no salary set yet — set it in{' '}
+              <strong>Settings → Salaries</strong>.
+            </div>
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatTile label="Total pay" icon={Wallet} tone="orange" value={formatINR(payrollTotals.total)} note="Salary + incentives" />
+            <StatTile label="Salaries" icon={Users} value={formatINR(payrollTotals.salary)} note={`For ${payroll.days} days`} />
+            <StatTile label="Incentives" icon={CheckCircle2} tone="emerald" value={formatINR(payrollTotals.incentives)} note="Finished jobs" />
+            <StatTile label="Staff" icon={Users} tone="blue" value={payroll.rows.length} note="Everyone on the staff list" />
+          </div>
+          <PreviewTable
+            sheet={payrollSheet}
+            keys={['code', 'name', 'role', 'monthly', 'salary', 'serviceJobs', 'installJobs', 'incentives', 'hours', 'total']}
+            empty="No staff yet."
+          />
+        </div>
+      )}
+
+      {/* ENQUIRIES */}
+      {activeReport === 'ENQUIRIES' && (
+        <div className="space-y-6">
+          {reportBar(<h2 className="text-sm font-bold text-slate-900">Enquiries</h2>, () =>
+            listReport('enquiries', 'Enquiries', [enquirySheet])
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatTile label="Enquiries" icon={Inbox} value={periodEnquiries.length} note="Logged in the period" />
+            <StatTile
+              label="Follow-up"
+              icon={Clock}
+              tone="amber"
+              value={periodEnquiries.filter((e) => e.status === 'FOLLOW_UP').length}
+              note="Still open"
+            />
+            <StatTile
+              label="Approved"
+              icon={CheckCircle2}
+              tone="emerald"
+              value={periodEnquiries.filter((e) => e.status === 'APPROVED').length}
+              note="Turned into jobs"
+            />
+            <StatTile
+              label="Cancelled"
+              icon={AlertTriangle}
+              value={periodEnquiries.filter((e) => e.status === 'CANCELLED').length}
+              note="Closed without a job"
+            />
+          </div>
+          <PreviewTable sheet={enquirySheet} keys={['no', 'date', 'customer', 'phone', 'category', 'status', 'job']} empty="No enquiries in this period." />
+        </div>
+      )}
+
+      {/* SERVICE JOBS */}
+      {activeReport === 'SERVICE_JOBS' && (
+        <div className="space-y-6">
+          {reportBar(<h2 className="text-sm font-bold text-slate-900">Service jobs</h2>, () =>
+            listReport('service_jobs', 'Service jobs', [serviceSheet])
+          )}
+          {jobTiles(serviceJobsPeriod, serviceSheet)}
+          <PreviewTable
+            sheet={serviceSheet}
+            keys={['no', 'created', 'customer', 'category', 'status', 'lead', 'invoice', 'billed', 'balance']}
+            empty="No service jobs in this period."
+          />
+        </div>
+      )}
+
+      {/* INSTALLATION JOBS */}
+      {activeReport === 'INSTALL_JOBS' && (
+        <div className="space-y-6">
+          {reportBar(<h2 className="text-sm font-bold text-slate-900">Installation jobs</h2>, () =>
+            listReport('installation_jobs', 'Installation jobs', [installSheet])
+          )}
+          {jobTiles(installJobsPeriod, installSheet)}
+          <PreviewTable
+            sheet={installSheet}
+            keys={['no', 'created', 'customer', 'category', 'status', 'lead', 'invoice', 'billed', 'balance']}
+            empty="No installation jobs in this period."
+          />
+        </div>
+      )}
+
+      {/* REPAIRS */}
+      {activeReport === 'REPAIRS' && (
+        <div className="space-y-6">
+          {reportBar(<h2 className="text-sm font-bold text-slate-900">Repairs</h2>, () =>
+            listReport('repairs', 'Repair tickets', [repairSheet])
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatTile label="Tickets" icon={RotateCcw} value={periodRepairs.length} note="Opened in the period" />
+            <StatTile
+              label="In-house"
+              icon={Wrench}
+              tone="orange"
+              value={periodRepairs.filter((t) => t.status === 'IN_HOUSE_REPAIR').length}
+              note="Being repaired here"
+            />
+            <StatTile
+              label="At supplier"
+              icon={Clock}
+              tone="blue"
+              value={periodRepairs.filter((t) => t.status === 'SENT_TO_VENDOR').length}
+              note="Sent for warranty"
+            />
+            <StatTile
+              label="Back in service"
+              icon={CheckCircle2}
+              tone="emerald"
+              value={periodRepairs.filter((t) => t.status === 'READY_TO_REINSTALL' || t.status === 'REINSTALLED').length}
+              note="Ready or reinstalled"
+            />
+          </div>
+          <PreviewTable sheet={repairSheet} keys={['no', 'created', 'customer', 'unit', 'status', 'tech']} empty="No repair tickets in this period." />
+        </div>
+      )}
+
+      {/* INVENTORY */}
+      {activeReport === 'INVENTORY' && (
+        <div className="space-y-6">
+          {reportBar(
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">Inventory</h2>
+              <p className="hidden sm:block text-xs text-slate-500">Stock by product today, and units bought in the period</p>
+            </div>,
+            () => listReport('inventory', 'Inventory', [stockNowSheet, boughtSheet])
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatTile label="Products" icon={Boxes} value={products.length} note="In the catalogue" />
+            <StatTile
+              label="In stock"
+              icon={Boxes}
+              tone="emerald"
+              value={serialUnits.filter((u) => u.status === 'IN_STOCK').length}
+              note="Units today"
+            />
+            <StatTile label="Bought" icon={FileSpreadsheet} tone="blue" value={boughtUnits.length} note="Units in the period" />
+            <StatTile
+              label="Stock value"
+              icon={Wallet}
+              tone="orange"
+              value={formatINR(stockNowSheet.rows.reduce((sum, r) => sum + (Number(r.value) || 0), 0))}
+              note="In stock, at cost"
+            />
+          </div>
+          <PreviewTable
+            sheet={stockNowSheet}
+            keys={['name', 'category', 'inStock', 'allocated', 'installed', 'repair', 'value']}
+            empty="No products yet."
+          />
+        </div>
+      )}
+
+      {/* CUSTOMERS */}
+      {activeReport === 'CUSTOMERS' && (
+        <div className="space-y-6">
+          {reportBar(
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">Customers</h2>
+              <p className="hidden sm:block text-xs text-slate-500">Customers added in the period, with all their jobs and bills</p>
+            </div>,
+            () => listReport('customers', 'Customers', [customerSheet])
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatTile label="Customers" icon={Users} value={periodCustomers.length} note="Added in the period" />
+            <StatTile
+              label="On AMC"
+              icon={ShieldCheck}
+              tone="emerald"
+              value={periodCustomers.filter((c) => c.amcActive).length}
+              note="Active contracts"
+            />
+            <StatTile
+              label="Billed"
+              icon={FileSpreadsheet}
+              value={formatINR(customerSheet.rows.reduce((sum, r) => sum + (Number(r.billed) || 0), 0))}
+              note="All their invoices"
+            />
+            <StatTile
+              label="Balance"
+              icon={Clock}
+              tone="amber"
+              value={formatINR(customerSheet.rows.reduce((sum, r) => sum + (Number(r.balance) || 0), 0))}
+              note="Still to collect"
+            />
+          </div>
+          <PreviewTable
+            sheet={customerSheet}
+            keys={['name', 'phone', 'gstin', 'created', 'jobs', 'billed', 'balance']}
+            empty="No customers added in this period."
+          />
         </div>
       )}
 

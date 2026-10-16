@@ -33,6 +33,8 @@ import { VendorModal } from '@/components/inventory/VendorModal';
 import { ProductModal } from '@/components/inventory/ProductModal';
 import { AddStockModal } from '@/components/inventory/AddStockModal';
 import { SerialDetailsModal } from '@/components/inventory/SerialDetailsModal';
+import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import { toast } from 'sonner';
 
 export const InventoryPage: React.FC = () => {
@@ -66,6 +68,7 @@ export const InventoryPage: React.FC = () => {
   const [serialStatusFilter, setSerialStatusFilter] = useState<'ALL' | SerialStatus>('ALL');
   const [serialProductFilter, setSerialProductFilter] = useState<string>('ALL');
   const [serialVendorFilter, setSerialVendorFilter] = useState<string>('ALL');
+  const [range, setRange] = useState<DateRange>(() => presetRange('FY'));
 
   // Filters for Product Catalog
   const [productSearch, setProductSearch] = useState('');
@@ -94,8 +97,12 @@ export const InventoryPage: React.FC = () => {
   });
 
 
+  // Date filter (bought in the chosen period) — Serial numbers tab only; the stock tiles above stay
+  // current stock, and units without a purchase date show only under "All time"
+  const serialsInRange = serialUnits.filter((s) => inRange(s.purchaseDate, range));
+
   // Filtered Serial Units
-  const filteredSerials = serialUnits.filter((s) => {
+  const filteredSerials = serialsInRange.filter((s) => {
     const prod = products.find((p) => p.id === s.productId);
     const vend = vendors.find((v) => v.id === s.purchasedFromVendorId);
     const cust = customers.find((c) => c.id === s.soldToCustomerId);
@@ -293,7 +300,7 @@ export const InventoryPage: React.FC = () => {
           }`}
         >
           <Tag className="w-3.5 h-3.5" />
-          <span>Serial numbers ({serialUnits.length})</span>
+          <span>Serial numbers ({serialsInRange.length})</span>
         </button>
 
         <button
@@ -328,6 +335,12 @@ export const InventoryPage: React.FC = () => {
         <div className="space-y-4">
           {/* Search & Filters */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {/* Purchase date range (its own row) */}
+            <div className="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">Purchase date</span>
+              <DateRangeFilter value={range} onChange={setRange} withTime />
+            </div>
+
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
               <Input

@@ -9,6 +9,7 @@ export interface SheetColumn {
   key: string;
   type?: CellType;
   width?: number;
+  pdf?: boolean; // false: left out of PDF downloads (too wide for a page)
 }
 
 export interface SheetSpec {

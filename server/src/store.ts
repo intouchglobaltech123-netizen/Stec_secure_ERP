@@ -33,6 +33,7 @@ export const COLLECTIONS: CollectionName[] = [
   'repairTickets',
   'notifications',
   'creditNotes',
+  'payProfiles',
 ];
 
 export interface StateChanges {

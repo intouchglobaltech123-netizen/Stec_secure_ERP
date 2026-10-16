@@ -21,6 +21,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CustomerModal } from '@/components/customers/CustomerModal';
 import { SiteLocationModal } from '@/components/customers/SiteLocationModal';
+import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { DateRange, inRange, presetRange } from '@/lib/date-range';
 
 export const CustomersPage: React.FC = () => {
   const { customers, visibleJobs, invoices, isManagement } = useStecSecure();
@@ -29,11 +31,18 @@ export const CustomersPage: React.FC = () => {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [selectedCustomerForEdit, setSelectedCustomerForEdit] = useState<Customer | null>(null);
   const [selectedCustomerForLocation, setSelectedCustomerForLocation] = useState<Customer | null>(null);
+  const [range, setRange] = useState<DateRange>(() => presetRange('FY'));
+
+  // Date filter (added in the chosen period) — search and the count work inside it
+  const customersInRange = useMemo(
+    () => customers.filter((c) => inRange(c.createdAt, range)),
+    [customers, range]
+  );
 
   const filteredCustomers = useMemo(() => {
-    if (!search.trim()) return customers;
+    if (!search.trim()) return customersInRange;
     const q = search.toLowerCase();
-    return customers.filter(
+    return customersInRange.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
         c.phone.includes(q) ||
@@ -41,7 +50,7 @@ export const CustomersPage: React.FC = () => {
         (c.contactPerson && c.contactPerson.toLowerCase().includes(q)) ||
         (c.gstin && c.gstin.toLowerCase().includes(q))
     );
-  }, [customers, search]);
+  }, [customersInRange, search]);
 
   return (
     <div className="space-y-6">
@@ -72,8 +81,8 @@ export const CustomersPage: React.FC = () => {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative flex-1 w-full sm:max-w-md">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-center justify-between gap-3">
+        <div className="relative flex-1 w-full sm:max-w-md sm:min-w-[16rem]">
           <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
           <Input
             placeholder="Search customers by name, phone, address, or GST..."
@@ -82,10 +91,19 @@ export const CustomersPage: React.FC = () => {
             className="pl-9 text-[13px] bg-white"
           />
         </div>
-        <div className="text-[13px] text-slate-500 font-medium">
-          Showing {filteredCustomers.length} of {customers.length} client accounts
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 w-full sm:w-auto">
+          <DateRangeFilter value={range} onChange={setRange} withTime />
+          <div className="text-[13px] text-slate-500 font-medium">
+            Showing {filteredCustomers.length} of {customersInRange.length} client accounts
+          </div>
         </div>
       </div>
+
+      {filteredCustomers.length === 0 && (
+        <div className="p-8 text-center text-[13px] text-slate-500 bg-white border border-slate-200 rounded-md">
+          No customers found for this search and period.
+        </div>
+      )}
 
       {/* Customer Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

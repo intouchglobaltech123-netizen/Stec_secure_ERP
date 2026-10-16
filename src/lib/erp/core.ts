@@ -23,6 +23,7 @@ import {
   AppNotification,
   AccessControl,
   CreditNote,
+  PayProfile,
   DEFAULT_ACCESS_CONTROL,
 } from '../stecsecure-types';
 import {
@@ -69,6 +70,7 @@ export interface ErpState {
   repairTickets: RepairTicket[];
   notifications: AppNotification[];
   creditNotes: CreditNote[]; // Step 3
+  payProfiles: PayProfile[]; // payroll settings (CEO only)
   accessControl: AccessControl;
 }
 
@@ -395,6 +397,7 @@ export function getSeedState(): ErpState {
     repairTickets: SEED_REPAIR_TICKETS,
     notifications: [],
     creditNotes: [],
+    payProfiles: [],
     accessControl: DEFAULT_ACCESS_CONTROL,
   };
 }
@@ -461,6 +464,7 @@ export function normalizeSavedState(parsed: any, { browserLegacyFixes = true } =
     repairTickets: list<RepairTicket>(parsed.repairTickets),
     notifications: list<AppNotification>(parsed.notifications),
     creditNotes: list<CreditNote>(parsed.creditNotes),
+    payProfiles: list<PayProfile>(parsed.payProfiles),
     accessControl: { ...DEFAULT_ACCESS_CONTROL, ...(parsed.accessControl || {}) },
   };
 }

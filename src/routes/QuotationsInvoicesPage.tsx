@@ -40,6 +40,8 @@ import { QuotationPreviewModal } from '@/components/quotations/QuotationPreviewM
 import { DeliveryChallanModal } from '@/components/jobs/DeliveryChallanModal';
 import { InvoicePreviewModal } from '@/components/invoices/InvoicePreviewModal';
 import { CreditNotePreviewModal } from '@/components/invoices/InvoiceCorrectionModals';
+import { DateRangeFilter } from '@/components/ui/date-range-filter';
+import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import {
   creditNoteReasonLabel,
   invoiceNetTotal,
@@ -119,6 +121,9 @@ export const QuotationsInvoicesPage: React.FC = () => {
   const [quotationStatusFilter, setQuotationStatusFilter] = useState<'ALL' | QuotationStatus>('ALL');
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [challanSearch, setChallanSearch] = useState('');
+
+  // Date filter for the tiles and every tab (opens on this financial year)
+  const [range, setRange] = useState<DateRange>(() => presetRange('FY'));
 
   // Expandable row state for grouped view (Set of groupIds)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -325,9 +330,30 @@ export const QuotationsInvoicesPage: React.FC = () => {
     return groups;
   }, [jobs, enquiries, quotations, deliveryChallans, invoices, customers]);
 
+  // Date filter (dated in the chosen period): each document by its own date
+  const quotationsInRange = quotations.filter((q) => inRange(q.date, range));
+  const challansInRange = deliveryChallans.filter((dc) => inRange(dc.date, range));
+  const invoicesInRange = invoices.filter((inv) => inRange(inv.date, range));
+  const creditNotesInRange = creditNotes.filter((cn) => inRange(cn.date, range));
+
+  // A job / enquiry group is in the period when it was created then or any of its documents is dated
+  // then; the group still shows its whole document chain
+  const projectGroupsInRange = useMemo(
+    () =>
+      projectGroups.filter(
+        (g) =>
+          inRange(g.createdAt, range) ||
+          inRange(g.enquiry?.createdAt, range) ||
+          g.quotations.some((q) => inRange(q.date, range)) ||
+          g.deliveryChallans.some((dc) => inRange(dc.date, range)) ||
+          g.invoices.some((inv) => inRange(inv.date, range))
+      ),
+    [projectGroups, range]
+  );
+
   // Filtered Project Groups
   const filteredProjectGroups = useMemo(() => {
-    return projectGroups.filter((g) => {
+    return projectGroupsInRange.filter((g) => {
       const q = projectSearch.toLowerCase();
       const matchesSearch =
         !projectSearch.trim() ||
@@ -354,10 +380,10 @@ export const QuotationsInvoicesPage: React.FC = () => {
 
       return matchesSearch && matchesFilter;
     });
-  }, [projectGroups, projectSearch, projectFilter]);
+  }, [projectGroupsInRange, projectSearch, projectFilter]);
 
   // Filtered Flat Views (Secondary Views)
-  const filteredQuotations = quotations.filter((q) => {
+  const filteredQuotations = quotationsInRange.filter((q) => {
     const customer = customers.find((c) => c.id === q.customerNumber);
     const matchesSearch =
       q.quotationNo.toLowerCase().includes(quotationSearch.toLowerCase()) ||
@@ -370,7 +396,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const filteredInvoices = invoices.filter((inv) => {
+  const filteredInvoices = invoicesInRange.filter((inv) => {
     const customer = customers.find((c) => c.id === inv.customerNumber);
     return (
       inv.invoiceNo.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
@@ -378,7 +404,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
     );
   });
 
-  const filteredChallans = deliveryChallans.filter((dc) => {
+  const filteredChallans = challansInRange.filter((dc) => {
     const customer = customers.find((c) => c.id === dc.customerNumber);
     return (
       dc.challanNo.toLowerCase().includes(challanSearch.toLowerCase()) ||
@@ -387,9 +413,9 @@ export const QuotationsInvoicesPage: React.FC = () => {
     );
   });
 
-  // Totals for top statistics
-  const totalQuotationValue = quotations.reduce((sum, q) => sum + q.grandTotal, 0);
-  const totalBalanceDue = invoices.reduce((sum, inv) => sum + inv.balanceDue, 0);
+  // Totals for top statistics (chosen period)
+  const totalQuotationValue = quotationsInRange.reduce((sum, q) => sum + q.grandTotal, 0);
+  const totalBalanceDue = invoicesInRange.reduce((sum, inv) => sum + inv.balanceDue, 0);
 
   // Conversion Handlers (Phase 21: run on the server; one conversion at a time to avoid double clicks)
   const handleConvertQuoteToChallan = async (quot: Quotation, jobId?: string) => {
@@ -442,7 +468,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header & Overview */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-[28px] font-bold text-slate-900 tracking-tight">
             Quotations & Invoices
@@ -452,23 +478,28 @@ export const QuotationsInvoicesPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Global Action Button */}
-        {isManagement && (
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => {
-              setQuotationToEdit(null);
-              setBuilderCustomerId(undefined);
-              setBuilderEnquiryId(undefined);
-              setIsBuilderOpen(true);
-            }}
-            className="text-[13px] font-semibold shrink-0 shadow-2xs"
-          >
-            <Plus className="w-4 h-4 mr-1.5" />
-            New Quotation
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Period for the tiles and every tab below */}
+          <DateRangeFilter value={range} onChange={setRange} withTime />
+
+          {/* Global Action Button */}
+          {isManagement && (
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => {
+                setQuotationToEdit(null);
+                setBuilderCustomerId(undefined);
+                setBuilderEnquiryId(undefined);
+                setIsBuilderOpen(true);
+              }}
+              className="text-[13px] font-semibold shrink-0 shadow-2xs"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              New Quotation
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* KPI Stats Strip */}
@@ -480,7 +511,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
             </div>
             <div>
               <div className="text-xs font-bold uppercase text-slate-500 tracking-wider">Projects / Jobs</div>
-              <div className="text-xl font-extrabold text-slate-900 font-mono">{projectGroups.length}</div>
+              <div className="text-xl font-extrabold text-slate-900 font-mono">{projectGroupsInRange.length}</div>
             </div>
           </CardContent>
         </Card>
@@ -492,7 +523,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
             </div>
             <div>
               <div className="text-xs font-bold uppercase text-slate-500 tracking-wider">Quotations (A-Series)</div>
-              <div className="text-xl font-extrabold text-slate-900 font-mono">{quotations.length}</div>
+              <div className="text-xl font-extrabold text-slate-900 font-mono">{quotationsInRange.length}</div>
               <div className="text-[11px] text-slate-500 font-mono">{formatINR(totalQuotationValue)}</div>
             </div>
           </CardContent>
@@ -505,7 +536,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
             </div>
             <div>
               <div className="text-xs font-bold uppercase text-slate-500 tracking-wider">Delivery Challans</div>
-              <div className="text-xl font-extrabold text-slate-900 font-mono">{deliveryChallans.length}</div>
+              <div className="text-xl font-extrabold text-slate-900 font-mono">{challansInRange.length}</div>
               <div className="text-[11px] text-slate-500">Material transfers</div>
             </div>
           </CardContent>
@@ -518,7 +549,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
             </div>
             <div>
               <div className="text-xs font-bold uppercase text-slate-500 tracking-wider">Invoiced / Balance Due</div>
-              <div className="text-xl font-extrabold text-slate-900 font-mono">{invoices.length} Invoices</div>
+              <div className="text-xl font-extrabold text-slate-900 font-mono">{invoicesInRange.length} Invoices</div>
               <div className="text-[11px] font-mono">
                 Due: <span className={totalBalanceDue > 0 ? 'text-rose-600 font-bold' : 'text-emerald-700 font-bold'}>{formatINR(totalBalanceDue)}</span>
               </div>
@@ -539,7 +570,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
           }`}
         >
           <FolderGit2 className="w-3.5 h-3.5" />
-          <span>By job ({projectGroups.length})</span>
+          <span>By job ({projectGroupsInRange.length})</span>
         </button>
 
         <button
@@ -552,7 +583,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
           }`}
         >
           <FileSpreadsheet className="w-3.5 h-3.5" />
-          <span>Quotations ({quotations.length})</span>
+          <span>Quotations ({quotationsInRange.length})</span>
         </button>
 
         <button
@@ -565,7 +596,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
           }`}
         >
           <Truck className="w-3.5 h-3.5" />
-          <span>Challans ({deliveryChallans.length})</span>
+          <span>Challans ({challansInRange.length})</span>
         </button>
 
         <button
@@ -578,7 +609,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
           }`}
         >
           <ReceiptText className="w-3.5 h-3.5" />
-          <span>Invoices ({invoices.length})</span>
+          <span>Invoices ({invoicesInRange.length})</span>
         </button>
 
         <button
@@ -591,7 +622,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
           }`}
         >
           <FileMinus className="w-3.5 h-3.5" />
-          <span>Credit notes ({creditNotes.length})</span>
+          <span>Credit notes ({creditNotesInRange.length})</span>
         </button>
       </div>
 
@@ -616,7 +647,7 @@ export const QuotationsInvoicesPage: React.FC = () => {
                 onChange={(e) => setProjectFilter(e.target.value as any)}
                 className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-[13px] text-slate-700 focus:outline-none focus:border-orange-500 cursor-pointer"
               >
-                <option value="ALL">All Projects / Jobs ({projectGroups.length})</option>
+                <option value="ALL">All Projects / Jobs ({projectGroupsInRange.length})</option>
                 <option value="WITH_QUOTATION">With Quotations</option>
                 <option value="WITH_CHALLAN">With Delivery Challans</option>
                 <option value="WITH_INVOICE">With Tax Invoices</option>
@@ -1569,14 +1600,16 @@ export const QuotationsInvoicesPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {creditNotes.length === 0 ? (
+                  {creditNotesInRange.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="p-8 text-center text-slate-500 italic">
-                        No credit notes yet. Issue one from an invoice's preview (Credit Note button).
+                        {creditNotes.length === 0
+                          ? "No credit notes yet. Issue one from an invoice's preview (Credit Note button)."
+                          : 'No credit notes in this period.'}
                       </td>
                     </tr>
                   ) : (
-                    creditNotes.map((cn) => (
+                    creditNotesInRange.map((cn) => (
                       <tr
                         key={cn.id}
                         className="hover:bg-slate-50 cursor-pointer transition-colors"

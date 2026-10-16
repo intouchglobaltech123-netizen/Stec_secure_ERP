@@ -13,7 +13,12 @@ export function canAccessSection(state: ErpState, user: User, section: AppSectio
 export function scopeStateFor(state: ErpState, user: User): ErpState {
   // Everyone — management included — receives only notifications addressed to them
   const scoped = scopeRecordsFor(state, user);
-  return { ...scoped, notifications: state.notifications.filter((n) => n.recipientUserIds.includes(user.id)) };
+  return {
+    ...scoped,
+    notifications: state.notifications.filter((n) => n.recipientUserIds.includes(user.id)),
+    // Salaries are for the CEO's eyes only
+    payProfiles: user.role === 'CEO' ? state.payProfiles : [],
+  };
 }
 
 function scopeRecordsFor(state: ErpState, user: User): ErpState {

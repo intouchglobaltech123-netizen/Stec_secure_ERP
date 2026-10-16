@@ -13,6 +13,15 @@ export interface User {
   staffCode?: string; // readable staff number by role: TECH-001, MGR-001, CEO-001 (given by the server)
 }
 
+// Payroll: each person's pay, set by the CEO in Settings → Salaries. Sent to the CEO only.
+export interface PayProfile {
+  id: string; // the staff member's user id
+  monthlySalary: number;
+  serviceIncentive: number; // per finished service job the person worked on
+  installationIncentive: number; // per finished installation job the person worked on
+  updatedAt: string;
+}
+
 // Staff number prefix for each role
 export const STAFF_CODE_PREFIX: Record<UserRole, string> = { TECHNICIAN: 'TECH-', MANAGER: 'MGR-', CEO: 'CEO-' };
 
