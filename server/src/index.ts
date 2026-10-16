@@ -4,6 +4,7 @@ import { connectDatabase } from './db';
 import { migrate } from './migrate';
 import { Store } from './store';
 import { createApp } from './app';
+import { loadDemoData } from './demo-data';
 
 async function main() {
   const db = await connectDatabase();
@@ -12,6 +13,8 @@ async function main() {
 
   const store = new Store(db);
   await store.init();
+  // One-off demo data for showing the ERP (only into a database without business data)
+  if (process.env.LOAD_DEMO_DATA === 'true') await loadDemoData(db, store);
 
   const server = createApp(db, store).listen(config.port, () => {
     console.log(`[server] listening on port ${config.port}`);

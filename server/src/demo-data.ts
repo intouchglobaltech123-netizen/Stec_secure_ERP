@@ -4,15 +4,12 @@
 // created through the ERP's own actions with dates spread over July–October 2026, so numbering, GST,
 // stock and payroll all add up.
 //
-//   node server-dist/demo-data.js        (after `npm run build`; uses DATABASE_URL like the server)
-//
-// Refuses a database that already has customers, products, jobs or invoices. The server keeps the data
-// in memory, so restart it afterwards (on Railway: `railway ssh` to run this, then `railway restart`).
-// Demo staff get no login: the CEO sets their PINs in Settings → Staff Accounts.
+// Runs when the server starts with LOAD_DEMO_DATA=true, before it takes requests. Does nothing on a
+// database that already has customers, products, jobs or invoices. Demo staff get no login: the CEO sets
+// their PINs in Settings → Staff Accounts.
 import fs from 'node:fs';
 import path from 'node:path';
-import { connectDatabase } from './db';
-import { migrate } from './migrate';
+import { Database } from './db';
 import { Store, normalizePhone } from './store';
 import { extractPhotos } from './photos';
 import { makeEnv, ErpState } from '../../src/lib/erp/core';
@@ -37,20 +34,14 @@ const at = (date: string, h = 10, m = 0) => new Date(`${date}T${String(h).padSta
 const addDays = (date: string, n: number) => new Date(Date.parse(`${date}T12:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
 
 type Event = { when: Date; seq: number; label: string; fn: () => Promise<void> };
-const events: Event[] = [];
-let seq = 0;
-const on = (when: Date, label: string, fn: () => Promise<void>) => events.push({ when, seq: seq++, label, fn });
-
-async function main() {
-  const db = await connectDatabase();
-  await migrate(db);
-  const store = new Store(db);
-  await store.init();
+export async function loadDemoData(db: Database, store: Store): Promise<boolean> {
+  const events: Event[] = [];
+  let seq = 0;
+  const on = (when: Date, label: string, fn: () => Promise<void>) => events.push({ when, seq: seq++, label, fn });
   const s0 = store.state;
   if ((s0.customers.length || s0.jobs.length || s0.invoices.length || s0.products.length)) {
-    console.error('[demo] this database already has business data — nothing loaded.');
-    await db.close();
-    process.exit(1);
+    console.log('[demo] LOAD_DEMO_DATA is set, but this database already has business data — nothing loaded.');
+    return false;
   }
   const foundCeo = s0.users.find((u) => u.role === 'CEO');
   if (!foundCeo) throw new Error('No CEO account in this database.');
@@ -529,10 +520,5 @@ async function main() {
   console.log(`  enquiries ${s.enquiries.length}, quotations ${s.quotations.length}, jobs ${s.jobs.length} (service ${s.jobs.filter((j) => j.type === 'SERVICE').length}, installation ${s.jobs.filter((j) => j.type === 'INSTALLATION').length})`);
   console.log(`  challans ${s.deliveryChallans.length}, invoices ${s.invoices.length}, credit notes ${s.creditNotes.length}, payments ${s.payments.length}, repairs ${s.repairTickets.length}, leave ${s.leaveRecords.length}`);
   console.log(`  job stages: ${Object.entries(s.jobs.reduce((m: Record<string, number>, j) => ((m[j.status] = (m[j.status] || 0) + 1), m), {})).map(([k, v]) => `${k} ${v}`).join(', ')}`);
-  await db.close();
+  return true;
 }
-
-main().catch((err) => {
-  console.error('[demo] stopped:', err instanceof Error ? err.message : err);
-  process.exit(1);
-});

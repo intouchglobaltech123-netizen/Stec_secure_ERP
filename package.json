@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:server": "tsx watch server/src/index.ts",
     "build": "tsc -b && tsc -p server/tsconfig.json && vite build && npm run build:server",
-    "build:server": "esbuild server/src/index.ts server/src/restore.ts server/src/demo-data.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outdir=server-dist",
+    "build:server": "esbuild server/src/index.ts server/src/restore.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outdir=server-dist",
     "start": "node server-dist/index.js",
     "restore": "node server-dist/restore.js",
     "preview": "vite preview"
