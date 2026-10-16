@@ -35,6 +35,7 @@ import type { SheetSpec } from '@/lib/excel-book';
 import { ExportFormat, ReportExport, exportReport } from '@/lib/report-export';
 import { customersSheet, enquiriesSheet, jobsSheet, repairsSheet, stockSheet, stockSummarySheet } from '@/lib/backup-sheets';
 import { computePayroll } from '@/lib/payroll';
+import { leaveDays, leaveTypeLabel } from '@/lib/leave';
 import { stateName } from '@/lib/gst';
 import { errorMessage } from '@/lib/api';
 import { invoiceCategory, invoiceNetTotal, isCancelledInvoice } from '@/lib/invoice-status';
@@ -177,6 +178,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
     quotations,
     workLogs,
     payProfiles,
+    leaveRecords,
   } = useStecSecure();
   const isCeo = currentUser?.role === 'CEO';
   const jobs = currentUser?.role === 'TECHNICIAN' ? visibleJobs : allJobs;
@@ -710,13 +712,13 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
   // 7. PAYROLL (CEO only): salary for the period + incentives for finished jobs
   // ==========================================
   const payroll = useMemo(
-    () => (isCeo ? computePayroll({ users, payProfiles, jobs: allJobs, workLogs, holdEvents }, range) : null),
-    [isCeo, users, payProfiles, allJobs, workLogs, holdEvents, range]
+    () => (isCeo ? computePayroll({ users, payProfiles, jobs: allJobs, workLogs, holdEvents, leaveRecords }, range) : null),
+    [isCeo, users, payProfiles, allJobs, workLogs, holdEvents, leaveRecords, range]
   );
   const payrollSheet: SheetSpec | null = payroll
     ? {
         name: 'Payroll',
-        title: `Payroll — salary for ${payroll.days} days (${formatDate(payroll.from)} to ${formatDate(payroll.to)}) + job incentives`,
+        title: `Payroll — salary for ${payroll.days} days (${formatDate(payroll.from)} to ${formatDate(payroll.to)}) + job incentives − loss of pay`,
         columns: [
           { header: 'Staff no.', key: 'code' },
           { header: 'Name', key: 'name' },
@@ -730,8 +732,14 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           { header: 'Installation jobs finished', key: 'installJobs', type: 'number' },
           { header: 'Per installation job (₹)', key: 'installRate', type: 'money', pdf: false },
           { header: 'Incentives (₹)', key: 'incentives', type: 'money' },
-          { header: 'Hours worked', key: 'hours', type: 'number' },
-          { header: 'Holds raised', key: 'holds', type: 'number' },
+          { header: 'Hours worked', key: 'hours', type: 'number', pdf: false },
+          { header: 'Holds raised', key: 'holds', type: 'number', pdf: false },
+          { header: 'Paid leave taken', key: 'paidLeave', type: 'number' },
+          { header: 'Casual leave taken', key: 'casualLeave', type: 'number' },
+          { header: 'Unpaid days', key: 'unpaidDays', type: 'number' },
+          { header: 'Loss of pay (₹)', key: 'deduction', type: 'money' },
+          { header: 'Paid leave left', key: 'paidLeft', type: 'number', pdf: false },
+          { header: 'Casual leave left', key: 'casualLeft', type: 'number', pdf: false },
           { header: 'Total pay (₹)', key: 'total', type: 'money' },
         ],
         rows: payroll.rows.map((r) => ({
@@ -749,17 +757,68 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           incentives: r.incentives,
           hours: r.hours,
           holds: r.holds,
+          paidLeave: r.paidLeave,
+          casualLeave: r.casualLeave,
+          unpaidDays: r.unpaidDays,
+          deduction: r.deduction,
+          paidLeft: r.paidLeaveLeft,
+          casualLeft: r.casualLeaveLeft,
           total: r.total,
         })),
-        totalKeys: ['monthly', 'salary', 'serviceJobs', 'installJobs', 'incentives', 'hours', 'holds', 'total'],
+        totalKeys: [
+          'monthly',
+          'salary',
+          'serviceJobs',
+          'installJobs',
+          'incentives',
+          'hours',
+          'holds',
+          'paidLeave',
+          'casualLeave',
+          'unpaidDays',
+          'deduction',
+          'total',
+        ],
       }
     : null;
+  // The leave entries behind those numbers
+  const periodLeave = leaveRecords
+    .filter((l) => inRange(l.from, range) || inRange(l.to, range))
+    .sort((a, b) => a.from.localeCompare(b.from));
+  const leaveSheet: SheetSpec = {
+    name: 'Leave taken',
+    title: `Leave taken ${periodLabel}`,
+    columns: [
+      { header: 'Staff no.', key: 'code' },
+      { header: 'Name', key: 'name' },
+      { header: 'Type', key: 'type' },
+      { header: 'From', key: 'from', type: 'date' },
+      { header: 'To', key: 'to', type: 'date' },
+      { header: 'Days', key: 'days', type: 'number' },
+      { header: 'Reason', key: 'reason', width: 40 },
+    ],
+    rows: periodLeave.map((l) => {
+      const u = users.find((x) => x.id === l.userId);
+      return {
+        code: u?.staffCode,
+        name: u?.name,
+        type: leaveTypeLabel(l.type) + (l.halfDay ? ' (half day)' : ''),
+        from: l.from,
+        to: l.to,
+        days: leaveDays(l),
+        reason: l.reason,
+      };
+    }),
+    totalKeys: ['days'],
+  };
   const payrollTotals = payroll
     ? {
         salary: payroll.rows.reduce((sum, r) => sum + r.salary, 0),
         incentives: payroll.rows.reduce((sum, r) => sum + r.incentives, 0),
         total: payroll.rows.reduce((sum, r) => sum + r.total, 0),
         notSet: payroll.rows.filter((r) => !r.profile).length,
+        deduction: payroll.rows.reduce((sum, r) => sum + r.deduction, 0),
+        unpaidDays: payroll.rows.reduce((sum, r) => sum + r.unpaidDays, 0),
       }
     : null;
 
@@ -1422,10 +1481,10 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
             <div>
               <h2 className="text-sm font-bold text-slate-900">Payroll</h2>
               <p className="text-xs text-slate-500">
-                Salary for {payroll.days} days ({formatDate(payroll.from)} – {formatDate(payroll.to)}) + incentives for finished jobs
+                Salary for {payroll.days} days ({formatDate(payroll.from)} – {formatDate(payroll.to)}) + incentives for finished jobs − loss of pay
               </p>
             </div>,
-            () => listReport('payroll', 'Payroll', [payrollSheet])
+            () => listReport('payroll', 'Payroll', [payrollSheet, leaveSheet])
           )}
           {payrollTotals.notSet > 0 && (
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[13px] text-amber-900">
@@ -1437,13 +1496,20 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
             <StatTile label="Total pay" icon={Wallet} tone="orange" value={formatINR(payrollTotals.total)} note="Salary + incentives" />
             <StatTile label="Salaries" icon={Users} value={formatINR(payrollTotals.salary)} note={`For ${payroll.days} days`} />
             <StatTile label="Incentives" icon={CheckCircle2} tone="emerald" value={formatINR(payrollTotals.incentives)} note="Finished jobs" />
-            <StatTile label="Staff" icon={Users} tone="blue" value={payroll.rows.length} note="Everyone on the staff list" />
+            <StatTile
+              label="Loss of pay"
+              icon={AlertTriangle}
+              tone="rose"
+              value={formatINR(payrollTotals.deduction)}
+              note={`${payrollTotals.unpaidDays} unpaid ${payrollTotals.unpaidDays === 1 ? 'day' : 'days'}`}
+            />
           </div>
           <PreviewTable
             sheet={payrollSheet}
-            keys={['code', 'name', 'role', 'monthly', 'salary', 'serviceJobs', 'installJobs', 'incentives', 'hours', 'total']}
+            keys={['code', 'name', 'monthly', 'salary', 'incentives', 'paidLeave', 'casualLeave', 'unpaidDays', 'deduction', 'total']}
             empty="No staff yet."
           />
+          <PreviewTable sheet={leaveSheet} keys={['name', 'type', 'from', 'to', 'days', 'reason']} empty="No leave in this period." />
         </div>
       )}
 

@@ -68,6 +68,8 @@ export const ACTIONS = {
   updateAccessControl: admin.updateAccessControl,
   markNotificationsRead: admin.markNotificationsRead,
   setPayProfile: admin.setPayProfile,
+  addLeave: admin.addLeave,
+  deleteLeave: admin.deleteLeave,
 } as const;
 
 export type ActionName = keyof typeof ACTIONS;

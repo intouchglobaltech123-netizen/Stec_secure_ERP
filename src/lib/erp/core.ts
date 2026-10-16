@@ -24,6 +24,7 @@ import {
   AccessControl,
   CreditNote,
   PayProfile,
+  LeaveRecord,
   DEFAULT_ACCESS_CONTROL,
 } from '../stecsecure-types';
 import {
@@ -71,6 +72,7 @@ export interface ErpState {
   notifications: AppNotification[];
   creditNotes: CreditNote[]; // Step 3
   payProfiles: PayProfile[]; // payroll settings (CEO only)
+  leaveRecords: LeaveRecord[]; // leave taken (management; technicians get their own)
   accessControl: AccessControl;
 }
 
@@ -398,6 +400,7 @@ export function getSeedState(): ErpState {
     notifications: [],
     creditNotes: [],
     payProfiles: [],
+    leaveRecords: [],
     accessControl: DEFAULT_ACCESS_CONTROL,
   };
 }
@@ -465,6 +468,7 @@ export function normalizeSavedState(parsed: any, { browserLegacyFixes = true } =
     notifications: list<AppNotification>(parsed.notifications),
     creditNotes: list<CreditNote>(parsed.creditNotes),
     payProfiles: list<PayProfile>(parsed.payProfiles),
+    leaveRecords: list<LeaveRecord>(parsed.leaveRecords),
     accessControl: { ...DEFAULT_ACCESS_CONTROL, ...(parsed.accessControl || {}) },
   };
 }

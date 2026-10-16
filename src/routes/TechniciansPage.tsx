@@ -24,6 +24,7 @@ import { DateRangeFilter } from '@/components/ui/date-range-filter';
 import { DateRange, inRange, presetRange } from '@/lib/date-range';
 import { formatDate, humanize } from '@/lib/utils';
 import { JobDetailModal } from '@/components/jobs/JobDetailModal';
+import { LeaveCard } from '@/components/technicians/LeaveCard';
 
 const JOB_STATUSES: JobStatus[] = ['ASSIGNED', 'IN_PROGRESS', 'ON_HOLD', 'AWAITING_OTP', 'COMPLETED', 'CLOSED', 'CANCELLED'];
 
@@ -275,6 +276,9 @@ export const TechniciansPage: React.FC = () => {
               />
             </div>
           )}
+
+          {/* Leave: balance, leave taken in these dates, and recording leave (office) */}
+          <LeaveCard user={selectedUser} range={range} />
 
           {/* Materials used on these jobs */}
           {Object.keys(userMaterialsMap).length > 0 && (

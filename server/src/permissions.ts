@@ -135,6 +135,8 @@ const RULES: Record<ActionName, Check> = {
 
   updateAccessControl: ceoOnly,
   setPayProfile: ceoOnly,
+  addLeave: managementOnly,
+  deleteLeave: managementOnly,
   // Only ever touches the caller's own notifications
   markNotificationsRead: () => null,
 };

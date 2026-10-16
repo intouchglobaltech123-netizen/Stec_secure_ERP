@@ -19,7 +19,26 @@ export interface PayProfile {
   monthlySalary: number;
   serviceIncentive: number; // per finished service job the person worked on
   installationIncentive: number; // per finished installation job the person worked on
+  // Leave allowed per month; unused days carry forward to later months of the same financial year
+  paidLeavePerMonth?: number;
+  casualLeavePerMonth?: number;
   updatedAt: string;
+}
+
+// Leave taken, recorded by the office. Sundays inside the dates are not counted. Paid / casual leave
+// beyond what the person has built up is unpaid (loss of pay) in payroll.
+export type LeaveType = 'PAID' | 'CASUAL' | 'UNPAID';
+
+export interface LeaveRecord {
+  id: string;
+  userId: string;
+  type: LeaveType;
+  from: string; // India date YYYY-MM-DD
+  to: string; // India date YYYY-MM-DD (same as from for one day)
+  halfDay?: boolean; // only for a single day
+  reason?: string;
+  createdAt: string;
+  createdByUserId?: string;
 }
 
 // Staff number prefix for each role

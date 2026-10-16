@@ -8,7 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-type Draft = { monthlySalary: string; serviceIncentive: string; installationIncentive: string };
+type Draft = {
+  monthlySalary: string;
+  serviceIncentive: string;
+  installationIncentive: string;
+  paidLeavePerMonth: string;
+  casualLeavePerMonth: string;
+};
 
 // Payroll settings (CEO only): monthly salary and incentive per finished job, per person.
 // The Payroll report works out pay from these.
@@ -23,6 +29,8 @@ export const SalariesCard: React.FC = () => {
       monthlySalary: p ? String(p.monthlySalary) : '',
       serviceIncentive: p ? String(p.serviceIncentive) : '',
       installationIncentive: p ? String(p.installationIncentive) : '',
+      paidLeavePerMonth: p ? String(p.paidLeavePerMonth ?? 0) : '',
+      casualLeavePerMonth: p ? String(p.casualLeavePerMonth ?? 0) : '',
     };
   };
 
@@ -44,6 +52,8 @@ export const SalariesCard: React.FC = () => {
         monthlySalary: Number(d.monthlySalary) || 0,
         serviceIncentive: Number(d.serviceIncentive) || 0,
         installationIncentive: Number(d.installationIncentive) || 0,
+        paidLeavePerMonth: Number(d.paidLeavePerMonth) || 0,
+        casualLeavePerMonth: Number(d.casualLeavePerMonth) || 0,
       });
       toast.success(`Pay saved for ${users.find((u) => u.id === userId)?.name}.`);
     } catch (err) {
@@ -62,7 +72,7 @@ export const SalariesCard: React.FC = () => {
       placeholder="0"
       value={drafts[userId]?.[key] ?? ''}
       onChange={(e) => change(userId, key, e.target.value)}
-      className="h-9 w-full lg:w-32 text-[13px] text-right font-mono bg-white"
+      className="h-9 w-full lg:w-[5.5rem] xl:w-28 text-[13px] text-right font-mono bg-white"
     />
   );
 
@@ -74,8 +84,11 @@ export const SalariesCard: React.FC = () => {
           Salaries
         </CardTitle>
         <CardDescription className="text-slate-500">
-          Monthly salary and incentive per finished job, for Reports → Payroll.
-          <span className="hidden sm:inline"> Every team member on a finished job gets that job's incentive. Only you can see this.</span>
+          Monthly salary, incentive per finished job and leave days per month, for Reports → Payroll.
+          <span className="hidden sm:inline">
+            {' '}Every team member on a finished job gets that job's incentive. Unused leave carries forward until March.
+            Only you can see this.
+          </span>
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -87,6 +100,8 @@ export const SalariesCard: React.FC = () => {
               <th className="py-2 pr-3 text-right">Monthly salary (₹)</th>
               <th className="py-2 pr-3 text-right">Per service job (₹)</th>
               <th className="py-2 pr-3 text-right">Per installation job (₹)</th>
+              <th className="py-2 pr-3 text-right">Paid leave / month</th>
+              <th className="py-2 pr-3 text-right">Casual leave / month</th>
               <th className="py-2 text-right">Save</th>
             </tr>
           </thead>
@@ -97,7 +112,9 @@ export const SalariesCard: React.FC = () => {
               const changed =
                 d.monthlySalary !== s.monthlySalary ||
                 d.serviceIncentive !== s.serviceIncentive ||
-                d.installationIncentive !== s.installationIncentive;
+                d.installationIncentive !== s.installationIncentive ||
+                d.paidLeavePerMonth !== s.paidLeavePerMonth ||
+                d.casualLeavePerMonth !== s.casualLeavePerMonth;
               return (
                 <tr key={u.id} className="border-b border-slate-100 last:border-0">
                   <td className="py-2 pr-3">
@@ -110,6 +127,8 @@ export const SalariesCard: React.FC = () => {
                   <td className="py-2 pr-3 text-right">
                     {field(u.id, 'installationIncentive', `Per installation job for ${u.name}`)}
                   </td>
+                  <td className="py-2 pr-3 text-right">{field(u.id, 'paidLeavePerMonth', `Paid leave days per month for ${u.name}`)}</td>
+                  <td className="py-2 pr-3 text-right">{field(u.id, 'casualLeavePerMonth', `Casual leave days per month for ${u.name}`)}</td>
                   <td className="py-2 text-right">
                     <Button
                       size="sm"

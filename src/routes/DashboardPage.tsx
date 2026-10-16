@@ -278,9 +278,15 @@ export const DashboardPage: React.FC = () => {
         tone="emerald"
         value={countBy(list, 'COMPLETED')}
         note={installation ? 'Installed, not yet closed' : 'Finished, not yet closed'}
+      />
+      <StatTile
+        label="Closed"
+        icon={FileCheck2}
+        tone="teal"
+        value={countBy(list, 'CLOSED')}
+        note="Signed off"
         extra={trendPill(trend)}
       />
-      <StatTile label="Closed" icon={FileCheck2} tone="teal" value={countBy(list, 'CLOSED')} note="Signed off" />
     </div>
   );
 

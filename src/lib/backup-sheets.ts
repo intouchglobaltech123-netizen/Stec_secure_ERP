@@ -8,6 +8,7 @@ import { humanize } from './utils';
 import { stateName, customerStateCode } from './gst';
 import { creditNoteReasonLabel, invoiceNetTotal, isCancelledInvoice } from './invoice-status';
 import { quotationStatusMeta } from './quotation-status';
+import { leaveDays, leaveTypeLabel } from './leave';
 
 export type SheetLookups = Pick<
   ErpState,
@@ -448,6 +449,8 @@ export function backupSheets(state: ErpState): SheetSpec[] {
         { header: 'Monthly salary (₹)', key: 'salary', type: 'money' },
         { header: 'Per service job (₹)', key: 'service', type: 'money' },
         { header: 'Per installation job (₹)', key: 'installation', type: 'money' },
+        { header: 'Paid leave / month', key: 'paidLeave', type: 'number' },
+        { header: 'Casual leave / month', key: 'casualLeave', type: 'number' },
       ],
       rows: state.users.map((u) => {
         const pay = state.payProfiles.find((p) => p.id === u.id);
@@ -460,8 +463,30 @@ export function backupSheets(state: ErpState): SheetSpec[] {
           salary: pay?.monthlySalary,
           service: pay?.serviceIncentive,
           installation: pay?.installationIncentive,
+          paidLeave: pay?.paidLeavePerMonth,
+          casualLeave: pay?.casualLeavePerMonth,
         };
       }),
+    },
+    {
+      name: 'Leave',
+      columns: [
+        { header: 'Staff', key: 'name' },
+        { header: 'Type', key: 'type' },
+        { header: 'From', key: 'from', type: 'date' },
+        { header: 'To', key: 'to', type: 'date' },
+        { header: 'Days', key: 'days', type: 'number' },
+        { header: 'Reason', key: 'reason', width: 40 },
+      ],
+      rows: oldestFirst(state.leaveRecords, (l) => l.from).map((l) => ({
+        name: h.userName(l.userId),
+        type: leaveTypeLabel(l.type) + (l.halfDay ? ' (half day)' : ''),
+        from: l.from,
+        to: l.to,
+        days: leaveDays(l),
+        reason: l.reason,
+      })),
+      totalKeys: ['days'],
     },
   ];
 }

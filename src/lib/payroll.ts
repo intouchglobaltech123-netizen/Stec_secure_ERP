@@ -1,7 +1,9 @@
 // Payroll for a period: each person's monthly salary for the days in the period (part-months counted by
-// days in that month) plus incentives for finished jobs they worked on. Hours and holds are shown
-// alongside. Pure — used by the Reports page (CEO only).
-import type { HoldEvent, Job, PayProfile, User, WorkLog } from './stecsecure-types';
+// days in that month) plus incentives for finished jobs they worked on, less loss of pay for leave
+// beyond their allowance (leave.ts). Hours and holds are shown alongside. Pure — used by the Reports
+// page (CEO only).
+import type { HoldEvent, Job, LeaveRecord, PayProfile, User, WorkLog } from './stecsecure-types';
+import { leaveLedger } from './leave';
 import { DateRange, inRange, rangeBounds } from './date-range';
 import { localDateISO } from './numbering';
 
@@ -20,6 +22,12 @@ export interface PayrollRow {
   incentives: number;
   hours: number;
   holds: number;
+  paidLeave: number; // days of paid leave taken in the period (within the allowance)
+  casualLeave: number;
+  unpaidDays: number; // loss of pay days in the period
+  deduction: number; // salary for the unpaid days
+  paidLeaveLeft: number; // balance on the last day of the period
+  casualLeaveLeft: number;
   total: number;
 }
 
@@ -73,7 +81,14 @@ export function hoursWorked(workLogs: WorkLog[], userId: string, range: DateRang
 }
 
 export function computePayroll(
-  input: { users: User[]; payProfiles: PayProfile[]; jobs: Job[]; workLogs: WorkLog[]; holdEvents: HoldEvent[] },
+  input: {
+    users: User[];
+    payProfiles: PayProfile[];
+    jobs: Job[];
+    workLogs: WorkLog[];
+    holdEvents: HoldEvent[];
+    leaveRecords: LeaveRecord[];
+  },
   range: DateRange,
   now: Date = new Date()
 ): PayrollResult {
@@ -103,6 +118,25 @@ export function computePayroll(
     const serviceIncentive = profile?.serviceIncentive ?? 0;
     const installationIncentive = profile?.installationIncentive ?? 0;
     const incentives = serviceJobs * serviceIncentive + installationJobs * installationIncentive;
+
+    // Leave in the period: paid / casual within the allowance; the rest is loss of pay at that month's daily rate
+    const ledger = leaveLedger(
+      input.leaveRecords.filter((l) => l.userId === user.id),
+      profile,
+      to
+    );
+    const inPeriod = ledger.days.filter((d) => d.date >= from && d.date <= to);
+    const sum = (list: typeof inPeriod, f: (d: (typeof inPeriod)[number]) => number) => list.reduce((a, d) => a + f(d), 0);
+    const paidLeave = sum(inPeriod.filter((d) => d.type === 'PAID'), (d) => d.paid);
+    const casualLeave = sum(inPeriod.filter((d) => d.type === 'CASUAL'), (d) => d.paid);
+    const unpaidDays = sum(inPeriod, (d) => d.unpaid);
+    const deduction =
+      Math.round(
+        sum(inPeriod, (d) => {
+          const [y, m] = d.date.split('-').map(Number);
+          return (d.unpaid * monthlySalary) / daysInMonth(y, m);
+        }) * 100
+      ) / 100;
     return {
       user,
       profile,
@@ -116,7 +150,13 @@ export function computePayroll(
       incentives,
       hours: hoursWorked(input.workLogs, user.id, range, now.getTime()),
       holds: input.holdEvents.filter((h) => h.raisedByUserId === user.id && inRange(h.raisedAt, range)).length,
-      total: Math.round((salary + incentives) * 100) / 100,
+      paidLeave,
+      casualLeave,
+      unpaidDays,
+      deduction,
+      paidLeaveLeft: ledger.balance.PAID,
+      casualLeaveLeft: ledger.balance.CASUAL,
+      total: Math.max(0, Math.round((salary + incentives - deduction) * 100) / 100),
     };
   });
 

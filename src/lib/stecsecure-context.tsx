@@ -29,6 +29,7 @@ import {
   QuotationStatus,
   CreditNote,
   PayProfile,
+  LeaveRecord,
 } from './stecsecure-types';
 import { ErpState, normalizeSavedState, getJobQuotation as getJobQuotationIn } from './erp/core';
 import type { ActionName, ActionArgs, ActionReturn } from './erp/actions';
@@ -56,6 +57,8 @@ export interface StecSecureContextType extends ErpState {
   updateAccessControl: (role: ConfigurableRole, sections: AppSection[]) => Promise<void>;
   payProfiles: PayProfile[]; // CEO only (empty for everyone else)
   setPayProfile: (args: ActionArgs<'setPayProfile'>) => Promise<PayProfile>;
+  addLeave: (args: ActionArgs<'addLeave'>) => Promise<LeaveRecord>;
+  deleteLeave: (leaveId: string) => Promise<void>;
   // Phase 22: mark my notifications read (all, or the given ids)
   markNotificationsRead: (ids?: string[]) => Promise<void>;
 
@@ -523,6 +526,8 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         updateAccessControl: (role, sections) => run('updateAccessControl', { role, sections }),
         payProfiles: erpState.payProfiles,
         setPayProfile: (args) => run('setPayProfile', args),
+        addLeave: (args) => run('addLeave', args),
+        deleteLeave: (leaveId) => run('deleteLeave', { leaveId }),
         markNotificationsRead: (ids) => run('markNotificationsRead', { ids }),
         login,
         logout,

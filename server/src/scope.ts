@@ -18,6 +18,8 @@ export function scopeStateFor(state: ErpState, user: User): ErpState {
     notifications: state.notifications.filter((n) => n.recipientUserIds.includes(user.id)),
     // Salaries are for the CEO's eyes only
     payProfiles: user.role === 'CEO' ? state.payProfiles : [],
+    // Leave: management sees everyone's, a technician their own
+    leaveRecords: isManagementRole(user) ? state.leaveRecords : state.leaveRecords.filter((l) => l.userId === user.id),
   };
 }
 

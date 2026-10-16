@@ -34,6 +34,7 @@ export const COLLECTIONS: CollectionName[] = [
   'notifications',
   'creditNotes',
   'payProfiles',
+  'leaveRecords',
 ];
 
 export interface StateChanges {
