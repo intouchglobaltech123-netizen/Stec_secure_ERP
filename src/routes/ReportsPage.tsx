@@ -718,7 +718,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
   const payrollSheet: SheetSpec | null = payroll
     ? {
         name: 'Payroll',
-        title: `Payroll — salary for ${payroll.days} days (${formatDate(payroll.from)} to ${formatDate(payroll.to)}) + job incentives − loss of pay`,
+        title: `Payroll — salary for ${payroll.days} ${payroll.days === 1 ? 'day' : 'days'} (${formatDate(payroll.from)} to ${formatDate(payroll.to)}) + job incentives − loss of pay`,
         columns: [
           { header: 'Staff no.', key: 'code' },
           { header: 'Name', key: 'name' },
@@ -1481,7 +1481,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
             <div>
               <h2 className="text-sm font-bold text-slate-900">Payroll</h2>
               <p className="text-xs text-slate-500">
-                Salary for {payroll.days} days ({formatDate(payroll.from)} – {formatDate(payroll.to)}) + incentives for finished jobs − loss of pay
+                Salary for {payroll.days} {payroll.days === 1 ? 'day' : 'days'} ({formatDate(payroll.from)} – {formatDate(payroll.to)}) + incentives for finished jobs − loss of pay
               </p>
             </div>,
             () => listReport('payroll', 'Payroll', [payrollSheet, leaveSheet])
@@ -1494,7 +1494,7 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigateToJob }) => 
           )}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatTile label="Total pay" icon={Wallet} tone="orange" value={formatINR(payrollTotals.total)} note="Salary + incentives" />
-            <StatTile label="Salaries" icon={Users} value={formatINR(payrollTotals.salary)} note={`For ${payroll.days} days`} />
+            <StatTile label="Salaries" icon={Users} value={formatINR(payrollTotals.salary)} note={`For ${payroll.days} ${payroll.days === 1 ? 'day' : 'days'}`} />
             <StatTile label="Incentives" icon={CheckCircle2} tone="emerald" value={formatINR(payrollTotals.incentives)} note="Finished jobs" />
             <StatTile
               label="Loss of pay"
