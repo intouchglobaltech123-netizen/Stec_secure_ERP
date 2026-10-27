@@ -410,7 +410,7 @@ export function getSeedState(): ErpState {
 // (Falling back to demo seeds here used to resurrect deleted records.)
 // `browserLegacyFixes` applies one-off fixes for old browser saves (demo CEO name, bank details,
 // demo users when none exist); the server stores real data and never applies them.
-export function normalizeSavedState(parsed: any, { browserLegacyFixes = true } = {}): ErpState {
+export function normalizeSavedState(parsed: any, { browserLegacyFixes = false } = {}): ErpState {
   const list = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
 
   const quotations = list<Quotation>(parsed.quotations).map((q) =>

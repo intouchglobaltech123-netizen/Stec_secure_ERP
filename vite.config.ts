@@ -19,7 +19,7 @@ export default defineConfig({
     open: true,
     // API calls go to the ERP server (npm run dev:server) during development
     proxy: {
-      '/api': 'http://localhost:8080',
+      '/api': 'http://localhost:8081',
     },
   },
 });

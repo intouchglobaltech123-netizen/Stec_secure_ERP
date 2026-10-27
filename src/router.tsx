@@ -43,6 +43,8 @@ const isAppSection = (value: string | null): value is AppSection =>
 // Root app layout that handles authentication check & active module view
 export const AppLayout: React.FC = () => {
   const { isAuthenticated, currentUser, canAccessSection } = useStecSecure();
+
+  // Read section from ?section= query param on first load
   const [currentSection, setCurrentSection] = useState<NavSection>(() => {
     if (typeof window !== 'undefined') {
       const p = new URLSearchParams(window.location.search).get('section');
@@ -50,6 +52,28 @@ export const AppLayout: React.FC = () => {
     }
     return 'dashboard';
   });
+
+  // Navigate: update state AND sync URL so reload preserves the page
+  const navigate = React.useCallback((section: NavSection) => {
+    setCurrentSection(section);
+    const url = new URL(window.location.href);
+    if (section === 'dashboard') {
+      url.searchParams.delete('section');
+    } else {
+      url.searchParams.set('section', section);
+    }
+    window.history.pushState({ section }, '', url.toString());
+  }, []);
+
+  // Handle browser back / forward buttons
+  React.useEffect(() => {
+    const onPopState = () => {
+      const p = new URLSearchParams(window.location.search).get('section');
+      setCurrentSection(isAppSection(p) ? p : 'dashboard');
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   // 'jobs' is a legacy alias of the service jobs list
   const sectionKey: AppSection = currentSection === 'jobs' ? 'service-jobs' : currentSection;
@@ -61,7 +85,7 @@ export const AppLayout: React.FC = () => {
     if (lastUserIdRef.current === currentUser?.id) return;
     lastUserIdRef.current = currentUser?.id;
     if (currentUser) {
-      setCurrentSection(canAccessSection('dashboard') ? 'dashboard' : firstAllowed ?? 'dashboard');
+      navigate(canAccessSection('dashboard') ? 'dashboard' : firstAllowed ?? 'dashboard');
     }
   }, [currentUser, firstAllowed]);
 
@@ -71,7 +95,7 @@ export const AppLayout: React.FC = () => {
 
   const renderSection = () => {
     if (!canAccessSection(sectionKey)) {
-      return <AccessRestricted onGoHome={firstAllowed ? () => setCurrentSection(firstAllowed) : undefined} />;
+      return <AccessRestricted onGoHome={firstAllowed ? () => navigate(firstAllowed) : undefined} />;
     }
     switch (currentSection) {
       case 'dashboard':
@@ -80,7 +104,7 @@ export const AppLayout: React.FC = () => {
         return (
           <EnquiriesPage
             onNavigateToJob={(_jobId, type) =>
-              setCurrentSection(type === 'INSTALLATION' ? 'installation-jobs' : 'service-jobs')
+              navigate(type === 'INSTALLATION' ? 'installation-jobs' : 'service-jobs')
             }
           />
         );
@@ -91,7 +115,7 @@ export const AppLayout: React.FC = () => {
       case 'repairs':
         return (
           <RepairsPage
-            onNavigateToJob={(_jobId) => setCurrentSection('service-jobs')}
+            onNavigateToJob={(_jobId) => navigate('service-jobs')}
           />
         );
       case 'jobs':
@@ -110,7 +134,7 @@ export const AppLayout: React.FC = () => {
         return (
           <ReportsPage
             onNavigateToJob={(_jobId, type) =>
-              setCurrentSection(type === 'INSTALLATION' ? 'installation-jobs' : 'service-jobs')
+              navigate(type === 'INSTALLATION' ? 'installation-jobs' : 'service-jobs')
             }
           />
         );
@@ -122,7 +146,7 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <AppShell currentSection={currentSection} onNavigate={setCurrentSection}>
+    <AppShell currentSection={currentSection} onNavigate={navigate}>
       {renderSection()}
     </AppShell>
   );
@@ -133,10 +157,10 @@ const rootRoute = createRootRoute({
   component: AppLayout,
 });
 
+// Index route: root already renders AppLayout, so no component needed here
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: AppLayout,
 });
 
 const routeTree = rootRoute.addChildren([indexRoute]);

@@ -297,6 +297,8 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const versionRef = useRef(0);
   // Identical actions already on their way to the server (double clicks) share one request
   const inFlightRef = useRef(new Map<string, Promise<unknown>>());
+  // Guard: only one /state refresh in-flight at a time
+  const refreshingRef = useRef(false);
 
   const signedOut = () => {
     setCurrentUser(null);
@@ -307,6 +309,8 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Full (first time) or incremental refresh of this user's data
   const refreshState = async () => {
+    if (refreshingRef.current) return; // already in-flight, skip
+    refreshingRef.current = true;
     try {
       const data = await api<{ version: number; state: ErpState } | undefined>(
         `/state${versionRef.current ? `?since=${versionRef.current}` : ''}`
@@ -317,6 +321,8 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) signedOut();
       else throw err;
+    } finally {
+      refreshingRef.current = false;
     }
   };
 
@@ -338,14 +344,21 @@ export const StecSecureProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // Pick up other people's changes: every 15 seconds and whenever the app comes back to the screen
   useEffect(() => {
     if (status !== 'ready') return;
+    // Debounce: visibilitychange and focus often fire together — collapse into one call
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const tick = () => {
-      if (document.visibilityState === 'visible') refreshState().catch(() => undefined);
+      if (document.visibilityState !== 'visible') return;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        refreshState().catch(() => undefined);
+      }, 100);
     };
-    const timer = window.setInterval(tick, POLL_MS);
+    const timer = window.setInterval(() => refreshState().catch(() => undefined), POLL_MS);
     document.addEventListener('visibilitychange', tick);
     window.addEventListener('focus', tick);
     return () => {
       window.clearInterval(timer);
+      if (debounceTimer) clearTimeout(debounceTimer);
       document.removeEventListener('visibilitychange', tick);
       window.removeEventListener('focus', tick);
     };
