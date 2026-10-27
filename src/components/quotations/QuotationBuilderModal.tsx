@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { formatINR, formatDate } from '@/lib/utils';
-import { CANARA_BANK_DETAILS } from '@/lib/seed-data';
 import {
   COMPANY_STATE_CODE,
   INDIAN_STATES,
@@ -249,7 +248,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
           totalIgst,
           roundOff,
           grandTotal,
-          bankDetails: CANARA_BANK_DETAILS,
+          bankDetails: quotationToEdit.bankDetails,
           status,
           enquiryId: quotationToEdit.enquiryId || initialEnquiryId,
         });
@@ -272,7 +271,7 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
         totalIgst,
         roundOff,
         grandTotal,
-        bankDetails: CANARA_BANK_DETAILS,
+        bankDetails: quotationToEdit?.bankDetails,
         status,
         enquiryId: initialEnquiryId,
       });
@@ -684,20 +683,24 @@ export const QuotationBuilderModal: React.FC<QuotationBuilderModalProps> = ({
           </div>
 
           {/* Bank Details Block */}
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            <div>
-              <div className="font-bold text-slate-900 text-[13px]">Bank Details for Remittance:</div>
-              <div className="text-slate-600">
-                A/C Name: <strong>S TEC SECURE</strong> &bull; Bank: <strong>CANARA</strong> &bull; A/C Type: <strong>Current</strong>
+          {quotationToEdit?.bankDetails ? (
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+              <div>
+                <div className="font-bold text-slate-900 text-[13px]">Bank Details for Remittance:</div>
+                <div className="text-slate-600">
+                  Bank: <strong>{quotationToEdit.bankDetails.bankName}</strong> &bull; A/C Type: <strong>{quotationToEdit.bankDetails.accountType || 'Current'}</strong>
+                </div>
+                <div className="text-slate-600">
+                  A/C No: <strong className="font-mono">{quotationToEdit.bankDetails.accountNumber}</strong> &bull; IFSC: <strong className="font-mono">{quotationToEdit.bankDetails.ifscCode}</strong> &bull; Branch: <strong>{quotationToEdit.bankDetails.branch}</strong>
+                </div>
               </div>
-              <div className="text-slate-600">
-                A/C No: <strong className="font-mono">{CANARA_BANK_DETAILS.accountNumber}</strong> &bull; IFSC: <strong className="font-mono">{CANARA_BANK_DETAILS.ifscCode}</strong> &bull; Branch: <strong>Veerappan Chathiram, Erode</strong>
-              </div>
+              {quotationToEdit.bankDetails.upiId && (
+                <div className="text-orange-600 font-mono font-semibold">
+                  UPI Remittance: {quotationToEdit.bankDetails.upiId}
+                </div>
+              )}
             </div>
-            <div className="text-orange-600 font-mono font-semibold">
-              UPI Remittance Available
-            </div>
-          </div>
+          ) : null}
         </div>
 
         {/* Pinned Action Buttons Footer */}

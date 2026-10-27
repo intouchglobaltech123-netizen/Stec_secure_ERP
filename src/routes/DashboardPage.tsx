@@ -671,9 +671,9 @@ export const DashboardPage: React.FC = () => {
                   )}
                 </div>
                 <div className="space-y-0.5 flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-[13px] font-semibold text-slate-900 truncate">{item.title}</span>
-                    <span className="text-[11px] text-slate-500 font-mono">
+                    <span className="text-[11px] text-slate-500 font-mono shrink-0">
                       {formatDateTime(item.time)}
                     </span>
                   </div>
@@ -695,19 +695,19 @@ export const DashboardPage: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {visibleJobs.slice(0, 4).map((job) => (
-              <div
+            <div
                 key={job.id}
-                className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between hover:border-orange-200 transition-colors"
+                className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2 hover:border-orange-200 transition-colors"
               >
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
+                <div className="space-y-0.5 min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[13px] font-bold text-orange-600 font-mono">{job.jobNumber}</span>
                     <Badge variant="outline" className="text-[11px]">
                       {job.category}
                     </Badge>
                   </div>
-                  <div className="text-[13px] text-slate-900 font-semibold">{job.productModel}</div>
-                  <div className="text-xs text-slate-500 truncate max-w-xs">{job.problemReported}</div>
+                  <div className="text-[13px] text-slate-900 font-semibold truncate">{job.productModel}</div>
+                  <div className="text-xs text-slate-500 truncate">{job.problemReported}</div>
                 </div>
 
                 <Badge

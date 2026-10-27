@@ -186,7 +186,9 @@ export const InventoryPage: React.FC = () => {
               <Package className="w-3.5 h-3.5 text-orange-600" />
             </div>
             <div className="text-2xl font-bold text-slate-900 font-mono">{products.length}</div>
-            <p className="text-[11px] text-slate-500">Across 6 categories</p>
+            <p className="text-[11px] text-slate-500">
+              Across {new Set(products.map((p) => p.category)).size} categories
+            </p>
           </CardContent>
         </Card>
 

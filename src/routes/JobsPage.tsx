@@ -55,7 +55,6 @@ import { DateRangeFilter } from '@/components/ui/date-range-filter';
 import { TablePager } from '@/components/ui/table-pager';
 import { usePagination } from '@/lib/use-pagination';
 import { DateRange, inRange, presetRange } from '@/lib/date-range';
-import { SAMPLE_BEFORE_PHOTO, SAMPLE_AFTER_PHOTO } from '@/lib/seed-data';
 import { errorMessage } from '@/lib/api';
 import { toast } from 'sonner';
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStecSecure } from '@/lib/stecsecure-context';
 import { KeyRound, AlertCircle, ArrowRight, Phone, Loader2 } from 'lucide-react';
 import { COMPANY_LOGO_SRC } from '@/components/layout/AppShell';
@@ -51,6 +51,29 @@ export const LoginScreen: React.FC = () => {
     setPin((prev) => prev.slice(0, -1));
     setError(null);
   };
+
+  // Physical keyboard support: digits, Backspace, Enter
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept when the phone number input is focused
+      const phoneInput = document.getElementById('login-phone');
+      if (document.activeElement === phoneInput) return;
+
+      if (/^[0-9]$/.test(e.key)) {
+        e.preventDefault();
+        handleKeypadPress(e.key);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        handleDelete();
+      } else if (e.key === 'Enter' && pin.length === 4 && phoneValid && !submitting) {
+        e.preventDefault();
+        void submit(phone, pin);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pin, phone, phoneValid, submitting]);
 
   const handleDemoLogin = (demoPhone: string, demoPin: string) => {
     setPhone(demoPhone);
@@ -110,10 +133,20 @@ export const LoginScreen: React.FC = () => {
                 inputMode="numeric"
                 autoComplete="tel"
                 placeholder="98xxxxxxxx"
+                maxLength={10}
                 value={phone}
                 onChange={(e) => {
-                  setPhone(e.target.value);
+                  // Only allow digits, max 10
+                  const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setPhone(digits);
                   setError(null);
+                }}
+                onKeyDown={(e) => {
+                  // On Enter after 10 digits, blur so PIN keyboard listener takes over
+                  if (e.key === 'Enter' && phoneValid) {
+                    e.preventDefault();
+                    (e.target as HTMLInputElement).blur();
+                  }
                 }}
                 className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-300 bg-white text-base font-mono tracking-wide text-slate-900 focus:outline-none focus:border-orange-500"
               />
